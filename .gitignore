@@ -1,0 +1,48 @@
+# Build artifacts
+bin/
+obj/
+out/
+artifacts/
+
+# User and IDE-specific files
+*.user
+*.rsuser
+*.suo
+*.userprefs
+*.sln.docstates
+
+# JetBrains Rider / IntelliJ
+.idea/
+*.sln.iml
+
+# Visual Studio
+.vs/
+
+# VS Code (keep shared workspace config if used)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Test and coverage output
+TestResults/
+coverage/
+coverage*.json
+coverage*.xml
+
+# Logs and temp files
+*.log
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# NuGet package artifacts
+*.nupkg
+*.snupkg
+
+# Local tool caches
+_ReSharper*/
+*.DotSettings.user
