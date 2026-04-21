@@ -7,7 +7,16 @@
         x:Class="HamBusLog.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
+        Width="1200"
+        Height="760"
+        MinWidth="980"
+        MinHeight="620"
         Title="HamBusLog">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#1F2937"/>
+        <SolidColorBrush x:Key="SidebarForegroundBrush" Color="White"/>
+    </Window.Resources>
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -15,6 +24,35 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <Grid ColumnDefinitions="220,*">
+        <Border Grid.Column="0" Background="{StaticResource SidebarBackgroundBrush}" Padding="12">
+            <StackPanel Spacing="10">
+                <TextBlock Text="Menu" FontSize="18" FontWeight="Bold" Foreground="{StaticResource SidebarForegroundBrush}" Margin="4,2,4,8"/>
+                <TreeView ItemsSource="{Binding MenuItems}"
+                          SelectedItem="{Binding SelectedMenuItem, Mode=TwoWay}"
+                          Foreground="{StaticResource SidebarForegroundBrush}"
+                          Background="Transparent"
+                          BorderThickness="0">
+                    <TreeView.Styles>
+                        <Style Selector="TreeViewItem">
+                            <Setter Property="IsExpanded" Value="{ReflectionBinding DataContext.IsExpanded, RelativeSource={RelativeSource Self}, Mode=TwoWay}"/>
+                        </Style>
+                    </TreeView.Styles>
+                    <TreeView.ItemTemplate>
+                        <TreeDataTemplate x:DataType="vm:MenuNode" ItemsSource="{Binding Children}">
+                            <TextBlock Text="{Binding Title}" Foreground="{StaticResource SidebarForegroundBrush}"/>
+                        </TreeDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Column="1" Padding="20">
+            <StackPanel Spacing="8">
+                <TextBlock Text="HamBusLog" FontSize="24" FontWeight="Bold"/>
+                <TextBlock Text="{Binding SelectedMenuTitle, StringFormat=Selected: {0}}" FontSize="16"/>
+            </StackPanel>
+        </Border>
+    </Grid>
 
 </Window>
