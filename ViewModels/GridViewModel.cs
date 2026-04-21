@@ -1,10 +1,15 @@
+using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
+using System.Linq;
+using HamBlocks.Library.Models;
 
 namespace HamBusLog.ViewModels;
 
 public class GridViewModel
 {
-    public ObservableCollection<LogEntry> LogEntries { get; }
+    public ObservableCollection<Qso> LogEntries { get; }
+    private readonly Dictionary<string, bool> _sortAscendingByColumn = new();
     
     // Input fields
     public string InputCall { get; set; } = string.Empty;
@@ -23,18 +28,18 @@ public class GridViewModel
 
     public GridViewModel()
     {
-        LogEntries = new ObservableCollection<LogEntry>
+        LogEntries = new ObservableCollection<Qso>
         {
-            new LogEntry { Call = "W5XYZ", DateTime = "2026-04-21 14:30", Frequency = "7.250 MHz", Mode = "SSB", RST = "59", Comments = "Good signal" },
-            new LogEntry { Call = "K0ABC", DateTime = "2026-04-21 14:45", Frequency = "14.250 MHz", Mode = "CW", RST = "579", Comments = "Strong signal" },
-            new LogEntry { Call = "N1XYZ", DateTime = "2026-04-21 15:00", Frequency = "21.250 MHz", Mode = "SSB", RST = "57", Comments = "Weak but readable" },
-            new LogEntry { Call = "VE3XYZ", DateTime = "2026-04-21 15:15", Frequency = "3.650 MHz", Mode = "LSB", RST = "549", Comments = "Canadian contact" },
-            new LogEntry { Call = "W4ABC", DateTime = "2026-04-21 15:30", Frequency = "28.400 MHz", Mode = "FM", RST = "59+", Comments = "Crystal clear" },
-            new LogEntry { Call = "K5XYZ", DateTime = "2026-04-21 15:45", Frequency = "7.180 MHz", Mode = "CW", RST = "589", Comments = "Excellent contact" },
-            new LogEntry { Call = "W6ZZZ", DateTime = "2026-04-21 16:00", Frequency = "14.200 MHz", Mode = "SSB", RST = "55", Comments = "Fading in/out" },
-            new LogEntry { Call = "N2ABC", DateTime = "2026-04-21 16:15", Frequency = "3.750 MHz", Mode = "USB", RST = "559", Comments = "Local contact" },
-            new LogEntry { Call = "VE2XYZ", DateTime = "2026-04-21 16:30", Frequency = "21.350 MHz", Mode = "CW", RST = "569", Comments = "QSO complete" },
-            new LogEntry { Call = "W7ABC", DateTime = "2026-04-21 16:45", Frequency = "10.120 MHz", Mode = "CW", RST = "579", Comments = "Great propagation" }
+            new Qso { Call = "W5XYZ", QsoDate = Convert.ToDateTime("2026-04-21 14:30"), Freq = 7.250m, Mode = "SSB", RstRcvd = "59" },
+            new Qso { Call = "K0ABC", QsoDate = Convert.ToDateTime("2026-04-21 14:45"), Freq = 14.250m, Mode = "CW", RstRcvd = "579" },
+            new Qso { Call = "N1XYZ", QsoDate = Convert.ToDateTime("2026-04-21 15:00"), Freq = 21.250m, Mode = "SSB", RstRcvd = "57" },
+            new Qso { Call = "VE3XYZ", QsoDate = Convert.ToDateTime("2026-04-21 15:15"), Freq = 3.650m, Mode = "LSB", RstRcvd = "549" },
+            new Qso { Call = "W4ABC", QsoDate = Convert.ToDateTime("2026-04-21 15:30"), Freq = 28.400m, Mode = "FM", RstRcvd = "59+" },
+            new Qso { Call = "K5XYZ", QsoDate = Convert.ToDateTime("2026-04-21 15:45"), Freq = 7.180m, Mode = "CW", RstRcvd = "589" },
+            new Qso { Call = "W6ZZZ", QsoDate = Convert.ToDateTime("2026-04-21 16:00"), Freq = 14.200m, Mode = "SSB", RstRcvd = "55" },
+            new Qso { Call = "N2ABC", QsoDate = Convert.ToDateTime("2026-04-21 16:15"), Freq = 3.750m, Mode = "USB", RstRcvd = "559" },
+            new Qso { Call = "VE2XYZ", QsoDate = Convert.ToDateTime("2026-04-21 16:30"), Freq = 21.350m, Mode = "CW", RstRcvd = "569" },
+            new Qso { Call = "W7ABC", QsoDate = Convert.ToDateTime("2026-04-21 16:45"), Freq = 10.120m, Mode = "CW", RstRcvd = "579" }
         };
     }
     
@@ -42,27 +47,64 @@ public class GridViewModel
     {
         if (string.IsNullOrWhiteSpace(InputCall))
             return;
+
+        var qsoDate = DateTime.TryParse(InputDate, out var parsedDate)
+            ? parsedDate
+            : DateTime.Now;
+        var freq = decimal.TryParse(InputFreq, out var parsedFreq)
+            ? parsedFreq
+            : 0m;
         
-        var newEntry = new LogEntry
+        var newEntry = new Qso
         {
             Call = InputCall,
-            Date = InputDate,
+            QsoDate = qsoDate,
             Band = InputBand,
             Mode = InputMode,
-            TimeOn = InputTimeOn,
-            Sent = InputSent,
-            Rec = InputRec,
+
+            RstSent = InputSent,
+            RstRcvd = InputRec,
             Country = InputCountry,
-            Name = InputName,
             State = InputState,
-            County = InputCounty,
-            Frequency = InputFreq,
-            DateTime = InputDate,
-            Comments = InputComments
+            Freq = freq
         };
         
         LogEntries.Add(newEntry);
         ClearInputs();
+    }
+
+    public void SortBy(string column)
+    {
+        if (string.IsNullOrWhiteSpace(column) || LogEntries.Count == 0)
+            return;
+
+        var ascending = !_sortAscendingByColumn.GetValueOrDefault(column, false);
+        _sortAscendingByColumn[column] = ascending;
+
+        IEnumerable<Qso> sorted = column switch
+        {
+            "Call" => ascending
+                ? LogEntries.OrderBy(x => x.Call)
+                : LogEntries.OrderByDescending(x => x.Call),
+            "QsoDate" => ascending
+                ? LogEntries.OrderBy(x => x.QsoDate)
+                : LogEntries.OrderByDescending(x => x.QsoDate),
+            "Freq" => ascending
+                ? LogEntries.OrderBy(x => x.Freq)
+                : LogEntries.OrderByDescending(x => x.Freq),
+            "Mode" => ascending
+                ? LogEntries.OrderBy(x => x.Mode)
+                : LogEntries.OrderByDescending(x => x.Mode),
+            "RstRcvd" => ascending
+                ? LogEntries.OrderBy(x => x.RstRcvd)
+                : LogEntries.OrderByDescending(x => x.RstRcvd),
+            _ => LogEntries
+        };
+
+        var snapshot = sorted.ToList();
+        LogEntries.Clear();
+        foreach (var item in snapshot)
+            LogEntries.Add(item);
     }
     
     private void ClearInputs()
@@ -89,12 +131,9 @@ public class LogEntry
     public string DateTime { get; set; } = string.Empty;
     public string Date { get; set; } = string.Empty;
     public string Band { get; set; } = string.Empty;
-    public string Frequency { get; set; } = string.Empty;
+    public decimal Freq { get; set; } = 0.0m;
     public string Mode { get; set; } = string.Empty;
-    public string TimeOn { get; set; } = string.Empty;
-    public string Sent { get; set; } = string.Empty;
-    public string Rec { get; set; } = string.Empty;
-    public string RST { get; set; } = string.Empty;
+    public string RstRcvd { get; set; } = string.Empty;
     public string Country { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string State { get; set; } = string.Empty;
