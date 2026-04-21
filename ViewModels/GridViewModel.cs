@@ -5,6 +5,21 @@ namespace HamBusLog.ViewModels;
 public class GridViewModel
 {
     public ObservableCollection<LogEntry> LogEntries { get; }
+    
+    // Input fields
+    public string InputCall { get; set; } = string.Empty;
+    public string InputDate { get; set; } = string.Empty;
+    public string InputBand { get; set; } = string.Empty;
+    public string InputMode { get; set; } = string.Empty;
+    public string InputTimeOn { get; set; } = string.Empty;
+    public string InputSent { get; set; } = string.Empty;
+    public string InputRec { get; set; } = string.Empty;
+    public string InputCountry { get; set; } = string.Empty;
+    public string InputName { get; set; } = string.Empty;
+    public string InputState { get; set; } = string.Empty;
+    public string InputCounty { get; set; } = string.Empty;
+    public string InputFreq { get; set; } = string.Empty;
+    public string InputComments { get; set; } = string.Empty;
 
     public GridViewModel()
     {
@@ -22,15 +37,70 @@ public class GridViewModel
             new LogEntry { Call = "W7ABC", DateTime = "2026-04-21 16:45", Frequency = "10.120 MHz", Mode = "CW", RST = "579", Comments = "Great propagation" }
         };
     }
+    
+    public void AddNewEntry()
+    {
+        if (string.IsNullOrWhiteSpace(InputCall))
+            return;
+        
+        var newEntry = new LogEntry
+        {
+            Call = InputCall,
+            Date = InputDate,
+            Band = InputBand,
+            Mode = InputMode,
+            TimeOn = InputTimeOn,
+            Sent = InputSent,
+            Rec = InputRec,
+            Country = InputCountry,
+            Name = InputName,
+            State = InputState,
+            County = InputCounty,
+            Frequency = InputFreq,
+            DateTime = InputDate,
+            Comments = InputComments
+        };
+        
+        LogEntries.Add(newEntry);
+        ClearInputs();
+    }
+    
+    private void ClearInputs()
+    {
+        InputCall = string.Empty;
+        InputDate = string.Empty;
+        InputBand = string.Empty;
+        InputMode = string.Empty;
+        InputTimeOn = string.Empty;
+        InputSent = string.Empty;
+        InputRec = string.Empty;
+        InputCountry = string.Empty;
+        InputName = string.Empty;
+        InputState = string.Empty;
+        InputCounty = string.Empty;
+        InputFreq = string.Empty;
+        InputComments = string.Empty;
+    }
 }
 
 public class LogEntry
 {
     public string Call { get; set; } = string.Empty;
     public string DateTime { get; set; } = string.Empty;
+    public string Date { get; set; } = string.Empty;
+    public string Band { get; set; } = string.Empty;
     public string Frequency { get; set; } = string.Empty;
     public string Mode { get; set; } = string.Empty;
+    public string TimeOn { get; set; } = string.Empty;
+    public string Sent { get; set; } = string.Empty;
+    public string Rec { get; set; } = string.Empty;
     public string RST { get; set; } = string.Empty;
+    public string Country { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public string County { get; set; } = string.Empty;
     public string Comments { get; set; } = string.Empty;
 }
+
+
 
