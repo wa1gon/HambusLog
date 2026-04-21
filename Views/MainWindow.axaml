@@ -34,6 +34,7 @@
                           Background="Transparent"
                           BorderThickness="0"
                           Name="MenuTreeView"
+                          SelectionChanged="OnMenuTreeViewSelectionChanged"
                           >
                     <TreeView.Styles>
                         <Style Selector="TreeViewItem">

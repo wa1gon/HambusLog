@@ -4,6 +4,7 @@ public partial class MainWindowViewModel : ViewModelBase
 {
     public MenuNode[] MenuItems { get; } =
     [
+        new MenuNode("Grid"),
         new MenuNode("File", true,
             new MenuNode("Import ADIF"),
             new MenuNode("Export ADIF"),

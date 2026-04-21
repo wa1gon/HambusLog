@@ -7,31 +7,35 @@ namespace HamBusLog.Views;
 
 public partial class MainWindow : Window
 {
+    private MenuNode? _previousSelection;
+
     public MainWindow()
     {
         InitializeComponent();
     }
 
-    public void OnTreeViewItemPressed(object? sender, PointerPressedEventArgs e)
+    public void OnMenuTreeViewSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        // Placeholder - will be replaced with OnTreeViewPointerPressed
-    }
-
-    public void OnTreeViewPointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        var treeViewItem = e.Source as TreeViewItem ?? (e.Source as Control)?.FindAncestorOfType<TreeViewItem>();
-        if (treeViewItem != null && treeViewItem.DataContext is MenuNode node && node.HasChildren)
+        if (e.AddedItems.Count > 0 && e.AddedItems[0] is MenuNode node)
         {
-            treeViewItem.IsExpanded = !treeViewItem.IsExpanded;
-        }
-    }
-
-    public void OnTreeViewItemPointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (sender is TreeViewItem treeViewItem && treeViewItem.DataContext is MenuNode node && node.HasChildren)
-        {
-            treeViewItem.IsExpanded = !treeViewItem.IsExpanded;
-            e.Handled = true;
+            if (node.Title == "Grid")
+            {
+                var gridWindow = new GridWindow();
+                gridWindow.Show();
+                
+                // Reset selection to previous item
+                if (_previousSelection != null)
+                {
+                    if (sender is TreeView treeView)
+                    {
+                        treeView.SelectedItem = _previousSelection;
+                    }
+                }
+            }
+            else
+            {
+                _previousSelection = node;
+            }
         }
     }
 }
