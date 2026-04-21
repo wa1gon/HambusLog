@@ -1,5 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
+using System.Linq;
 using HamBlocks.Library.Models;
 
 namespace HamBusLog.ViewModels;
@@ -7,6 +9,7 @@ namespace HamBusLog.ViewModels;
 public class GridViewModel
 {
     public ObservableCollection<Qso> LogEntries { get; }
+    private readonly Dictionary<string, bool> _sortAscendingByColumn = new();
     
     // Input fields
     public string InputCall { get; set; } = string.Empty;
@@ -68,6 +71,40 @@ public class GridViewModel
         
         LogEntries.Add(newEntry);
         ClearInputs();
+    }
+
+    public void SortBy(string column)
+    {
+        if (string.IsNullOrWhiteSpace(column) || LogEntries.Count == 0)
+            return;
+
+        var ascending = !_sortAscendingByColumn.GetValueOrDefault(column, false);
+        _sortAscendingByColumn[column] = ascending;
+
+        IEnumerable<Qso> sorted = column switch
+        {
+            "Call" => ascending
+                ? LogEntries.OrderBy(x => x.Call)
+                : LogEntries.OrderByDescending(x => x.Call),
+            "QsoDate" => ascending
+                ? LogEntries.OrderBy(x => x.QsoDate)
+                : LogEntries.OrderByDescending(x => x.QsoDate),
+            "Freq" => ascending
+                ? LogEntries.OrderBy(x => x.Freq)
+                : LogEntries.OrderByDescending(x => x.Freq),
+            "Mode" => ascending
+                ? LogEntries.OrderBy(x => x.Mode)
+                : LogEntries.OrderByDescending(x => x.Mode),
+            "RstRcvd" => ascending
+                ? LogEntries.OrderBy(x => x.RstRcvd)
+                : LogEntries.OrderByDescending(x => x.RstRcvd),
+            _ => LogEntries
+        };
+
+        var snapshot = sorted.ToList();
+        LogEntries.Clear();
+        foreach (var item in snapshot)
+            LogEntries.Add(item);
     }
     
     private void ClearInputs()
