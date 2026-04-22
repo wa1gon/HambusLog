@@ -54,23 +54,36 @@
                         <!-- Row 1 -->
                         <StackPanel Grid.Column="0" Grid.Row="0" Spacing="4">
                             <TextBlock Text="Call" Foreground="White" FontSize="12" FontWeight="Bold" />
-                            <TextBox Text="{Binding InputCall}" Background="#2C3E50" Foreground="White" Padding="6" />
+                            <TextBox Text="{Binding InputCall}" Background="#2C3E50" Foreground="White" Padding="6" TextChanged="OnCallInputChanged" />
+                            <TextBlock Text="{Binding CallError}" Foreground="#FF6B6B" FontSize="11" IsVisible="{Binding HasCallError}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Grid.Row="0" Spacing="4">
                             <TextBlock Text="Date (YYYYMMDD)" Foreground="White" FontSize="12" FontWeight="Bold" />
-                            <TextBox Text="{Binding InputDate}" Background="#2C3E50" Foreground="White" Padding="6" />
+                            <TextBox Name="DateInput"
+                                     Text="{Binding InputDate}"
+                                     Background="#2C3E50"
+                                     Foreground="White"
+                                     Padding="6"
+                                     GotFocus="OnDateOrTimeFocus" />
                         </StackPanel>
                         <StackPanel Grid.Column="2" Grid.Row="0" Spacing="4">
                             <TextBlock Text="Time On (HHMM)" Foreground="White" FontSize="12" FontWeight="Bold" />
-                            <TextBox Text="{Binding InputTimeOn}" Background="#2C3E50" Foreground="White" Padding="6" />
+                            <TextBox Name="TimeInput"
+                                     Text="{Binding InputTimeOn}"
+                                     Background="#2C3E50"
+                                     Foreground="White"
+                                     Padding="6"
+                                     GotFocus="OnDateOrTimeFocus" />
                         </StackPanel>
                         <StackPanel Grid.Column="3" Grid.Row="0" Spacing="4">
                             <TextBlock Text="Band" Foreground="White" FontSize="12" FontWeight="Bold" />
-                            <TextBox Text="{Binding InputBand}" Background="#2C3E50" Foreground="White" Padding="6" />
+                            <TextBox Text="{Binding InputBand}" Background="#2C3E50" Foreground="White" Padding="6" TextChanged="OnBandInputChanged" />
+                            <TextBlock Text="{Binding BandError}" Foreground="#FF6B6B" FontSize="11" IsVisible="{Binding HasBandError}" />
                         </StackPanel>
                         <StackPanel Grid.Column="4" Grid.Row="0" Spacing="4">
                             <TextBlock Text="Mode" Foreground="White" FontSize="12" FontWeight="Bold" />
-                            <TextBox Text="{Binding InputMode}" Background="#2C3E50" Foreground="White" Padding="6" />
+                            <TextBox Text="{Binding InputMode}" Background="#2C3E50" Foreground="White" Padding="6" TextChanged="OnModeInputChanged" />
+                            <TextBlock Text="{Binding ModeError}" Foreground="#FF6B6B" FontSize="11" IsVisible="{Binding HasModeError}" />
                         </StackPanel>
                         <StackPanel Grid.Column="5" Grid.Row="0" Spacing="4">
                             <TextBlock Text="Freq" Foreground="White" FontSize="12" FontWeight="Bold" />
@@ -96,11 +109,13 @@
                         <Grid ColumnDefinitions="1*,1*" ColumnSpacing="8">
                             <StackPanel Grid.Column="0" Spacing="4">
                                 <TextBlock Text="Section" Foreground="White" FontSize="12" />
-                                <TextBox Text="{Binding InputFieldDaySection}" Background="#2C3E50" Foreground="White" Padding="6" />
+                                <TextBox Text="{Binding InputFieldDaySection}" Background="#2C3E50" Foreground="White" Padding="6" TextChanged="OnSectionInputChanged" />
+                                <TextBlock Text="{Binding SectionError}" Foreground="#FF6B6B" FontSize="11" IsVisible="{Binding HasSectionError}" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Spacing="4">
                                 <TextBlock Text="Class" Foreground="White" FontSize="12" />
-                                <TextBox Text="{Binding InputFieldDayClass}" Background="#2C3E50" Foreground="White" Padding="6" />
+                                <TextBox Text="{Binding InputFieldDayClass}" Background="#2C3E50" Foreground="White" Padding="6" TextChanged="OnClassInputChanged" />
+                                <TextBlock Text="{Binding ClassError}" Foreground="#FF6B6B" FontSize="11" IsVisible="{Binding HasClassError}" />
                             </StackPanel>
                         </Grid>
                     </StackPanel>

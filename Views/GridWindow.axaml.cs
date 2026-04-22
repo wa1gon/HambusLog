@@ -1,6 +1,8 @@
 using Avalonia.Controls;
 using System;
+using System.Linq;
 using Avalonia.Interactivity;
+using Avalonia.Input;
 using HamBusLog.ViewModels;
 
 namespace HamBusLog.Views;
@@ -71,6 +73,125 @@ public partial class GridWindow : Window
         {
             _viewModel?.SortBy(column);
         }
+    }
+
+    public void OnDateOrTimeFocus(object? sender, GotFocusEventArgs e)
+    {
+        var utcNow = DateTime.UtcNow;
+        var dateValue = utcNow.ToString("yyyyMMdd");
+        var timeValue = utcNow.ToString("HHmm");
+
+        var dateInput = this.FindControl<TextBox>("DateInput");
+        var timeInput = this.FindControl<TextBox>("TimeInput");
+
+        if (dateInput != null)
+            dateInput.Text = dateValue;
+        if (timeInput != null)
+            timeInput.Text = timeValue;
+
+        if (_viewModel != null)
+        {
+            _viewModel.InputDate = dateValue;
+            _viewModel.InputTimeOn = timeValue;
+        }
+    }
+
+    public void OnCallInputChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox textBox)
+            return;
+
+        var source = textBox.Text ?? string.Empty;
+        var normalized = new string(source
+            .ToUpperInvariant()
+            .Where(c => char.IsLetterOrDigit(c) || c == '/')
+            .ToArray());
+
+        if (source != normalized)
+        {
+            var caret = textBox.CaretIndex;
+            textBox.Text = normalized;
+            textBox.CaretIndex = Math.Min(caret, normalized.Length);
+        }
+
+        if (_viewModel != null)
+            _viewModel.InputCall = normalized;
+    }
+
+    public void OnSectionInputChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox textBox)
+            return;
+
+        var source = textBox.Text ?? string.Empty;
+        var normalized = source.ToUpperInvariant();
+
+        if (source != normalized)
+        {
+            var caret = textBox.CaretIndex;
+            textBox.Text = normalized;
+            textBox.CaretIndex = Math.Min(caret, normalized.Length);
+        }
+
+        if (_viewModel != null)
+            _viewModel.InputFieldDaySection = normalized;
+    }
+
+    public void OnClassInputChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox textBox)
+            return;
+
+        var source = textBox.Text ?? string.Empty;
+        var normalized = source.ToUpperInvariant();
+
+        if (source != normalized)
+        {
+            var caret = textBox.CaretIndex;
+            textBox.Text = normalized;
+            textBox.CaretIndex = Math.Min(caret, normalized.Length);
+        }
+
+        if (_viewModel != null)
+            _viewModel.InputFieldDayClass = normalized;
+    }
+
+    public void OnBandInputChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox textBox)
+            return;
+
+        var source = textBox.Text ?? string.Empty;
+        var normalized = source.ToUpperInvariant();
+
+        if (source != normalized)
+        {
+            var caret = textBox.CaretIndex;
+            textBox.Text = normalized;
+            textBox.CaretIndex = Math.Min(caret, normalized.Length);
+        }
+
+        if (_viewModel != null)
+            _viewModel.InputBand = normalized;
+    }
+
+    public void OnModeInputChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox textBox)
+            return;
+
+        var source = textBox.Text ?? string.Empty;
+        var normalized = source.ToUpperInvariant();
+
+        if (source != normalized)
+        {
+            var caret = textBox.CaretIndex;
+            textBox.Text = normalized;
+            textBox.CaretIndex = Math.Min(caret, normalized.Length);
+        }
+
+        if (_viewModel != null)
+            _viewModel.InputMode = normalized;
     }
 }
 
