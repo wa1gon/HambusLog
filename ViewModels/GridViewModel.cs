@@ -86,8 +86,8 @@ public class GridViewModel
             QsoDate = qsoDate,
             Band = InputBand,
             Mode = InputMode,
-            RstSent = InputSent,
-            RstRcvd = InputRec,
+            RstSent = SelectedContestType == ContestType.ArrlFieldDay ? string.Empty : InputSent,
+            RstRcvd = SelectedContestType == ContestType.ArrlFieldDay ? string.Empty : InputRec,
             Freq = freq
         };
         

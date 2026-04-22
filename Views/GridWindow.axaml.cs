@@ -32,17 +32,30 @@ public partial class GridWindow : Window
         
         var modeLabel = this.FindControl<TextBlock>("ContestModeLabel");
         var fieldDayPanel = this.FindControl<StackPanel>("FieldDayExchange");
+        var sentRstPanel = this.FindControl<StackPanel>("SentRstPanel");
+        var recRstPanel = this.FindControl<StackPanel>("RecRstPanel");
+        var isFieldDay = _viewModel.SelectedContestType == HamBusLog.ViewModels.ContestType.ArrlFieldDay;
         
         if (modeLabel != null)
         {
-            modeLabel.Text = _viewModel.SelectedContestType == HamBusLog.ViewModels.ContestType.ArrlFieldDay
+            modeLabel.Text = isFieldDay
                 ? "Mode: ARRL Field Day"
                 : "Mode: Normal QSO";
         }
         
         if (fieldDayPanel != null)
         {
-            fieldDayPanel.IsVisible = _viewModel.SelectedContestType == HamBusLog.ViewModels.ContestType.ArrlFieldDay;
+            fieldDayPanel.IsVisible = isFieldDay;
+        }
+
+        if (sentRstPanel != null)
+        {
+            sentRstPanel.IsVisible = !isFieldDay;
+        }
+
+        if (recRstPanel != null)
+        {
+            recRstPanel.IsVisible = !isFieldDay;
         }
     }
 

@@ -50,7 +50,7 @@
                     </StackPanel>
                     
                     <!-- Common Fields (Required for ARRL Field Day) -->
-                    <Grid ColumnDefinitions="1*,1*,1*,1*,1*,1*" RowDefinitions="Auto" ColumnSpacing="8" RowSpacing="8">
+                    <Grid ColumnDefinitions="1*,1*,1*,1*,1*,1*,1*" RowDefinitions="Auto" ColumnSpacing="8" RowSpacing="8">
                         <!-- Row 1 -->
                         <StackPanel Grid.Column="0" Grid.Row="0" Spacing="4">
                             <TextBlock Text="Call" Foreground="White" FontSize="12" FontWeight="Bold" />
@@ -73,18 +73,18 @@
                             <TextBox Text="{Binding InputMode}" Background="#2C3E50" Foreground="White" Padding="6" />
                         </StackPanel>
                         <StackPanel Grid.Column="5" Grid.Row="0" Spacing="4">
-                            <TextBlock Text="Sent RST" Foreground="White" FontSize="12" FontWeight="Bold" />
-                            <TextBox Text="{Binding InputSent}" Background="#2C3E50" Foreground="White" Padding="6" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="5" Grid.Row="0" Spacing="4" Margin="0,0,0,0">
                             <TextBlock Text="Freq" Foreground="White" FontSize="12" FontWeight="Bold" />
                             <TextBox Text="{Binding InputFreq}" Background="#2C3E50" Foreground="White" Padding="6" />
+                        </StackPanel>
+                        <StackPanel Name="SentRstPanel" Grid.Column="6" Grid.Row="0" Spacing="4">
+                            <TextBlock Text="Sent RST" Foreground="White" FontSize="12" FontWeight="Bold" />
+                            <TextBox Text="{Binding InputSent}" Background="#2C3E50" Foreground="White" Padding="6" />
                         </StackPanel>
                     </Grid>
 
                     
                     <Grid ColumnDefinitions="1*,1*" ColumnSpacing="8">
-                        <StackPanel Grid.Column="0" Spacing="4">
+                        <StackPanel Name="RecRstPanel" Grid.Column="0" Spacing="4">
                             <TextBlock Text="Rec RST" Foreground="White" FontSize="12" FontWeight="Bold" />
                             <TextBox Text="{Binding InputRec}" Background="#2C3E50" Foreground="White" Padding="6" />
                         </StackPanel>
