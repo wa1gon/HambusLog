@@ -2,16 +2,42 @@ using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
+using System.ComponentModel;
 using HamBlocks.Library.Models;
 
 namespace HamBusLog.ViewModels;
 
+public enum ContestType
+{
+    Normal,
+    ArrlFieldDay
+}
+
 public class GridViewModel
 {
     public ObservableCollection<Qso> LogEntries { get; }
+    public List<ContestType> ContestTypes { get; } = new() { ContestType.Normal, ContestType.ArrlFieldDay };
+    
+    private ContestType _selectedContestType = ContestType.Normal;
+    
+    public event EventHandler<PropertyChangedEventArgs>? PropertyChanged;
+    
+    public ContestType SelectedContestType
+    {
+        get => _selectedContestType;
+        set
+        {
+            if (_selectedContestType != value)
+            {
+                _selectedContestType = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedContestType)));
+            }
+        }
+    }
+    
     private readonly Dictionary<string, bool> _sortAscendingByColumn = new();
     
-    // Input fields
+    // Common input fields
     public string InputCall { get; set; } = string.Empty;
     public string InputDate { get; set; } = string.Empty;
     public string InputBand { get; set; } = string.Empty;
@@ -19,13 +45,12 @@ public class GridViewModel
     public string InputTimeOn { get; set; } = string.Empty;
     public string InputSent { get; set; } = string.Empty;
     public string InputRec { get; set; } = string.Empty;
-    public string InputCountry { get; set; } = string.Empty;
-    public string InputName { get; set; } = string.Empty;
-    public string InputState { get; set; } = string.Empty;
-    public string InputCounty { get; set; } = string.Empty;
     public string InputFreq { get; set; } = string.Empty;
-    public string InputComments { get; set; } = string.Empty;
-
+    
+    // ARRL Field Day specific
+    public string InputFieldDaySection { get; set; } = string.Empty;
+    public string InputFieldDayClass { get; set; } = string.Empty;
+    
     public GridViewModel()
     {
         LogEntries = new ObservableCollection<Qso>
@@ -61,13 +86,21 @@ public class GridViewModel
             QsoDate = qsoDate,
             Band = InputBand,
             Mode = InputMode,
-
             RstSent = InputSent,
             RstRcvd = InputRec,
-            Country = InputCountry,
-            State = InputState,
             Freq = freq
         };
+        
+        // Store contest-specific fields in QsoDetails
+        if (SelectedContestType == ContestType.ArrlFieldDay && 
+            (!string.IsNullOrWhiteSpace(InputFieldDaySection) || !string.IsNullOrWhiteSpace(InputFieldDayClass)))
+        {
+            newEntry.Details = new List<QsoDetail>();
+            if (!string.IsNullOrWhiteSpace(InputFieldDaySection))
+                newEntry.Details.Add(new QsoDetail { FieldName = "Section", FieldValue = InputFieldDaySection });
+            if (!string.IsNullOrWhiteSpace(InputFieldDayClass))
+                newEntry.Details.Add(new QsoDetail { FieldName = "Class", FieldValue = InputFieldDayClass });
+        }
         
         LogEntries.Add(newEntry);
         ClearInputs();
@@ -116,12 +149,9 @@ public class GridViewModel
         InputTimeOn = string.Empty;
         InputSent = string.Empty;
         InputRec = string.Empty;
-        InputCountry = string.Empty;
-        InputName = string.Empty;
-        InputState = string.Empty;
-        InputCounty = string.Empty;
         InputFreq = string.Empty;
-        InputComments = string.Empty;
+        InputFieldDaySection = string.Empty;
+        InputFieldDayClass = string.Empty;
     }
 }
 

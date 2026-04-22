@@ -42,65 +42,69 @@
                 <StackPanel Spacing="8">
                     <TextBlock Text="New Log Entry" FontSize="14" FontWeight="Bold" Foreground="White" />
                     
-                    <Grid ColumnDefinitions="1*,1*,1*,1*,1*,1*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                    <TextBlock Name="ContestModeLabel" FontSize="12" FontWeight="Bold" Foreground="#3498DB" />
+                    
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Contest Type" Foreground="White" FontSize="12" />
+                        <ComboBox ItemsSource="{Binding ContestTypes}" SelectedItem="{Binding SelectedContestType}" Background="#2C3E50" Foreground="White" />
+                    </StackPanel>
+                    
+                    <!-- Common Fields (Required for ARRL Field Day) -->
+                    <Grid ColumnDefinitions="1*,1*,1*,1*,1*,1*" RowDefinitions="Auto" ColumnSpacing="8" RowSpacing="8">
                         <!-- Row 1 -->
                         <StackPanel Grid.Column="0" Grid.Row="0" Spacing="4">
-                            <TextBlock Text="Call" Foreground="White" FontSize="12" />
+                            <TextBlock Text="Call" Foreground="White" FontSize="12" FontWeight="Bold" />
                             <TextBox Text="{Binding InputCall}" Background="#2C3E50" Foreground="White" Padding="6" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Grid.Row="0" Spacing="4">
-                            <TextBlock Text="Date" Foreground="White" FontSize="12" />
+                            <TextBlock Text="Date (YYYYMMDD)" Foreground="White" FontSize="12" FontWeight="Bold" />
                             <TextBox Text="{Binding InputDate}" Background="#2C3E50" Foreground="White" Padding="6" />
                         </StackPanel>
                         <StackPanel Grid.Column="2" Grid.Row="0" Spacing="4">
-                            <TextBlock Text="Band" Foreground="White" FontSize="12" />
-                            <TextBox Text="{Binding InputBand}" Background="#2C3E50" Foreground="White" Padding="6" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="3" Grid.Row="0" Spacing="4">
-                            <TextBlock Text="Mode" Foreground="White" FontSize="12" />
-                            <TextBox Text="{Binding InputMode}" Background="#2C3E50" Foreground="White" Padding="6" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="4" Grid.Row="0" Spacing="4">
-                            <TextBlock Text="Time On" Foreground="White" FontSize="12" />
+                            <TextBlock Text="Time On (HHMM)" Foreground="White" FontSize="12" FontWeight="Bold" />
                             <TextBox Text="{Binding InputTimeOn}" Background="#2C3E50" Foreground="White" Padding="6" />
                         </StackPanel>
+                        <StackPanel Grid.Column="3" Grid.Row="0" Spacing="4">
+                            <TextBlock Text="Band" Foreground="White" FontSize="12" FontWeight="Bold" />
+                            <TextBox Text="{Binding InputBand}" Background="#2C3E50" Foreground="White" Padding="6" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="4" Grid.Row="0" Spacing="4">
+                            <TextBlock Text="Mode" Foreground="White" FontSize="12" FontWeight="Bold" />
+                            <TextBox Text="{Binding InputMode}" Background="#2C3E50" Foreground="White" Padding="6" />
+                        </StackPanel>
                         <StackPanel Grid.Column="5" Grid.Row="0" Spacing="4">
-                            <TextBlock Text="Sent RST" Foreground="White" FontSize="12" />
+                            <TextBlock Text="Sent RST" Foreground="White" FontSize="12" FontWeight="Bold" />
                             <TextBox Text="{Binding InputSent}" Background="#2C3E50" Foreground="White" Padding="6" />
                         </StackPanel>
-
-                        <!-- Row 2 -->
-                        <StackPanel Grid.Column="0" Grid.Row="1" Spacing="4">
-                            <TextBlock Text="Rec RST" Foreground="White" FontSize="12" />
-                            <TextBox Text="{Binding InputRec}" Background="#2C3E50" Foreground="White" Padding="6" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Grid.Row="1" Spacing="4">
-                            <TextBlock Text="Country" Foreground="White" FontSize="12" />
-                            <TextBox Text="{Binding InputCountry}" Background="#2C3E50" Foreground="White" Padding="6" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="2" Grid.Row="1" Spacing="4">
-                            <TextBlock Text="Name" Foreground="White" FontSize="12" />
-                            <TextBox Text="{Binding InputName}" Background="#2C3E50" Foreground="White" Padding="6" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="3" Grid.Row="1" Spacing="4">
-                            <TextBlock Text="State" Foreground="White" FontSize="12" />
-                            <TextBox Text="{Binding InputState}" Background="#2C3E50" Foreground="White" Padding="6" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="4" Grid.Row="1" Spacing="4">
-                            <TextBlock Text="County" Foreground="White" FontSize="12" />
-                            <TextBox Text="{Binding InputCounty}" Background="#2C3E50" Foreground="White" Padding="6" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="5" Grid.Row="1" Spacing="4">
-                            <TextBlock Text="Freq" Foreground="White" FontSize="12" />
+                        <StackPanel Grid.Column="5" Grid.Row="0" Spacing="4" Margin="0,0,0,0">
+                            <TextBlock Text="Freq" Foreground="White" FontSize="12" FontWeight="Bold" />
                             <TextBox Text="{Binding InputFreq}" Background="#2C3E50" Foreground="White" Padding="6" />
                         </StackPanel>
                     </Grid>
 
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Comments" Foreground="White" FontSize="12" />
-                        <TextBox Text="{Binding InputComments}" Background="#2C3E50" Foreground="White" Padding="6" Height="50" AcceptsReturn="True" TextWrapping="Wrap" />
+                    
+                    <Grid ColumnDefinitions="1*,1*" ColumnSpacing="8">
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <TextBlock Text="Rec RST" Foreground="White" FontSize="12" FontWeight="Bold" />
+                            <TextBox Text="{Binding InputRec}" Background="#2C3E50" Foreground="White" Padding="6" />
+                        </StackPanel>
+                    </Grid>
+                    
+                    <!-- ARRL Field Day Specific Exchange -->
+                    <StackPanel Name="FieldDayExchange" Spacing="8" IsVisible="False">
+                        <TextBlock Text="Field Day Exchange" FontSize="12" FontWeight="Bold" Foreground="#FFD700" />
+                        <Grid ColumnDefinitions="1*,1*" ColumnSpacing="8">
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock Text="Section" Foreground="White" FontSize="12" />
+                                <TextBox Text="{Binding InputFieldDaySection}" Background="#2C3E50" Foreground="White" Padding="6" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Text="Class" Foreground="White" FontSize="12" />
+                                <TextBox Text="{Binding InputFieldDayClass}" Background="#2C3E50" Foreground="White" Padding="6" />
+                            </StackPanel>
+                        </Grid>
                     </StackPanel>
-
+                    
                     <Button Content="Add Entry" Background="#3498DB" Foreground="White" Padding="8,6" Click="OnAddEntryClicked" />
                 </StackPanel>
             </ScrollViewer>
