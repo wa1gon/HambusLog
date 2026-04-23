@@ -5,6 +5,7 @@ public partial class MainWindow : Window
 {
     private MenuNode? _previousSelection;
     private GridWindow? _gridWindow;
+    private RigCatalogWindow? _rigCatalogWindow;
 
     public MainWindow()
     {
@@ -18,28 +19,17 @@ public partial class MainWindow : Window
             if (node.Title == "Grid" || node.Title == "Open/Reopen Grid")
             {
                 ToggleGridWindow();
-                
-                // Reset selection to previous item
-                if (_previousSelection != null)
-                {
-                    if (sender is TreeView treeView)
-                    {
-                        treeView.SelectedItem = _previousSelection;
-                    }
-                }
+                ResetTreeSelection(sender);
             }
             else if (node.Title == "Settings")
             {
                 OpenSettingsWindow();
-                
-                // Reset selection to previous item
-                if (_previousSelection != null)
-                {
-                    if (sender is TreeView treeView)
-                    {
-                        treeView.SelectedItem = _previousSelection;
-                    }
-                }
+                ResetTreeSelection(sender);
+            }
+            else if (node.Title == "Rig Catalog")
+            {
+                OpenRigCatalogWindow();
+                ResetTreeSelection(sender);
             }
             else
             {
@@ -69,5 +59,22 @@ public partial class MainWindow : Window
     {
         var settingsWindow = new SettingsWindow();
         settingsWindow.Show();
+    }
+
+    private void OpenRigCatalogWindow()
+    {
+        if (_rigCatalogWindow is { IsVisible: true })
+        {
+            return;
+        }
+        _rigCatalogWindow = new RigCatalogWindow();
+        _rigCatalogWindow.Closed += (_, _) => _rigCatalogWindow = null;
+        _rigCatalogWindow.Show();
+    }
+
+    private void ResetTreeSelection(object? sender)
+    {
+        if (_previousSelection != null && sender is TreeView tv)
+            tv.SelectedItem = _previousSelection;
     }
 }

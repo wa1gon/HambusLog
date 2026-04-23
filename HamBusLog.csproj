@@ -8,13 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Wa1gonLib.Tests\UnitTest1.cs" />
-    <Compile Include="Wa1gonLib.Tests\zGlobal.cs" />
-    <Compile Include="Wa1gonLib\Abstractions\ICommandRunner.cs" />
-    <Compile Include="Wa1gonLib\Class1.cs" />
-    <Compile Include="Wa1gonLib\Internal\ProcessCommandRunner.cs" />
-    <Compile Include="Wa1gonLib\Models\RigCatalogEntry.cs" />
-    <Compile Include="Wa1gonLib\RigctldRadioCatalogService.cs" />
     <AvaloniaResource Include="Assets\**" />
     <Compile Remove="Wa1gonLib\**\*.cs" />
     <Compile Remove="Wa1gonLib.Tests\**\*.cs" />
@@ -43,5 +36,9 @@
   <ItemGroup>
     <Content Include="Wa1gonLib.Tests\Wa1gonLib.Tests.csproj" />
     <Content Include="Wa1gonLib\Wa1gonLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Wa1gonLib\Wa1gonLib.csproj" />
   </ItemGroup>
 </Project>

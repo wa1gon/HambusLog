@@ -29,4 +29,6 @@ global using HamBusLog.ViewModels;
 global using HamBusLog.Views;
 global using Microsoft.EntityFrameworkCore;
 global using HamBusLog.Data.Repositories.Abstractions;
+global using Wa1gonLib;
+global using Wa1gonLib.Models;
 

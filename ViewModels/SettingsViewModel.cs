@@ -9,6 +9,7 @@ public sealed class SettingsViewModel : ViewModelBase
     private string _connectionString = "Data Source=hambuslog.db";
     private string _rigctldHost = "127.0.0.1";
     private int _rigctldPort = 4532;
+    private string _riglistFilePath = string.Empty;
     private string _statusMessage = string.Empty;
     private string _configFilePath = string.Empty;
     private string _newProfileName = string.Empty;
@@ -61,6 +62,12 @@ public sealed class SettingsViewModel : ViewModelBase
         set => SetProperty(ref _rigctldPort, value);
     }
 
+    public string RiglistFilePath
+    {
+        get => _riglistFilePath;
+        set => SetProperty(ref _riglistFilePath, value);
+    }
+
     public string StatusMessage
     {
         get => _statusMessage;
@@ -92,7 +99,8 @@ public sealed class SettingsViewModel : ViewModelBase
                 Rigctld = new RigctldConfiguration
                 {
                     Host = string.IsNullOrWhiteSpace(RigctldHost) ? "127.0.0.1" : RigctldHost.Trim(),
-                    Port = RigctldPort <= 0 ? 4532 : RigctldPort
+                    Port = RigctldPort <= 0 ? 4532 : RigctldPort,
+                    RiglistFilePath = RiglistFilePath.Trim()
                 }
             };
 
@@ -151,6 +159,7 @@ public sealed class SettingsViewModel : ViewModelBase
         ConnectionString = profile.ConnectionString;
         RigctldHost = profile.Rigctld.Host;
         RigctldPort = profile.Rigctld.Port;
+        RiglistFilePath = profile.Rigctld.RiglistFilePath;
     }
 
     private void Load()

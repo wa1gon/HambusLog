@@ -3,6 +3,8 @@ namespace HamBusLog;
 
 public partial class App : Application
 {
+    public static RigCatalogStore RigCatalogStore { get; } = new();
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -15,6 +17,7 @@ public partial class App : Application
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
             DisableAvaloniaDataAnnotationValidation();
+            RigCatalogStore.InitializeFromConfiguration();
             desktop.MainWindow = new MainWindow
             {
                 DataContext = new MainWindowViewModel(),

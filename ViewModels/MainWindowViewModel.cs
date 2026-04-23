@@ -14,6 +14,7 @@ public partial class MainWindowViewModel : ViewModelBase
         new MenuNode("Edit"),
         new MenuNode("Settings"),
         new MenuNode("Callbook"),
+        new MenuNode("Rig Catalog"),
         new MenuNode("List"),
         new MenuNode("Search"),
         new MenuNode("Awards"),

@@ -53,4 +53,25 @@ public sealed class RigctldRadioCatalogService
 
         return entries;
     }
+
+    public static IReadOnlyList<RigCatalogEntry> FilterByModel(IEnumerable<RigCatalogEntry> entries, string? searchText)
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+            return entries.ToList();
+
+        var term = searchText.Trim();
+        return entries
+            .Where(entry => entry.Model.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    public static string CreateRigctldCommandLine(RigCatalogEntry? entry, string host = "127.0.0.1", int port = 4532)
+    {
+        if (entry is null)
+            return string.Empty;
+
+        var safeHost = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host.Trim();
+        var safePort = port <= 0 ? 4532 : port;
+        return $"rigctld -m {entry.RigNum} -T {safeHost} -t {safePort}";
+    }
 }

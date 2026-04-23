@@ -75,4 +75,22 @@ public partial class SettingsWindow : Window
     public void OnSaveClicked(object? sender, RoutedEventArgs e) => _viewModel.Save();
     public void OnCloneProfileClicked(object? sender, RoutedEventArgs e) => _viewModel.CloneProfile();
     public void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
+
+    public async void OnBrowseRiglistClicked(object? sender, RoutedEventArgs e)
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = "Select rigctld rig list file",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("Text files") { Patterns = ["*.txt", "*.lst", "*.log", "*"] }
+            ]
+        });
+
+        if (files.Count > 0)
+        {
+            _viewModel.RiglistFilePath = files[0].Path.LocalPath;
+        }
+    }
 }
