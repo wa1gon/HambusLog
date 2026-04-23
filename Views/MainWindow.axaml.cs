@@ -70,6 +70,6 @@ public partial class MainWindow : Window
     private void OpenSettingsWindow()
     {
         var settingsWindow = new SettingsWindow();
-        settingsWindow.ShowDialog(this);
+        settingsWindow.Show();
     }
 }

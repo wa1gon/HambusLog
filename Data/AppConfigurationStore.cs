@@ -13,9 +13,11 @@ public static class AppConfigurationStore
     };
 
     private static readonly string ConfigFilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "HamBusLog",
-        "appsettings.json");
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        ".config",
+        "hambuslog.json");
+
+    public static string GetConfigFilePath() => ConfigFilePath;
 
     public static AppConfiguration Load()
     {
@@ -30,22 +32,35 @@ public static class AppConfigurationStore
             var config = JsonSerializer.Deserialize<AppConfiguration>(json, JsonOptions);
             return config ?? new AppConfiguration();
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"AppConfigurationStore.Load error: {ex}");
             return new AppConfiguration();
         }
     }
 
     public static void Save(AppConfiguration configuration)
     {
-        var directory = Path.GetDirectoryName(ConfigFilePath);
-        if (!string.IsNullOrWhiteSpace(directory))
+        try
         {
-            Directory.CreateDirectory(directory);
-        }
+            var directory = Path.GetDirectoryName(ConfigFilePath);
+            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
 
-        var json = JsonSerializer.Serialize(configuration, JsonOptions);
-        File.WriteAllText(ConfigFilePath, json);
+            var json = JsonSerializer.Serialize(configuration, JsonOptions);
+            File.WriteAllText(ConfigFilePath, json);
+            System.Diagnostics.Debug.WriteLine($"AppConfigurationStore.Save success: {ConfigFilePath}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"AppConfigurationStore.Save error: {ex}");
+            throw;
+        }
     }
 }
+
+
+
 

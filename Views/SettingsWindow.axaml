@@ -2,39 +2,51 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="HamBusLog.Views.SettingsWindow"
         Title="Configuration"
-        Width="700"
-        Height="520"
-        MinWidth="540"
-        MinHeight="420"
+        Width="800"
+        Height="650"
+        MinWidth="600"
+        MinHeight="520"
         WindowStartupLocation="CenterOwner">
     <ScrollViewer>
         <StackPanel Margin="16" Spacing="12">
             <TextBlock Text="Configuration" FontSize="24" FontWeight="Bold" />
-            <TextBlock Text="Enter color values as hex strings (example: #1F2937)." />
 
-            <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="8">
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Background Color" VerticalAlignment="Center" />
-                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BackgroundColor}" />
+            <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="12" ColumnSpacing="8">
+                <!-- Background Color -->
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Background Color" VerticalAlignment="Top" Margin="0,4,0,0" />
+                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
+                    <ColorPicker Color="{Binding BackgroundColor}" HorizontalAlignment="Left" />
+                </StackPanel>
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Foreground Color" VerticalAlignment="Center" />
-                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ForegroundColor}" />
+                <!-- Foreground Color -->
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Foreground Color" VerticalAlignment="Top" Margin="0,4,0,0" />
+                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                    <ColorPicker Color="{Binding ForegroundColor}" HorizontalAlignment="Left" />
+                </StackPanel>
 
+                <!-- Connection String -->
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Connection String" VerticalAlignment="Center" />
                 <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ConnectionString}" Watermark="Server=...;Database=...;" />
 
+                <!-- rigctld Host -->
                 <TextBlock Grid.Row="3" Grid.Column="0" Text="rigctld Host" VerticalAlignment="Center" />
                 <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding RigctldHost}" />
 
+                <!-- rigctld Port -->
                 <TextBlock Grid.Row="4" Grid.Column="0" Text="rigctld Port" VerticalAlignment="Center" />
-                <NumericUpDown Grid.Row="4" Grid.Column="1" Minimum="1" Maximum="65535" Value="{Binding RigctldPort}" />
+                <NumericUpDown Grid.Row="4" Grid.Column="1" Minimum="1" Maximum="65535" Value="{Binding RigctldPort}" HorizontalAlignment="Left" Width="150" />
+
+                <!-- Config File Path -->
+                <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding ConfigFilePath}" FontSize="11" Foreground="#7F8C8D" IsVisible="{Binding !!ConfigFilePath}" />
+
+                <!-- Status Message -->
+                <TextBlock Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding StatusMessage}" FontStyle="Italic" Foreground="#3498DB" />
             </Grid>
 
-            <StackPanel Orientation="Horizontal" Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
                 <Button Content="Save" Click="OnSaveClicked" Padding="14,8" />
                 <Button Content="Close" Click="OnCloseClicked" Padding="14,8" />
             </StackPanel>
-
-            <TextBlock Text="{Binding StatusMessage}" FontStyle="Italic" />
         </StackPanel>
     </ScrollViewer>
 </Window>
