@@ -11,18 +11,21 @@
         <StackPanel Margin="16" Spacing="12">
             <TextBlock Text="Configuration" FontSize="24" FontWeight="Bold" />
 
+            <!-- Profile Selection -->
+            <Grid ColumnDefinitions="200,*" RowDefinitions="Auto" RowSpacing="8" ColumnSpacing="8">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Profile" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding AvailableProfiles}" SelectedItem="{Binding SelectedProfile}" />
+            </Grid>
+
+            <!-- Settings -->
             <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="12" ColumnSpacing="8">
                 <!-- Background Color -->
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Background Color" VerticalAlignment="Top" Margin="0,4,0,0" />
-                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
-                    <ColorPicker Color="{Binding BackgroundColor}" HorizontalAlignment="Left" />
-                </StackPanel>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Background Color" VerticalAlignment="Center" />
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BackgroundColor}" Watermark="#1F2937" />
 
                 <!-- Foreground Color -->
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Foreground Color" VerticalAlignment="Top" Margin="0,4,0,0" />
-                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
-                    <ColorPicker Color="{Binding ForegroundColor}" HorizontalAlignment="Left" />
-                </StackPanel>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Foreground Color" VerticalAlignment="Center" />
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ForegroundColor}" Watermark="#FFFFFF" />
 
                 <!-- Connection String -->
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Connection String" VerticalAlignment="Center" />

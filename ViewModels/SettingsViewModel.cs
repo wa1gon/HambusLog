@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Avalonia.Media;
 using HamBusLog.Data;
 using HamBusLog.Models;
@@ -7,6 +9,8 @@ namespace HamBusLog.ViewModels;
 
 public sealed class SettingsViewModel : ViewModelBase
 {
+    private AppConfiguration _appConfig = new();
+    private string _selectedProfile = "default";
     private Color _backgroundColor = Color.Parse("#1F2937");
     private Color _foregroundColor = Color.Parse("#FFFFFF");
     private string _connectionString = "Data Source=hambuslog.db";
@@ -14,10 +18,29 @@ public sealed class SettingsViewModel : ViewModelBase
     private int _rigctldPort = 4532;
     private string _statusMessage = string.Empty;
     private string _configFilePath = string.Empty;
+    private List<string> _availableProfiles = new();
 
     public SettingsViewModel()
     {
         Load();
+    }
+
+    public string SelectedProfile
+    {
+        get => _selectedProfile;
+        set
+        {
+            if (SetProperty(ref _selectedProfile, value))
+            {
+                LoadProfile(value);
+            }
+        }
+    }
+
+    public List<string> AvailableProfiles
+    {
+        get => _availableProfiles;
+        private set => SetProperty(ref _availableProfiles, value);
     }
 
     public Color BackgroundColor
@@ -66,8 +89,9 @@ public sealed class SettingsViewModel : ViewModelBase
     {
         try
         {
-            var configuration = new AppConfiguration
+            var profile = new ConfigProfile
             {
+                Name = _selectedProfile,
                 BackgroundColor = BackgroundColor.ToString(),
                 ForegroundColor = ForegroundColor.ToString(),
                 ConnectionString = string.IsNullOrWhiteSpace(ConnectionString) ? "Data Source=hambuslog.db" : ConnectionString.Trim(),
@@ -78,8 +102,11 @@ public sealed class SettingsViewModel : ViewModelBase
                 }
             };
 
-            AppConfigurationStore.Save(configuration);
-            StatusMessage = $"✓ Saved at {DateTime.Now:HH:mm:ss}";
+            _appConfig.Profiles[_selectedProfile] = profile;
+            _appConfig.ActiveProfile = _selectedProfile;
+
+            AppConfigurationStore.Save(_appConfig);
+            StatusMessage = $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss}";
         }
         catch (Exception ex)
         {
@@ -87,22 +114,32 @@ public sealed class SettingsViewModel : ViewModelBase
         }
     }
 
+    private void LoadProfile(string profileName)
+    {
+        if (_appConfig.Profiles.TryGetValue(profileName, out var profile))
+        {
+            try
+            {
+                BackgroundColor = Color.Parse(profile.BackgroundColor);
+                ForegroundColor = Color.Parse(profile.ForegroundColor);
+            }
+            catch
+            {
+                BackgroundColor = Color.Parse("#1F2937");
+                ForegroundColor = Color.Parse("#FFFFFF");
+            }
+            ConnectionString = profile.ConnectionString;
+            RigctldHost = profile.Rigctld.Host;
+            RigctldPort = profile.Rigctld.Port;
+        }
+    }
+
     private void Load()
     {
-        var configuration = AppConfigurationStore.Load();
-        try
-        {
-            BackgroundColor = Color.Parse(configuration.BackgroundColor);
-            ForegroundColor = Color.Parse(configuration.ForegroundColor);
-        }
-        catch
-        {
-            BackgroundColor = Color.Parse("#1F2937");
-            ForegroundColor = Color.Parse("#FFFFFF");
-        }
-        ConnectionString = configuration.ConnectionString;
-        RigctldHost = configuration.Rigctld.Host;
-        RigctldPort = configuration.Rigctld.Port;
+        _appConfig = AppConfigurationStore.Load();
+        AvailableProfiles = _appConfig.Profiles.Keys.ToList();
+        _selectedProfile = _appConfig.ActiveProfile;
+        LoadProfile(_selectedProfile);
         ConfigFilePath = $"Config: {AppConfigurationStore.GetConfigFilePath()}";
     }
 }

@@ -59,6 +59,16 @@ public static class AppConfigurationStore
             throw;
         }
     }
+
+    public static ConfigProfile GetActiveProfile(AppConfiguration config)
+    {
+        if (!config.Profiles.TryGetValue(config.ActiveProfile, out var profile))
+        {
+            profile = new ConfigProfile { Name = config.ActiveProfile };
+            config.Profiles[config.ActiveProfile] = profile;
+        }
+        return profile;
+    }
 }
 
 
