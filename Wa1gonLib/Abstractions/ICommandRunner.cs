@@ -1,6 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace Wa1gonLib.Abstractions;
 
 public interface ICommandRunner
@@ -9,4 +6,3 @@ public interface ICommandRunner
 }
 
 public sealed record CommandResult(int ExitCode, string StandardOutput, string StandardError);
-

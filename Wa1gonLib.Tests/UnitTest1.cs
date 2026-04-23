@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace Wa1gonLib.Tests;
+﻿namespace Wa1gonLib.Tests;
 
 public class RigctldRadioCatalogServiceTests
 {

@@ -1,9 +1,3 @@
-using System;
-using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
-using Wa1gonLib.Abstractions;
-
 namespace Wa1gonLib.Internal;
 
 internal sealed class ProcessCommandRunner : ICommandRunner
@@ -34,4 +28,3 @@ internal sealed class ProcessCommandRunner : ICommandRunner
         return new CommandResult(process.ExitCode, stdOut, stdErr);
     }
 }
-

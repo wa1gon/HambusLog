@@ -1,11 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using Wa1gonLib.Models;
-
 namespace Wa1gonLib;
 
 public sealed class RigctldRadioCatalogService
@@ -62,4 +54,3 @@ public sealed class RigctldRadioCatalogService
         return entries;
     }
 }
-
