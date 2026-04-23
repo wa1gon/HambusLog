@@ -2,9 +2,12 @@ namespace HamBusLog.ViewModels;
 
 public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
 {
+    private const string AllModelsOption = "All Models";
+
     private readonly RigCatalogStore _store;
     private ObservableCollection<RigCatalogEntry> _filteredEntries = [];
-    private string _searchText = string.Empty;
+    private ObservableCollection<string> _availableModels = [];
+    private string _selectedSearchModel = AllModelsOption;
     private RigCatalogEntry? _selectedEntry;
     private string _rigctldCommandLine = string.Empty;
     private string? _statusMessageOverride;
@@ -27,6 +30,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
             _store.LoadFromFile(configuredPath);
         }
 
+        RefreshAvailableModels();
         RefreshFilteredEntries();
         if (_store.Entries.Count > 0)
             SelectedEntry = _store.Entries[0];
@@ -38,12 +42,18 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _filteredEntries, value);
     }
 
-    public string SearchText
+    public ObservableCollection<string> AvailableModels
     {
-        get => _searchText;
+        get => _availableModels;
+        private set => SetProperty(ref _availableModels, value);
+    }
+
+    public string SelectedSearchModel
+    {
+        get => _selectedSearchModel;
         set
         {
-            if (SetProperty(ref _searchText, value))
+            if (SetProperty(ref _selectedSearchModel, value))
                 RefreshFilteredEntries();
         }
     }
@@ -94,6 +104,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
     {
         if (e.PropertyName is nameof(RigCatalogStore.Entries))
         {
+            RefreshAvailableModels();
             RefreshFilteredEntries();
         }
 
@@ -106,7 +117,8 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
 
     private void RefreshFilteredEntries()
     {
-        var filtered = RigctldRadioCatalogService.FilterByModel(_store.Entries, SearchText);
+        var searchModel = SelectedSearchModel == AllModelsOption ? null : SelectedSearchModel;
+        var filtered = RigctldRadioCatalogService.FilterByModel(_store.Entries, searchModel);
         FilteredEntries = new ObservableCollection<RigCatalogEntry>(filtered);
 
         if (SelectedEntry is not null && FilteredEntries.Any(x => x.RigNum == SelectedEntry.RigNum))
@@ -116,6 +128,25 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         }
 
         SelectedEntry = FilteredEntries.FirstOrDefault();
+    }
+
+    private void RefreshAvailableModels()
+    {
+        var models = _store.Entries
+            .Select(x => x.Model)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var available = new ObservableCollection<string> { AllModelsOption };
+        foreach (var model in models)
+            available.Add(model);
+
+        AvailableModels = available;
+
+        if (!AvailableModels.Contains(SelectedSearchModel))
+            SelectedSearchModel = AllModelsOption;
     }
 
     private void UpdateCommandLine()
@@ -135,6 +166,8 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         _store.PropertyChanged -= OnStorePropertyChanged;
     }
 }
+
+
 
 
 

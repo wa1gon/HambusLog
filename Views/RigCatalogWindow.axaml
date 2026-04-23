@@ -23,9 +23,9 @@
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
             <TextBlock Text="Search Model:" VerticalAlignment="Center" />
-            <TextBox Text="{Binding SearchText}"
-                     Watermark="Type part of a model name..."
-                     Width="280" />
+            <ComboBox ItemsSource="{Binding AvailableModels}"
+                      SelectedItem="{Binding SelectedSearchModel}"
+                      Width="280" />
         </StackPanel>
 
         <!-- DataGrid -->
@@ -46,14 +46,14 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-            <TextBlock Text="rigctld Command:" VerticalAlignment="Center" />
-            <TextBox Text="{Binding RigctldCommandLine}"
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
+            <TextBlock Grid.Column="0" Text="rigctld Command:" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding RigctldCommandLine}"
                      IsReadOnly="True"
-                     Width="640"
+                     Margin="8,0,8,0"
                      FontFamily="Monospace" />
-            <Button Content="Copy Command" Click="OnCopyCommandClicked" Padding="10,6" />
-        </StackPanel>
+            <Button Grid.Column="2" Content="Copy Command" Click="OnCopyCommandClicked" Padding="10,6" />
+        </Grid>
 
         <!-- Status bar -->
         <TextBlock Grid.Row="4"
@@ -63,6 +63,9 @@
                    Margin="0,8,0,0" />
     </Grid>
 </Window>
+
+
+
 
 
 
