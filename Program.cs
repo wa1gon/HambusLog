@@ -1,7 +1,4 @@
-﻿using Avalonia;
-using System;
-
-namespace HamBusLog;
+﻿namespace HamBusLog;
 
 sealed class Program
 {

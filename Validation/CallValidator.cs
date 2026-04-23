@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 namespace HamBusLog.Validation;
 
 public sealed class CallValidator
@@ -23,4 +21,3 @@ public sealed class CallValidator
         return ValidationResult.Success();
     }
 }
-

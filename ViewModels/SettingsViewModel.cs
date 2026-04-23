@@ -1,9 +1,3 @@
-using System;
-using System.Collections.ObjectModel;
-using Avalonia.Media;
-using HamBusLog.Data;
-using HamBusLog.Models;
-
 namespace HamBusLog.ViewModels;
 
 public sealed class SettingsViewModel : ViewModelBase
@@ -173,4 +167,3 @@ public sealed class SettingsViewModel : ViewModelBase
 
     private static string ToHexRgb(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
 }
-

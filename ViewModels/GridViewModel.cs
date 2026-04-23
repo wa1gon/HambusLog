@@ -1,12 +1,3 @@
-using System;
-using System.Collections.ObjectModel;
-using System.Collections.Generic;
-using System.Linq;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using HamBlocks.Library.Models;
-using HamBusLog.Validation;
-
 namespace HamBusLog.ViewModels;
 
 public enum ContestType
@@ -287,6 +278,3 @@ public class LogEntry
     public string County { get; set; } = string.Empty;
     public string Comments { get; set; } = string.Empty;
 }
-
-
-

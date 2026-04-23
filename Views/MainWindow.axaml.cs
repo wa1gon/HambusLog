@@ -1,5 +1,3 @@
-using Avalonia.Controls;
-using HamBusLog.ViewModels;
 
 namespace HamBusLog.Views;
 

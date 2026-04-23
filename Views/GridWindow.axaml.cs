@@ -1,10 +1,3 @@
-using Avalonia.Controls;
-using System;
-using System.Linq;
-using Avalonia.Interactivity;
-using Avalonia.Input;
-using HamBusLog.ViewModels;
-
 namespace HamBusLog.Views;
 
 public partial class GridWindow : Window
@@ -194,5 +187,3 @@ public partial class GridWindow : Window
             _viewModel.InputMode = normalized;
     }
 }
-
-

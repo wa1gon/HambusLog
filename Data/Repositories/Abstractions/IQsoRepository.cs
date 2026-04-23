@@ -1,8 +1,3 @@
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using HamBlocks.Library.Models;
-
 namespace HamBusLog.Data.Repositories.Abstractions;
 
 public interface IQsoRepository
@@ -11,4 +6,3 @@ public interface IQsoRepository
 
     Task AddAsync(Qso qso, CancellationToken cancellationToken = default);
 }
-

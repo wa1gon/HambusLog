@@ -1,8 +1,3 @@
-using System;
-using System.IO;
-using System.Text.Json;
-using HamBusLog.Models;
-
 namespace HamBusLog.Data;
 
 public static class AppConfigurationStore
@@ -70,7 +65,3 @@ public static class AppConfigurationStore
         return profile;
     }
 }
-
-
-
-

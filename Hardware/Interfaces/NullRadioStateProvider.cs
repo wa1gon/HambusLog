@@ -1,6 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace HamBusLog.Hardware.Interfaces;
 
 // Default no-op implementation until CAT/rig integrations are wired.
@@ -12,4 +9,3 @@ public sealed class NullRadioStateProvider : IRadioStateProvider
 
     public Task<string?> GetModeAsync(CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
 }
-

@@ -1,6 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-
-namespace HamBusLog.ViewModels;
+﻿namespace HamBusLog.ViewModels;
 
 public abstract class ViewModelBase : ObservableObject
 {

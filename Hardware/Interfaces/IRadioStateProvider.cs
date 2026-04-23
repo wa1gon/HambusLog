@@ -1,6 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace HamBusLog.Hardware.Interfaces;
 
 public interface IRadioStateProvider
@@ -11,4 +8,3 @@ public interface IRadioStateProvider
 
     Task<string?> GetModeAsync(CancellationToken cancellationToken = default);
 }
-

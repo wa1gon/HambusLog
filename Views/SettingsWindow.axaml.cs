@@ -1,10 +1,3 @@
-using System.ComponentModel;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.Media;
-using HamBusLog.ViewModels;
-
 namespace HamBusLog.Views;
 
 public partial class SettingsWindow : Window
