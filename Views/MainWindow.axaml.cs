@@ -8,6 +8,7 @@ namespace HamBusLog.Views;
 public partial class MainWindow : Window
 {
     private MenuNode? _previousSelection;
+    private GridWindow? _gridWindow;
 
     public MainWindow()
     {
@@ -18,10 +19,9 @@ public partial class MainWindow : Window
     {
         if (e.AddedItems.Count > 0 && e.AddedItems[0] is MenuNode node)
         {
-            if (node.Title == "Grid")
+            if (node.Title == "Grid" || node.Title == "Open/Reopen Grid")
             {
-                var gridWindow = new GridWindow();
-                gridWindow.Show();
+                OpenOrActivateGridWindow();
                 
                 // Reset selection to previous item
                 if (_previousSelection != null)
@@ -37,5 +37,18 @@ public partial class MainWindow : Window
                 _previousSelection = node;
             }
         }
+    }
+
+    private void OpenOrActivateGridWindow()
+    {
+        if (_gridWindow is { IsVisible: true })
+        {
+            _gridWindow.Activate();
+            return;
+        }
+
+        _gridWindow = new GridWindow();
+        _gridWindow.Closed += (_, _) => _gridWindow = null;
+        _gridWindow.Show();
     }
 }

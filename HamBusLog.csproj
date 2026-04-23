@@ -8,8 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Wa1gonLib.Tests\UnitTest1.cs" />
+    <Compile Include="Wa1gonLib\Abstractions\ICommandRunner.cs" />
+    <Compile Include="Wa1gonLib\Class1.cs" />
+    <Compile Include="Wa1gonLib\Internal\ProcessCommandRunner.cs" />
+    <Compile Include="Wa1gonLib\Models\RigCatalogEntry.cs" />
+    <Compile Include="Wa1gonLib\RigctldRadioCatalogService.cs" />
     <Folder Include="Models\" />
     <AvaloniaResource Include="Assets\**" />
+    <Compile Remove="Wa1gonLib\**\*.cs" />
+    <Compile Remove="Wa1gonLib.Tests\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,5 +33,11 @@
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
     <PackageReference Include="HbLibrary" Version="1.0.0" />
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Wa1gonLib.Tests\Wa1gonLib.Tests.csproj" />
+    <Content Include="Wa1gonLib\Wa1gonLib.csproj" />
   </ItemGroup>
 </Project>

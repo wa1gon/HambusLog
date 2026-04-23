@@ -2,16 +2,49 @@ using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using HamBlocks.Library.Models;
+using HamBusLog.Validation;
 
 namespace HamBusLog.ViewModels;
+
+public enum ContestType
+{
+    Normal,
+    ArrlFieldDay
+}
 
 public class GridViewModel
 {
     public ObservableCollection<Qso> LogEntries { get; }
-    private readonly Dictionary<string, bool> _sortAscendingByColumn = new();
+    public List<ContestType> ContestTypes { get; } = new() { ContestType.Normal, ContestType.ArrlFieldDay };
     
-    // Input fields
+    private ContestType _selectedContestType = ContestType.Normal;
+    
+    public event PropertyChangedEventHandler? PropertyChanged;
+    
+    public ContestType SelectedContestType
+    {
+        get => _selectedContestType;
+        set
+        {
+            if (_selectedContestType != value)
+            {
+                _selectedContestType = value;
+                OnPropertyChanged(nameof(SelectedContestType));
+            }
+        }
+    }
+    
+    private readonly Dictionary<string, bool> _sortAscendingByColumn = new();
+    private readonly CallValidator _callValidator = new();
+    private readonly BandValidator _bandValidator = new();
+    private readonly ModeValidator _modeValidator = new();
+    private readonly SectionValidator _sectionValidator = new();
+    private readonly ClassValidator _classValidator = new();
+    
+    // Common input fields
     public string InputCall { get; set; } = string.Empty;
     public string InputDate { get; set; } = string.Empty;
     public string InputBand { get; set; } = string.Empty;
@@ -19,13 +52,54 @@ public class GridViewModel
     public string InputTimeOn { get; set; } = string.Empty;
     public string InputSent { get; set; } = string.Empty;
     public string InputRec { get; set; } = string.Empty;
-    public string InputCountry { get; set; } = string.Empty;
-    public string InputName { get; set; } = string.Empty;
-    public string InputState { get; set; } = string.Empty;
-    public string InputCounty { get; set; } = string.Empty;
     public string InputFreq { get; set; } = string.Empty;
-    public string InputComments { get; set; } = string.Empty;
+    
+    // ARRL Field Day specific
+    public string InputFieldDaySection { get; set; } = string.Empty;
+    public string InputFieldDayClass { get; set; } = string.Empty;
 
+    private string _callError = string.Empty;
+    private string _bandError = string.Empty;
+    private string _modeError = string.Empty;
+    private string _sectionError = string.Empty;
+    private string _classError = string.Empty;
+
+    public string CallError
+    {
+        get => _callError;
+        private set => SetValidationProperty(ref _callError, value, nameof(CallError), nameof(HasCallError));
+    }
+
+    public string BandError
+    {
+        get => _bandError;
+        private set => SetValidationProperty(ref _bandError, value, nameof(BandError), nameof(HasBandError));
+    }
+
+    public string ModeError
+    {
+        get => _modeError;
+        private set => SetValidationProperty(ref _modeError, value, nameof(ModeError), nameof(HasModeError));
+    }
+
+    public string SectionError
+    {
+        get => _sectionError;
+        private set => SetValidationProperty(ref _sectionError, value, nameof(SectionError), nameof(HasSectionError));
+    }
+
+    public string ClassError
+    {
+        get => _classError;
+        private set => SetValidationProperty(ref _classError, value, nameof(ClassError), nameof(HasClassError));
+    }
+
+    public bool HasCallError => !string.IsNullOrWhiteSpace(CallError);
+    public bool HasBandError => !string.IsNullOrWhiteSpace(BandError);
+    public bool HasModeError => !string.IsNullOrWhiteSpace(ModeError);
+    public bool HasSectionError => !string.IsNullOrWhiteSpace(SectionError);
+    public bool HasClassError => !string.IsNullOrWhiteSpace(ClassError);
+    
     public GridViewModel()
     {
         LogEntries = new ObservableCollection<Qso>
@@ -45,8 +119,50 @@ public class GridViewModel
     
     public void AddNewEntry()
     {
-        if (string.IsNullOrWhiteSpace(InputCall))
+        ClearValidationErrors();
+
+        InputBand = (InputBand ?? string.Empty).Trim().ToUpperInvariant();
+        InputMode = (InputMode ?? string.Empty).Trim().ToUpperInvariant();
+        InputFieldDaySection = (InputFieldDaySection ?? string.Empty).Trim().ToUpperInvariant();
+        InputFieldDayClass = (InputFieldDayClass ?? string.Empty).Trim().ToUpperInvariant();
+
+        var callResult = _callValidator.Validate(InputCall);
+        if (!callResult.IsValid)
+        {
+            CallError = callResult.ErrorMessage;
             return;
+        }
+
+        var bandResult = _bandValidator.Validate(InputBand);
+        if (!bandResult.IsValid)
+        {
+            BandError = bandResult.ErrorMessage;
+            return;
+        }
+
+        var modeResult = _modeValidator.Validate(InputMode);
+        if (!modeResult.IsValid)
+        {
+            ModeError = modeResult.ErrorMessage;
+            return;
+        }
+
+        if (SelectedContestType == ContestType.ArrlFieldDay)
+        {
+            var sectionResult = _sectionValidator.Validate(InputFieldDaySection);
+            if (!sectionResult.IsValid)
+            {
+                SectionError = sectionResult.ErrorMessage;
+                return;
+            }
+
+            var classResult = _classValidator.Validate(InputFieldDayClass);
+            if (!classResult.IsValid)
+            {
+                ClassError = classResult.ErrorMessage;
+                return;
+            }
+        }
 
         var qsoDate = DateTime.TryParse(InputDate, out var parsedDate)
             ? parsedDate
@@ -61,13 +177,23 @@ public class GridViewModel
             QsoDate = qsoDate,
             Band = InputBand,
             Mode = InputMode,
-
-            RstSent = InputSent,
-            RstRcvd = InputRec,
-            Country = InputCountry,
-            State = InputState,
+            RstSent = SelectedContestType == ContestType.ArrlFieldDay ? string.Empty : InputSent,
+            RstRcvd = SelectedContestType == ContestType.ArrlFieldDay ? string.Empty : InputRec,
             Freq = freq
         };
+
+        newEntry.QslInfo ??= new List<QsoQslInfo>();
+        newEntry.Details ??= new List<QsoDetail>();
+        
+        // Store contest-specific fields in QsoDetails
+        if (SelectedContestType == ContestType.ArrlFieldDay && 
+            (!string.IsNullOrWhiteSpace(InputFieldDaySection) || !string.IsNullOrWhiteSpace(InputFieldDayClass)))
+        {
+            if (!string.IsNullOrWhiteSpace(InputFieldDaySection))
+                newEntry.Details.Add(new QsoDetail { FieldName = "Section", FieldValue = InputFieldDaySection });
+            if (!string.IsNullOrWhiteSpace(InputFieldDayClass))
+                newEntry.Details.Add(new QsoDetail { FieldName = "Class", FieldValue = InputFieldDayClass });
+        }
         
         LogEntries.Add(newEntry);
         ClearInputs();
@@ -116,12 +242,33 @@ public class GridViewModel
         InputTimeOn = string.Empty;
         InputSent = string.Empty;
         InputRec = string.Empty;
-        InputCountry = string.Empty;
-        InputName = string.Empty;
-        InputState = string.Empty;
-        InputCounty = string.Empty;
         InputFreq = string.Empty;
-        InputComments = string.Empty;
+        InputFieldDaySection = string.Empty;
+        InputFieldDayClass = string.Empty;
+    }
+
+    private void ClearValidationErrors()
+    {
+        CallError = string.Empty;
+        BandError = string.Empty;
+        ModeError = string.Empty;
+        SectionError = string.Empty;
+        ClassError = string.Empty;
+    }
+
+    private void SetValidationProperty(ref string field, string value, string propertyName, string visibilityPropertyName)
+    {
+        if (field == value)
+            return;
+
+        field = value;
+        OnPropertyChanged(propertyName);
+        OnPropertyChanged(visibilityPropertyName);
+    }
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
 
