@@ -6,6 +6,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [
         new MenuNode("Grid"),
         new MenuNode("File", true,
+            new MenuNode("Open/Reopen Grid"),
             new MenuNode("Import ADIF"),
             new MenuNode("Export ADIF"),
             new MenuNode("Remove Dups"),

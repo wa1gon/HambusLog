@@ -4,8 +4,6 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Wa1gonLib.Abstractions;
-using Wa1gonLib.Internal;
 using Wa1gonLib.Models;
 
 namespace Wa1gonLib;
@@ -13,25 +11,22 @@ namespace Wa1gonLib;
 public sealed class RigctldRadioCatalogService
 {
     private static readonly Regex ColumnSplit = new("\\s{2,}", RegexOptions.Compiled);
-    private readonly ICommandRunner _commandRunner;
-    private readonly string _rigctldExecutable;
 
-    public RigctldRadioCatalogService(ICommandRunner? commandRunner = null, string rigctldExecutable = "rigctld")
+    public RigctldRadioCatalogService()
     {
-        _commandRunner = commandRunner ?? new ProcessCommandRunner();
-        _rigctldExecutable = rigctldExecutable;
     }
 
-    public async Task<IReadOnlyList<RigCatalogEntry>> GetAllRadiosAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<RigCatalogEntry>> GetAllRadiosAsync(CancellationToken cancellationToken = default)
     {
-        var result = await _commandRunner.RunAsync(_rigctldExecutable, "-l", cancellationToken);
-        if (result.ExitCode != 0)
-        {
-            throw new InvalidOperationException(
-                $"'{_rigctldExecutable} -l' failed with exit code {result.ExitCode}: {result.StandardError}");
-        }
+        // Flatpak sandboxes can block direct process execution of rigctld.
+        // Keep runtime path safe by returning an empty result and use ParseRigList
+        // when output is provided by a host-side integration.
+        return Task.FromResult<IReadOnlyList<RigCatalogEntry>>(Array.Empty<RigCatalogEntry>());
+    }
 
-        return ParseRigList(result.StandardOutput);
+    public IReadOnlyList<RigCatalogEntry> GetAllRadiosFromText(string? rigctldListOutput)
+    {
+        return ParseRigList(rigctldListOutput);
     }
 
     public static IReadOnlyList<RigCatalogEntry> ParseRigList(string? output)
