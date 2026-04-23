@@ -8,6 +8,8 @@ public interface ISerialPortCatalogService
 public sealed class SerialPortCatalogService : ISerialPortCatalogService
 {
     private const string LinuxByIdDirectory = "/dev/serial/by-id";
+    private const string FlexCatDirectory = "/tmp";
+    private const string FlexCatPattern = "ttyCAT*";
 
     public IReadOnlyList<string> GetAvailablePorts()
     {
@@ -36,10 +38,24 @@ public sealed class SerialPortCatalogService : ISerialPortCatalogService
             }
         }
 
+        if (OperatingSystem.IsLinux() && Directory.Exists(FlexCatDirectory))
+        {
+            try
+            {
+                foreach (var flexCatPath in Directory.GetFiles(FlexCatDirectory, FlexCatPattern))
+                    ports.Add(flexCatPath);
+            }
+            catch
+            {
+                // Ignore /tmp scan errors; other sources still provide usable ports.
+            }
+        }
+
         return ports
             .OrderBy(path => path.StartsWith(LinuxByIdDirectory, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
             .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 }
+
 
