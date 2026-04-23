@@ -3,89 +3,101 @@
         x:Class="HamBusLog.Views.SettingsWindow"
         Title="Configuration"
         Width="820"
-        Height="700"
+        Height="620"
         MinWidth="620"
-        MinHeight="560"
+        MinHeight="500"
         WindowStartupLocation="CenterOwner">
-    <ScrollViewer>
-        <StackPanel Margin="20" Spacing="14">
-            <TextBlock Text="Configuration" FontSize="24" FontWeight="Bold" />
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16">
 
-            <!-- Profile Selection + Clone -->
-            <Border BorderBrush="#CCC" BorderThickness="1" CornerRadius="4" Padding="12">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Profile" FontWeight="SemiBold" />
-                    <ComboBox ItemsSource="{Binding AvailableProfiles}"
-                              SelectedItem="{Binding SelectedProfile}"
-                              HorizontalAlignment="Stretch" />
+        <!-- ── Active Profile (always visible) ─────────────────── -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,10" Spacing="6">
+            <TextBlock Text="Configuration" FontSize="22" FontWeight="Bold" />
+            <Grid ColumnDefinitions="120,300,Auto" ColumnSpacing="8">
+                <TextBlock Grid.Column="0" Text="Active Profile" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1"
+                          ItemsSource="{Binding AvailableProfiles}"
+                          SelectedItem="{Binding SelectedProfile}"
+                          HorizontalAlignment="Stretch" />
+            </Grid>
+        </StackPanel>
+
+        <TabControl Grid.Row="1">
+
+            <!-- ── Config Tab ───────────────────────────────────── -->
+            <TabItem Header="Config">
+                <StackPanel Margin="12" Spacing="12">
+                    <TextBlock Text="Clone Profile" FontWeight="SemiBold" FontSize="14" />
+                    <TextBlock Text="Optionally enter a name below, then click Clone to duplicate the active profile." Foreground="#888" FontSize="12" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBox Text="{Binding NewProfileName}"
-                                 Watermark="New profile name (blank = auto)"
+                                 Watermark="New name (blank = auto)"
                                  Width="280" />
                         <Button Content="Clone Profile" Click="OnCloneProfileClicked" Padding="12,6" />
                     </StackPanel>
                 </StackPanel>
-            </Border>
+            </TabItem>
 
-            <!-- Colors -->
-            <Border BorderBrush="#CCC" BorderThickness="1" CornerRadius="4" Padding="12">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Colors" FontWeight="SemiBold" />
-
-                    <!-- Background -->
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Background Color" />
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+            <!-- ── Colors Tab ────────────────────────────────────── -->
+            <TabItem Header="Colors">
+                <StackPanel Margin="12" Spacing="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Background Color" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
                             <ColorPicker Name="BgColorPicker" />
                             <TextBlock Name="BgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- Foreground -->
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Foreground Color" />
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Foreground Color" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
                             <ColorPicker Name="FgColorPicker" />
                             <TextBlock Name="FgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
-            </Border>
+            </TabItem>
 
-            <!-- Database -->
-            <Border BorderBrush="#CCC" BorderThickness="1" CornerRadius="4" Padding="12">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Database" FontWeight="SemiBold" />
-                    <TextBox Text="{Binding ConnectionString}" Watermark="Server=...;Database=...;" />
+            <!-- ── Database Tab ──────────────────────────────────── -->
+            <TabItem Header="Database">
+                <StackPanel Margin="12" Spacing="12">
+                    <TextBlock Text="Connection String" FontWeight="SemiBold" FontSize="14" />
+                    <TextBlock Text="SQLite example: Data Source=hambuslog.db" Foreground="#888" FontSize="12" />
+                    <TextBlock Text="PostgreSQL example: Host=localhost;Database=hamlog;Username=ham;Password=..." Foreground="#888" FontSize="12" />
+                    <TextBox Text="{Binding ConnectionString}"
+                             Watermark="Data Source=hambuslog.db"
+                             AcceptsReturn="False" />
                 </StackPanel>
-            </Border>
+            </TabItem>
 
-            <!-- rigctld -->
-            <Border BorderBrush="#CCC" BorderThickness="1" CornerRadius="4" Padding="12">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="rigctld" FontWeight="SemiBold" />
-                    <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto" RowSpacing="8" ColumnSpacing="8">
+            <!-- ── Radio Control Tab ────────────────────────────── -->
+            <TabItem Header="Radio Control">
+                <StackPanel Margin="12" Spacing="12">
+                    <TextBlock Text="rigctld Settings" FontWeight="SemiBold" FontSize="14" />
+                    <TextBlock Text="Configure connection to the rigctld daemon (hamlib)." Foreground="#888" FontSize="12" />
+                    <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto" RowSpacing="10" ColumnSpacing="8">
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Host" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding RigctldHost}" />
+                        <TextBox   Grid.Row="0" Grid.Column="1" Text="{Binding RigctldHost}" Watermark="127.0.0.1" />
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Port" VerticalAlignment="Center" />
-                        <NumericUpDown Grid.Row="1" Grid.Column="1" Minimum="1" Maximum="65535"
-                                       Value="{Binding RigctldPort}" HorizontalAlignment="Left" Width="160" />
+                        <NumericUpDown Grid.Row="1" Grid.Column="1"
+                                       Minimum="1" Maximum="65535"
+                                       Value="{Binding RigctldPort}"
+                                       HorizontalAlignment="Left" Width="160" />
                     </Grid>
                 </StackPanel>
-            </Border>
+            </TabItem>
 
-            <!-- Buttons -->
+        </TabControl>
+
+        <!-- ── Footer ───────────────────────────────────────────── -->
+        <StackPanel Grid.Row="2" Spacing="6" Margin="0,8,0,4">
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Content="Save" Click="OnSaveClicked" Padding="14,8" />
                 <Button Content="Close" Click="OnCloseClicked" Padding="14,8" />
             </StackPanel>
-
-            <!-- Config path + status -->
             <TextBlock Text="{Binding ConfigFilePath}" FontSize="11" Foreground="#888" />
             <TextBlock Text="{Binding StatusMessage}" FontStyle="Italic" Foreground="#3498DB" />
-            <!-- Bottom padding to prevent scroll clipping -->
-            <Rectangle Height="12" />
         </StackPanel>
-    </ScrollViewer>
+    </Grid>
 </Window>
 
