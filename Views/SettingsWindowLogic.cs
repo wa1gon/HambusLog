@@ -74,6 +74,7 @@ public partial class SettingsWindow
 
     public void OnSaveClicked(object? sender, RoutedEventArgs e) => _viewModel.Save();
     public void OnCloneProfileClicked(object? sender, RoutedEventArgs e) => _viewModel.CloneProfile();
+    public void OnRefreshSerialPortsClicked(object? sender, RoutedEventArgs e) => _viewModel.RefreshSerialPorts();
     public void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
 
     public async void OnBrowseRiglistClicked(object? sender, RoutedEventArgs e)
@@ -94,6 +95,7 @@ public partial class SettingsWindow
         }
     }
 }
+
 
 
 

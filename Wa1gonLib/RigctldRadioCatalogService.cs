@@ -65,13 +65,40 @@ public sealed class RigctldRadioCatalogService
             .ToList();
     }
 
-    public static string CreateRigctldCommandLine(RigCatalogEntry? entry, string host = "127.0.0.1", int port = 4532)
+    public static string CreateRigctldCommandLine(
+        RigCatalogEntry? entry,
+        string host = "127.0.0.1",
+        int port = 4532,
+        string? serialPortName = null)
     {
         if (entry is null)
             return string.Empty;
 
         var safeHost = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host.Trim();
         var safePort = port <= 0 ? 4532 : port;
-        return $"rigctld -m {entry.RigNum} -T {safeHost} -t {safePort}";
+        var command = $"rigctld -m {entry.RigNum} -T {safeHost} -t {safePort}";
+        if (!string.IsNullOrWhiteSpace(serialPortName))
+            command += $" -r {QuoteArgument(serialPortName.Trim())}";
+
+        return command;
+    }
+
+    private static string QuoteArgument(string value)
+    {
+        if (value.Length == 0)
+            return "\"\"";
+
+        var escaped = value.Replace("\"", "\\\"");
+        var needsQuotes = false;
+        foreach (var ch in escaped)
+        {
+            if (!char.IsWhiteSpace(ch))
+                continue;
+
+            needsQuotes = true;
+            break;
+        }
+
+        return needsQuotes ? $"\"{escaped}\"" : escaped;
     }
 }

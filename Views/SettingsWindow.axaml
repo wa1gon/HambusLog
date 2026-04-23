@@ -75,7 +75,7 @@
                 <StackPanel Margin="12" Spacing="12">
                     <TextBlock Text="rigctld Settings" FontWeight="SemiBold" FontSize="14" />
                     <TextBlock Text="Configure connection to the rigctld daemon (hamlib)." Foreground="#888" FontSize="12" />
-                    <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10" ColumnSpacing="8">
+                    <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10" ColumnSpacing="8">
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Host" VerticalAlignment="Center" />
                         <TextBox   Grid.Row="0" Grid.Column="1" Text="{Binding RigctldHost}" Watermark="127.0.0.1" />
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Port" VerticalAlignment="Center" />
@@ -83,8 +83,16 @@
                                        Minimum="1" Maximum="65535"
                                        Value="{Binding RigctldPort}"
                                        HorizontalAlignment="Left" Width="160" />
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Rig List File" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Serial Port" VerticalAlignment="Center" />
                         <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                            <ComboBox ItemsSource="{Binding AvailableSerialPorts}"
+                                      SelectedItem="{Binding SelectedSerialPort}"
+                                      Width="360"
+                                      IsEditable="True" />
+                            <Button Content="Refresh" Click="OnRefreshSerialPortsClicked" Padding="10,6" />
+                        </StackPanel>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Rig List File" VerticalAlignment="Center" />
+                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="6">
                             <TextBox Text="{Binding RiglistFilePath}" Watermark="Path to rigctld --list output file..." Width="360" />
                             <Button Content="Browse…" Click="OnBrowseRiglistClicked" Padding="10,6" />
                         </StackPanel>

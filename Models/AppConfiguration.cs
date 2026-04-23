@@ -22,5 +22,6 @@ public sealed class RigctldConfiguration
 {
     public string Host { get; set; } = "127.0.0.1";
     public int Port { get; set; } = 4532;
+    public string SerialPortName { get; set; } = string.Empty;
     public string RiglistFilePath { get; set; } = string.Empty;
 }

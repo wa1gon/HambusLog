@@ -2,6 +2,7 @@ namespace HamBusLog.ViewModels;
 
 public sealed class SettingsViewModel : ViewModelBase
 {
+    private readonly HamBusLog.Hardware.ISerialPortCatalogService _serialPortCatalogService;
     private AppConfiguration _appConfig = new();
     private string _selectedProfile = "default";
     private Color _backgroundColor = Color.Parse("#1F2937");
@@ -9,14 +10,22 @@ public sealed class SettingsViewModel : ViewModelBase
     private string _connectionString = "Data Source=hambuslog.db";
     private string _rigctldHost = "127.0.0.1";
     private int _rigctldPort = 4532;
+    private string _selectedSerialPort = string.Empty;
     private string _riglistFilePath = string.Empty;
     private string _statusMessage = string.Empty;
     private string _configFilePath = string.Empty;
     private string _newProfileName = string.Empty;
 
     public SettingsViewModel()
+        : this(new HamBusLog.Hardware.SerialPortCatalogService())
     {
+    }
+
+    internal SettingsViewModel(HamBusLog.Hardware.ISerialPortCatalogService serialPortCatalogService)
+    {
+        _serialPortCatalogService = serialPortCatalogService;
         AvailableProfiles = new ObservableCollection<string>();
+        AvailableSerialPorts = new ObservableCollection<string>();
         Load();
     }
 
@@ -31,6 +40,7 @@ public sealed class SettingsViewModel : ViewModelBase
     }
 
     public ObservableCollection<string> AvailableProfiles { get; }
+    public ObservableCollection<string> AvailableSerialPorts { get; }
 
     public Color BackgroundColor
     {
@@ -60,6 +70,12 @@ public sealed class SettingsViewModel : ViewModelBase
     {
         get => _rigctldPort;
         set => SetProperty(ref _rigctldPort, value);
+    }
+
+    public string SelectedSerialPort
+    {
+        get => _selectedSerialPort;
+        set => SetProperty(ref _selectedSerialPort, value ?? string.Empty);
     }
 
     public string RiglistFilePath
@@ -100,6 +116,7 @@ public sealed class SettingsViewModel : ViewModelBase
                 {
                     Host = string.IsNullOrWhiteSpace(RigctldHost) ? "127.0.0.1" : RigctldHost.Trim(),
                     Port = RigctldPort <= 0 ? 4532 : RigctldPort,
+                    SerialPortName = SelectedSerialPort.Trim(),
                     RiglistFilePath = RiglistFilePath.Trim()
                 }
             };
@@ -136,7 +153,13 @@ public sealed class SettingsViewModel : ViewModelBase
             BackgroundColor = ToHexRgb(BackgroundColor),
             ForegroundColor = ToHexRgb(ForegroundColor),
             ConnectionString = src.ConnectionString,
-            Rigctld = new RigctldConfiguration { Host = src.Rigctld.Host, Port = src.Rigctld.Port }
+            Rigctld = new RigctldConfiguration
+            {
+                Host = src.Rigctld.Host,
+                Port = src.Rigctld.Port,
+                SerialPortName = src.Rigctld.SerialPortName,
+                RiglistFilePath = src.Rigctld.RiglistFilePath
+            }
         };
 
         _appConfig.Profiles[cloneName] = clone;
@@ -159,7 +182,24 @@ public sealed class SettingsViewModel : ViewModelBase
         ConnectionString = profile.ConnectionString;
         RigctldHost = profile.Rigctld.Host;
         RigctldPort = profile.Rigctld.Port;
+        SelectedSerialPort = profile.Rigctld.SerialPortName;
         RiglistFilePath = profile.Rigctld.RiglistFilePath;
+        RefreshSerialPorts();
+    }
+
+    public void RefreshSerialPorts()
+    {
+        var discovered = _serialPortCatalogService.GetAvailablePorts();
+        var currentSelection = SelectedSerialPort;
+
+        AvailableSerialPorts.Clear();
+        foreach (var port in discovered)
+            AvailableSerialPorts.Add(port);
+
+        if (!string.IsNullOrWhiteSpace(currentSelection) && !AvailableSerialPorts.Contains(currentSelection))
+            AvailableSerialPorts.Insert(0, currentSelection);
+
+        OnPropertyChanged(nameof(AvailableSerialPorts));
     }
 
     private void Load()

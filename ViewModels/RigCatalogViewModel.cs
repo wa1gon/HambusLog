@@ -5,31 +5,37 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
     private const string AllModelsOption = "All Models";
 
     private readonly RigCatalogStore _store;
+    private readonly HamBusLog.Hardware.ISerialPortCatalogService _serialPortCatalogService;
     private ObservableCollection<RigCatalogEntry> _filteredEntries = [];
     private ObservableCollection<string> _availableModels = [];
+    private ObservableCollection<string> _availableSerialPorts = [];
     private string _selectedSearchModel = AllModelsOption;
+    private string _selectedSerialPort = string.Empty;
     private RigCatalogEntry? _selectedEntry;
     private string _rigctldCommandLine = string.Empty;
     private string? _statusMessageOverride;
 
     public RigCatalogViewModel()
-        : this(App.RigCatalogStore)
+        : this(App.RigCatalogStore, new HamBusLog.Hardware.SerialPortCatalogService())
     {
     }
 
-    internal RigCatalogViewModel(RigCatalogStore store)
+    internal RigCatalogViewModel(RigCatalogStore store, HamBusLog.Hardware.ISerialPortCatalogService serialPortCatalogService)
     {
         _store = store;
+        _serialPortCatalogService = serialPortCatalogService;
         _store.PropertyChanged += OnStorePropertyChanged;
 
         var config = AppConfigurationStore.Load();
         var profile = AppConfigurationStore.GetActiveProfile(config);
         var configuredPath = profile.Rigctld.RiglistFilePath;
+        _selectedSerialPort = profile.Rigctld.SerialPortName;
         if (!string.IsNullOrWhiteSpace(configuredPath) && !string.Equals(configuredPath, _store.FilePath, StringComparison.Ordinal))
         {
             _store.LoadFromFile(configuredPath);
         }
 
+        RefreshSerialPorts();
         RefreshAvailableModels();
         RefreshFilteredEntries();
         if (_store.Entries.Count > 0)
@@ -48,6 +54,12 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _availableModels, value);
     }
 
+    public ObservableCollection<string> AvailableSerialPorts
+    {
+        get => _availableSerialPorts;
+        private set => SetProperty(ref _availableSerialPorts, value);
+    }
+
     public string SelectedSearchModel
     {
         get => _selectedSearchModel;
@@ -55,6 +67,16 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         {
             if (SetProperty(ref _selectedSearchModel, value))
                 RefreshFilteredEntries();
+        }
+    }
+
+    public string SelectedSerialPort
+    {
+        get => _selectedSerialPort;
+        set
+        {
+            if (SetProperty(ref _selectedSerialPort, value ?? string.Empty))
+                UpdateCommandLine();
         }
     }
 
@@ -98,6 +120,18 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
             OnPropertyChanged(nameof(StatusMessage));
             _store.LoadFromFile(_store.FilePath);
         }
+    }
+
+    public void RefreshSerialPorts()
+    {
+        var currentSelection = SelectedSerialPort;
+        var discovered = _serialPortCatalogService.GetAvailablePorts();
+        AvailableSerialPorts = new ObservableCollection<string>(discovered);
+
+        if (!string.IsNullOrWhiteSpace(currentSelection) && !AvailableSerialPorts.Contains(currentSelection))
+            AvailableSerialPorts.Insert(0, currentSelection);
+
+        OnPropertyChanged(nameof(AvailableSerialPorts));
     }
 
     private void OnStorePropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -156,7 +190,8 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         RigctldCommandLine = RigctldRadioCatalogService.CreateRigctldCommandLine(
             SelectedEntry,
             profile.Rigctld.Host,
-            profile.Rigctld.Port);
+            profile.Rigctld.Port,
+            SelectedSerialPort);
         _statusMessageOverride = null;
         OnPropertyChanged(nameof(StatusMessage));
     }
@@ -166,6 +201,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         _store.PropertyChanged -= OnStorePropertyChanged;
     }
 }
+
 
 
 

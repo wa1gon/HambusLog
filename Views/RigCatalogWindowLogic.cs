@@ -36,6 +36,11 @@ public partial class RigCatalogWindow
             _viewModel.Reload();
     }
 
+    public void OnRefreshSerialPortsClicked(object? sender, RoutedEventArgs e)
+    {
+        _viewModel.RefreshSerialPorts();
+    }
+
     public async void OnCopyCommandClicked(object? sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(_viewModel.RigctldCommandLine))
@@ -69,6 +74,7 @@ public partial class RigCatalogWindow
         base.OnClosed(e);
     }
 }
+
 
 
 
