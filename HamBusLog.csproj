@@ -14,7 +14,6 @@
     <Compile Include="Wa1gonLib\Internal\ProcessCommandRunner.cs" />
     <Compile Include="Wa1gonLib\Models\RigCatalogEntry.cs" />
     <Compile Include="Wa1gonLib\RigctldRadioCatalogService.cs" />
-    <Folder Include="Models\" />
     <AvaloniaResource Include="Assets\**" />
     <Compile Remove="Wa1gonLib\**\*.cs" />
     <Compile Remove="Wa1gonLib.Tests\**\*.cs" />

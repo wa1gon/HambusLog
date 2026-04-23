@@ -30,6 +30,19 @@ public partial class MainWindow : Window
                     }
                 }
             }
+            else if (node.Title == "Settings")
+            {
+                OpenSettingsWindow();
+                
+                // Reset selection to previous item
+                if (_previousSelection != null)
+                {
+                    if (sender is TreeView treeView)
+                    {
+                        treeView.SelectedItem = _previousSelection;
+                    }
+                }
+            }
             else
             {
                 _previousSelection = node;
@@ -52,5 +65,11 @@ public partial class MainWindow : Window
         }
 
         _gridWindow.Show();
+    }
+
+    private void OpenSettingsWindow()
+    {
+        var settingsWindow = new SettingsWindow();
+        settingsWindow.ShowDialog(this);
     }
 }
