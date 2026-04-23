@@ -1,7 +1,5 @@
 using Avalonia.Controls;
-using Avalonia.Input;
 using HamBusLog.ViewModels;
-using Avalonia.VisualTree;
 
 namespace HamBusLog.Views;
 
@@ -21,7 +19,7 @@ public partial class MainWindow : Window
         {
             if (node.Title == "Grid" || node.Title == "Open/Reopen Grid")
             {
-                OpenOrActivateGridWindow();
+                ToggleGridWindow();
                 
                 // Reset selection to previous item
                 if (_previousSelection != null)
@@ -39,16 +37,20 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OpenOrActivateGridWindow()
+    private void ToggleGridWindow()
     {
         if (_gridWindow is { IsVisible: true })
         {
-            _gridWindow.Activate();
+            _gridWindow.Hide();
             return;
         }
 
-        _gridWindow = new GridWindow();
-        _gridWindow.Closed += (_, _) => _gridWindow = null;
+        if (_gridWindow is null)
+        {
+            _gridWindow = new GridWindow();
+            _gridWindow.Closed += (_, _) => _gridWindow = null;
+        }
+
         _gridWindow.Show();
     }
 }
