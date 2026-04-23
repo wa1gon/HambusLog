@@ -1,6 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections.ObjectModel;
 using Avalonia.Media;
 using HamBusLog.Data;
 using HamBusLog.Models;
@@ -18,10 +17,11 @@ public sealed class SettingsViewModel : ViewModelBase
     private int _rigctldPort = 4532;
     private string _statusMessage = string.Empty;
     private string _configFilePath = string.Empty;
-    private List<string> _availableProfiles = new();
+    private string _newProfileName = string.Empty;
 
     public SettingsViewModel()
     {
+        AvailableProfiles = new ObservableCollection<string>();
         Load();
     }
 
@@ -30,18 +30,12 @@ public sealed class SettingsViewModel : ViewModelBase
         get => _selectedProfile;
         set
         {
-            if (SetProperty(ref _selectedProfile, value))
-            {
+            if (SetProperty(ref _selectedProfile, value) && value != null)
                 LoadProfile(value);
-            }
         }
     }
 
-    public List<string> AvailableProfiles
-    {
-        get => _availableProfiles;
-        private set => SetProperty(ref _availableProfiles, value);
-    }
+    public ObservableCollection<string> AvailableProfiles { get; }
 
     public Color BackgroundColor
     {
@@ -85,6 +79,12 @@ public sealed class SettingsViewModel : ViewModelBase
         private set => SetProperty(ref _configFilePath, value);
     }
 
+    public string NewProfileName
+    {
+        get => _newProfileName;
+        set => SetProperty(ref _newProfileName, value);
+    }
+
     public void Save()
     {
         try
@@ -92,8 +92,8 @@ public sealed class SettingsViewModel : ViewModelBase
             var profile = new ConfigProfile
             {
                 Name = _selectedProfile,
-                BackgroundColor = BackgroundColor.ToString(),
-                ForegroundColor = ForegroundColor.ToString(),
+                BackgroundColor = ToHexRgb(BackgroundColor),
+                ForegroundColor = ToHexRgb(ForegroundColor),
                 ConnectionString = string.IsNullOrWhiteSpace(ConnectionString) ? "Data Source=hambuslog.db" : ConnectionString.Trim(),
                 Rigctld = new RigctldConfiguration
                 {
@@ -104,7 +104,6 @@ public sealed class SettingsViewModel : ViewModelBase
 
             _appConfig.Profiles[_selectedProfile] = profile;
             _appConfig.ActiveProfile = _selectedProfile;
-
             AppConfigurationStore.Save(_appConfig);
             StatusMessage = $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss}";
         }
@@ -114,33 +113,64 @@ public sealed class SettingsViewModel : ViewModelBase
         }
     }
 
+    public void CloneProfile()
+    {
+        var cloneName = string.IsNullOrWhiteSpace(NewProfileName)
+            ? $"{_selectedProfile}-copy"
+            : NewProfileName.Trim();
+
+        if (_appConfig.Profiles.ContainsKey(cloneName))
+        {
+            StatusMessage = $"✗ Profile '{cloneName}' already exists.";
+            return;
+        }
+
+        var src = _appConfig.Profiles.TryGetValue(_selectedProfile, out var s)
+            ? s : new ConfigProfile { Name = _selectedProfile };
+
+        var clone = new ConfigProfile
+        {
+            Name = cloneName,
+            BackgroundColor = ToHexRgb(BackgroundColor),
+            ForegroundColor = ToHexRgb(ForegroundColor),
+            ConnectionString = src.ConnectionString,
+            Rigctld = new RigctldConfiguration { Host = src.Rigctld.Host, Port = src.Rigctld.Port }
+        };
+
+        _appConfig.Profiles[cloneName] = clone;
+        AvailableProfiles.Add(cloneName);
+        SelectedProfile = cloneName;
+        NewProfileName = string.Empty;
+        StatusMessage = $"✓ Profile '{cloneName}' cloned from '{src.Name}'.";
+    }
+
     private void LoadProfile(string profileName)
     {
-        if (_appConfig.Profiles.TryGetValue(profileName, out var profile))
-        {
-            try
-            {
-                BackgroundColor = Color.Parse(profile.BackgroundColor);
-                ForegroundColor = Color.Parse(profile.ForegroundColor);
-            }
-            catch
-            {
-                BackgroundColor = Color.Parse("#1F2937");
-                ForegroundColor = Color.Parse("#FFFFFF");
-            }
-            ConnectionString = profile.ConnectionString;
-            RigctldHost = profile.Rigctld.Host;
-            RigctldPort = profile.Rigctld.Port;
-        }
+        if (!_appConfig.Profiles.TryGetValue(profileName, out var profile)) return;
+
+        try { BackgroundColor = Color.Parse(profile.BackgroundColor); }
+        catch { BackgroundColor = Color.Parse("#1F2937"); }
+
+        try { ForegroundColor = Color.Parse(profile.ForegroundColor); }
+        catch { ForegroundColor = Color.Parse("#FFFFFF"); }
+
+        ConnectionString = profile.ConnectionString;
+        RigctldHost = profile.Rigctld.Host;
+        RigctldPort = profile.Rigctld.Port;
     }
 
     private void Load()
     {
         _appConfig = AppConfigurationStore.Load();
-        AvailableProfiles = _appConfig.Profiles.Keys.ToList();
+        AvailableProfiles.Clear();
+        foreach (var key in _appConfig.Profiles.Keys)
+            AvailableProfiles.Add(key);
         _selectedProfile = _appConfig.ActiveProfile;
+        OnPropertyChanged(nameof(SelectedProfile));
         LoadProfile(_selectedProfile);
-        ConfigFilePath = $"Config: {AppConfigurationStore.GetConfigFilePath()}";
+        ConfigFilePath = AppConfigurationStore.GetConfigFilePath();
     }
+
+    private static string ToHexRgb(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
 }
 

@@ -2,54 +2,89 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="HamBusLog.Views.SettingsWindow"
         Title="Configuration"
-        Width="800"
-        Height="650"
-        MinWidth="600"
-        MinHeight="520"
+        Width="820"
+        Height="700"
+        MinWidth="620"
+        MinHeight="560"
         WindowStartupLocation="CenterOwner">
     <ScrollViewer>
-        <StackPanel Margin="16" Spacing="12">
+        <StackPanel Margin="20" Spacing="14">
             <TextBlock Text="Configuration" FontSize="24" FontWeight="Bold" />
 
-            <!-- Profile Selection -->
-            <Grid ColumnDefinitions="200,*" RowDefinitions="Auto" RowSpacing="8" ColumnSpacing="8">
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Profile" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding AvailableProfiles}" SelectedItem="{Binding SelectedProfile}" />
-            </Grid>
+            <!-- Profile Selection + Clone -->
+            <Border BorderBrush="#CCC" BorderThickness="1" CornerRadius="4" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Profile" FontWeight="SemiBold" />
+                    <ComboBox ItemsSource="{Binding AvailableProfiles}"
+                              SelectedItem="{Binding SelectedProfile}"
+                              HorizontalAlignment="Stretch" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBox Text="{Binding NewProfileName}"
+                                 Watermark="New profile name (blank = auto)"
+                                 Width="280" />
+                        <Button Content="Clone Profile" Click="OnCloneProfileClicked" Padding="12,6" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
 
-            <!-- Settings -->
-            <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="12" ColumnSpacing="8">
-                <!-- Background Color -->
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Background Color" VerticalAlignment="Center" />
-                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BackgroundColor}" Watermark="#1F2937" />
+            <!-- Colors -->
+            <Border BorderBrush="#CCC" BorderThickness="1" CornerRadius="4" Padding="12">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Colors" FontWeight="SemiBold" />
 
-                <!-- Foreground Color -->
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Foreground Color" VerticalAlignment="Center" />
-                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ForegroundColor}" Watermark="#FFFFFF" />
+                    <!-- Background -->
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Background Color" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <ColorPicker Name="BgColorPicker" />
+                            <TextBlock Name="BgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
 
-                <!-- Connection String -->
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Connection String" VerticalAlignment="Center" />
-                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ConnectionString}" Watermark="Server=...;Database=...;" />
+                    <!-- Foreground -->
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Foreground Color" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <ColorPicker Name="FgColorPicker" />
+                            <TextBlock Name="FgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
 
-                <!-- rigctld Host -->
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="rigctld Host" VerticalAlignment="Center" />
-                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding RigctldHost}" />
+            <!-- Database -->
+            <Border BorderBrush="#CCC" BorderThickness="1" CornerRadius="4" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Database" FontWeight="SemiBold" />
+                    <TextBox Text="{Binding ConnectionString}" Watermark="Server=...;Database=...;" />
+                </StackPanel>
+            </Border>
 
-                <!-- rigctld Port -->
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="rigctld Port" VerticalAlignment="Center" />
-                <NumericUpDown Grid.Row="4" Grid.Column="1" Minimum="1" Maximum="65535" Value="{Binding RigctldPort}" HorizontalAlignment="Left" Width="150" />
+            <!-- rigctld -->
+            <Border BorderBrush="#CCC" BorderThickness="1" CornerRadius="4" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="rigctld" FontWeight="SemiBold" />
+                    <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto" RowSpacing="8" ColumnSpacing="8">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Host" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding RigctldHost}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Port" VerticalAlignment="Center" />
+                        <NumericUpDown Grid.Row="1" Grid.Column="1" Minimum="1" Maximum="65535"
+                                       Value="{Binding RigctldPort}" HorizontalAlignment="Left" Width="160" />
+                    </Grid>
+                </StackPanel>
+            </Border>
 
-                <!-- Config File Path -->
-                <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding ConfigFilePath}" FontSize="11" Foreground="#7F8C8D" IsVisible="{Binding !!ConfigFilePath}" />
-
-                <!-- Status Message -->
-                <TextBlock Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding StatusMessage}" FontStyle="Italic" Foreground="#3498DB" />
-            </Grid>
-
-            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+            <!-- Buttons -->
+            <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Content="Save" Click="OnSaveClicked" Padding="14,8" />
                 <Button Content="Close" Click="OnCloseClicked" Padding="14,8" />
             </StackPanel>
+
+            <!-- Config path + status -->
+            <TextBlock Text="{Binding ConfigFilePath}" FontSize="11" Foreground="#888" />
+            <TextBlock Text="{Binding StatusMessage}" FontStyle="Italic" Foreground="#3498DB" />
+            <!-- Bottom padding to prevent scroll clipping -->
+            <Rectangle Height="12" />
         </StackPanel>
     </ScrollViewer>
 </Window>

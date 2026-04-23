@@ -1,5 +1,8 @@
+using System.ComponentModel;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using HamBusLog.ViewModels;
 
 namespace HamBusLog.Views;
@@ -7,6 +10,10 @@ namespace HamBusLog.Views;
 public partial class SettingsWindow : Window
 {
     private readonly SettingsViewModel _viewModel;
+    private ColorPicker? _bgPicker;
+    private ColorPicker? _fgPicker;
+    private TextBlock? _bgHex;
+    private TextBlock? _fgHex;
 
     public SettingsWindow()
     {
@@ -15,14 +22,64 @@ public partial class SettingsWindow : Window
         DataContext = _viewModel;
     }
 
-    public void OnSaveClicked(object? sender, RoutedEventArgs e)
+    protected override void OnLoaded(RoutedEventArgs e)
     {
-        _viewModel.Save();
+        base.OnLoaded(e);
+
+        _bgPicker = this.FindControl<ColorPicker>("BgColorPicker");
+        _fgPicker = this.FindControl<ColorPicker>("FgColorPicker");
+        _bgHex    = this.FindControl<TextBlock>("BgColorHex");
+        _fgHex    = this.FindControl<TextBlock>("FgColorHex");
+
+        // Push initial colors into pickers now that controls are fully rendered
+        SyncPickersFromViewModel();
+
+        // ViewModel → pickers (profile switch)
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+        // Pickers → ViewModel
+        if (_bgPicker != null)
+            _bgPicker.ColorChanged += (_, ev) =>
+            {
+                _viewModel.BackgroundColor = ev.NewColor;
+                UpdateHex(_bgHex, ev.NewColor);
+            };
+
+        if (_fgPicker != null)
+            _fgPicker.ColorChanged += (_, ev) =>
+            {
+                _viewModel.ForegroundColor = ev.NewColor;
+                UpdateHex(_fgHex, ev.NewColor);
+            };
     }
 
-    public void OnCloseClicked(object? sender, RoutedEventArgs e)
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        Close();
+        if (e.PropertyName is nameof(SettingsViewModel.BackgroundColor))
+            SyncPickerColor(_bgPicker, _bgHex, _viewModel.BackgroundColor);
+        if (e.PropertyName is nameof(SettingsViewModel.ForegroundColor))
+            SyncPickerColor(_fgPicker, _fgHex, _viewModel.ForegroundColor);
     }
+
+    private void SyncPickersFromViewModel()
+    {
+        SyncPickerColor(_bgPicker, _bgHex, _viewModel.BackgroundColor);
+        SyncPickerColor(_fgPicker, _fgHex, _viewModel.ForegroundColor);
+    }
+
+    private static void SyncPickerColor(ColorPicker? picker, TextBlock? hex, Color color)
+    {
+        if (picker != null) picker.Color = color;
+        UpdateHex(hex, color);
+    }
+
+    private static void UpdateHex(TextBlock? label, Color c)
+    {
+        if (label != null)
+            label.Text = $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+    }
+
+    public void OnSaveClicked(object? sender, RoutedEventArgs e) => _viewModel.Save();
+    public void OnCloneProfileClicked(object? sender, RoutedEventArgs e) => _viewModel.CloneProfile();
+    public void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
 }
-
