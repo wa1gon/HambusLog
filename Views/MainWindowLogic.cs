@@ -4,7 +4,6 @@ public partial class MainWindow
 {
     private MenuNode? _previousSelection;
     private GridWindow? _gridWindow;
-    private RigCatalogWindow? _rigCatalogWindow;
 
     public MainWindow()
     {
@@ -20,14 +19,9 @@ public partial class MainWindow
                 ToggleGridWindow();
                 ResetTreeSelection(sender);
             }
-            else if (node.Title == "Settings")
+            else if (node.Title == "Configuration")
             {
-                OpenSettingsWindow();
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Rig Catalog")
-            {
-                OpenRigCatalogWindow();
+                OpenConfigurationWindow();
                 ResetTreeSelection(sender);
             }
             else
@@ -54,21 +48,10 @@ public partial class MainWindow
         _gridWindow.Show();
     }
 
-    private void OpenSettingsWindow()
+    private void OpenConfigurationWindow()
     {
-        var settingsWindow = new SettingsWindow();
-        settingsWindow.Show();
-    }
-
-    private void OpenRigCatalogWindow()
-    {
-        if (_rigCatalogWindow is { IsVisible: true })
-        {
-            return;
-        }
-        _rigCatalogWindow = new RigCatalogWindow();
-        _rigCatalogWindow.Closed += (_, _) => _rigCatalogWindow = null;
-        _rigCatalogWindow.Show();
+        var configurationWindow = new ConfigurationWindow();
+        configurationWindow.Show();
     }
 
     private void ResetTreeSelection(object? sender)
@@ -77,5 +60,7 @@ public partial class MainWindow
             tv.SelectedItem = _previousSelection;
     }
 }
+
+
 
 

@@ -1,6 +1,6 @@
 namespace HamBusLog.ViewModels;
 
-public sealed class SettingsViewModel : ViewModelBase
+public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 {
     private readonly HamBusLog.Hardware.ISerialPortCatalogService _serialPortCatalogService;
     private AppConfiguration _appConfig = new();
@@ -16,12 +16,12 @@ public sealed class SettingsViewModel : ViewModelBase
     private string _configFilePath = string.Empty;
     private string _newProfileName = string.Empty;
 
-    public SettingsViewModel()
+    public ConfigurationViewModel()
         : this(new HamBusLog.Hardware.SerialPortCatalogService())
     {
     }
 
-    internal SettingsViewModel(HamBusLog.Hardware.ISerialPortCatalogService serialPortCatalogService)
+    internal ConfigurationViewModel(HamBusLog.Hardware.ISerialPortCatalogService serialPortCatalogService)
     {
         _serialPortCatalogService = serialPortCatalogService;
         AvailableProfiles = new ObservableCollection<string>();
@@ -101,6 +101,8 @@ public sealed class SettingsViewModel : ViewModelBase
         get => _newProfileName;
         set => SetProperty(ref _newProfileName, value);
     }
+
+    public RigCatalogViewModel RigCatalog { get; } = new();
 
     public void Save()
     {
@@ -215,4 +217,10 @@ public sealed class SettingsViewModel : ViewModelBase
     }
 
     private static string ToHexRgb(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+
+    public void Dispose()
+    {
+        RigCatalog.Dispose();
+    }
 }
+

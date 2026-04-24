@@ -1,17 +1,17 @@
 namespace HamBusLog.Views;
 
-public partial class SettingsWindow
+public partial class ConfigurationWindow
 {
-    private readonly SettingsViewModel _viewModel;
+    private readonly ConfigurationViewModel _viewModel;
     private ColorPicker? _bgPicker;
     private ColorPicker? _fgPicker;
     private TextBlock? _bgHex;
     private TextBlock? _fgHex;
 
-    public SettingsWindow()
+    public ConfigurationWindow()
     {
         InitializeComponent();
-        _viewModel = new SettingsViewModel();
+        _viewModel = new ConfigurationViewModel();
         DataContext = _viewModel;
     }
 
@@ -48,9 +48,9 @@ public partial class SettingsWindow
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(SettingsViewModel.BackgroundColor))
+        if (e.PropertyName is nameof(ConfigurationViewModel.BackgroundColor))
             SyncPickerColor(_bgPicker, _bgHex, _viewModel.BackgroundColor);
-        if (e.PropertyName is nameof(SettingsViewModel.ForegroundColor))
+        if (e.PropertyName is nameof(ConfigurationViewModel.ForegroundColor))
             SyncPickerColor(_fgPicker, _fgHex, _viewModel.ForegroundColor);
     }
 
@@ -77,6 +77,63 @@ public partial class SettingsWindow
     public void OnRefreshSerialPortsClicked(object? sender, RoutedEventArgs e) => _viewModel.RefreshSerialPorts();
     public void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
 
+    public async void OnCatalogBrowseClicked(object? sender, RoutedEventArgs e)
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = "Select rigctld rig list file",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("Text / List files") { Patterns = ["*.txt", "*.lst", "*.log", "*"] }
+            ]
+        });
+
+        if (files.Count > 0)
+        {
+            var path = files[0].Path.LocalPath;
+            _viewModel.RigCatalog.LoadFromFile(path);
+        }
+    }
+
+    public void OnCatalogReloadClicked(object? sender, RoutedEventArgs e)
+    {
+        if (!string.IsNullOrWhiteSpace(_viewModel.RigCatalog.FilePath))
+            _viewModel.RigCatalog.Reload();
+    }
+
+    public void OnCatalogRefreshSerialPortsClicked(object? sender, RoutedEventArgs e)
+    {
+        _viewModel.RigCatalog.RefreshSerialPorts();
+    }
+
+    public async void OnCatalogCopyCommandClicked(object? sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_viewModel.RigCatalog.RigctldCommandLine))
+        {
+            _viewModel.RigCatalog.SetStatusMessage("No rigctld command to copy.");
+            return;
+        }
+
+        var topLevel = GetTopLevel(this);
+        var clipboard = topLevel?.Clipboard;
+        if (clipboard is null)
+        {
+            _viewModel.RigCatalog.SetStatusMessage("Clipboard is not available in this environment.");
+            return;
+        }
+
+        try
+        {
+            await clipboard.SetTextAsync(_viewModel.RigCatalog.RigctldCommandLine);
+            _viewModel.RigCatalog.SetStatusMessage("rigctld command copied to clipboard.");
+        }
+        catch (Exception ex)
+        {
+            _viewModel.RigCatalog.SetStatusMessage($"Failed to copy command: {ex.Message}");
+        }
+    }
+
     public async void OnBrowseRiglistClicked(object? sender, RoutedEventArgs e)
     {
         var files = await StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
@@ -94,7 +151,15 @@ public partial class SettingsWindow
             _viewModel.RiglistFilePath = files[0].Path.LocalPath;
         }
     }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _viewModel.Dispose();
+        base.OnClosed(e);
+    }
 }
+
+
 
 
 
