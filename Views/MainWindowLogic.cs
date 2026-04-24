@@ -50,13 +50,13 @@ public partial class MainWindow
             _gridWindow.Closed += (_, _) => _gridWindow = null;
         }
 
-        _gridWindow.Show();
+        ShowWithVisibleOwner(_gridWindow);
     }
 
     private void OpenConfigurationWindow()
     {
         var configurationWindow = new ConfigurationWindow();
-        configurationWindow.Show();
+        ShowWithVisibleOwner(configurationWindow);
     }
 
     private void OpenNewContactWindow()
@@ -74,7 +74,18 @@ public partial class MainWindow
         }
 
         if (!_gridWindow.IsVisible)
-            _gridWindow.Show();
+            ShowWithVisibleOwner(_gridWindow);
+    }
+
+    private void ShowWithVisibleOwner(Window window)
+    {
+        if (IsVisible)
+        {
+            window.Show(this);
+            return;
+        }
+
+        window.Show();
     }
 
     private void ResetTreeSelection(object? sender)

@@ -8,6 +8,7 @@ public partial class App
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
             ApplyThemeFromActiveProfile();
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
@@ -36,14 +37,26 @@ public partial class App
 
         var background = ParseColor(profile.BackgroundColor, Color.Parse("#1F2937"));
         var foreground = ParseColor(profile.ForegroundColor, Color.Parse("#FFFFFF"));
+        var menuBackground = ParseColor(profile.MenuBackgroundColor, Color.Parse("#111827"));
+        var menuForeground = ParseColor(profile.MenuForegroundColor, foreground);
+        var buttonNormal = ParseColor(profile.ButtonNormalColor, Color.Parse("#2563EB"));
+        var buttonCaution = ParseColor(profile.ButtonCautionColor, Color.Parse("#D97706"));
+        var buttonDanger = ParseColor(profile.ButtonDangerColor, Color.Parse("#DC2626"));
+        var buttonForeground = ParseColor(profile.ButtonForegroundColor, Color.Parse("#FFFFFF"));
 
         SetBrush(resources, "AppWindowBackgroundBrush", background);
         SetBrush(resources, "AppHeaderBackgroundBrush", background);
         SetBrush(resources, "AppPanelBackgroundBrush", AdjustBrightness(background, 0.08));
+        SetBrush(resources, "AppMenuBackgroundBrush", menuBackground);
+        SetBrush(resources, "AppMenuForegroundBrush", menuForeground);
         SetBrush(resources, "AppForegroundBrush", foreground);
         SetBrush(resources, "AppMutedForegroundBrush", AdjustBrightness(foreground, -0.35));
         SetBrush(resources, "AppBorderBrush", AdjustBrightness(background, 0.16));
         SetBrush(resources, "AppAccentBrush", Color.Parse("#3498DB"));
+        SetBrush(resources, "AppButtonNormalBrush", buttonNormal);
+        SetBrush(resources, "AppButtonCautionBrush", buttonCaution);
+        SetBrush(resources, "AppButtonDangerBrush", buttonDanger);
+        SetBrush(resources, "AppButtonForegroundBrush", buttonForeground);
         SetBrush(resources, "AppErrorBrush", Color.Parse("#FF6B6B"));
         SetBrush(resources, "AppWarningBrush", Color.Parse("#FFD700"));
     }

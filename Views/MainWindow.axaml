@@ -22,12 +22,12 @@
     </Design.DataContext>
 
     <Grid ColumnDefinitions="220,*">
-        <Border Grid.Column="0" Background="{DynamicResource AppHeaderBackgroundBrush}" Padding="12">
+        <Border Grid.Column="0" Background="{DynamicResource AppMenuBackgroundBrush}" Padding="12">
             <StackPanel Spacing="10">
-                <TextBlock Text="Menu" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource AppForegroundBrush}" Margin="4,2,4,8"/>
+                <TextBlock Text="Menu" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource AppMenuForegroundBrush}" Margin="4,2,4,8"/>
                 <TreeView ItemsSource="{Binding MenuItems}"
                           SelectedItem="{Binding SelectedMenuItem, Mode=TwoWay}"
-                          Foreground="{DynamicResource AppForegroundBrush}"
+                          Foreground="{DynamicResource AppMenuForegroundBrush}"
                           Background="Transparent"
                           BorderThickness="0"
                           Name="MenuTreeView"
@@ -40,7 +40,7 @@
                     </TreeView.Styles>
                     <TreeView.ItemTemplate>
                         <TreeDataTemplate x:DataType="vm:MenuNode" ItemsSource="{Binding Children}">
-                            <TextBlock Text="{Binding Title}" Foreground="{DynamicResource AppForegroundBrush}"/>
+                            <TextBlock Text="{Binding Title}" Foreground="{DynamicResource AppMenuForegroundBrush}"/>
                         </TreeDataTemplate>
                     </TreeView.ItemTemplate>
                 </TreeView>

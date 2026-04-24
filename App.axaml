@@ -13,10 +13,16 @@
         <SolidColorBrush x:Key="AppWindowBackgroundBrush" Color="#1F2937" />
         <SolidColorBrush x:Key="AppPanelBackgroundBrush" Color="#2C3E50" />
         <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#1F2937" />
+        <SolidColorBrush x:Key="AppMenuBackgroundBrush" Color="#111827" />
+        <SolidColorBrush x:Key="AppMenuForegroundBrush" Color="#FFFFFF" />
         <SolidColorBrush x:Key="AppForegroundBrush" Color="#FFFFFF" />
         <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#9CA3AF" />
         <SolidColorBrush x:Key="AppBorderBrush" Color="#34495E" />
         <SolidColorBrush x:Key="AppAccentBrush" Color="#3498DB" />
+        <SolidColorBrush x:Key="AppButtonNormalBrush" Color="#2563EB" />
+        <SolidColorBrush x:Key="AppButtonCautionBrush" Color="#D97706" />
+        <SolidColorBrush x:Key="AppButtonDangerBrush" Color="#DC2626" />
+        <SolidColorBrush x:Key="AppButtonForegroundBrush" Color="#FFFFFF" />
         <SolidColorBrush x:Key="AppErrorBrush" Color="#FF6B6B" />
         <SolidColorBrush x:Key="AppWarningBrush" Color="#FFD700" />
     </Application.Resources>
@@ -24,5 +30,72 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml"/>
+        <Style Selector="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource AppPanelBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+        </Style>
+        <Style Selector="ComboBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
+        </Style>
+        <Style Selector="TabItem">
+            <Setter Property="Background" Value="{DynamicResource AppHeaderBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,6" />
+        </Style>
+        <Style Selector="TabItem:selected">
+            <Setter Property="Background" Value="{DynamicResource AppButtonNormalBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppButtonForegroundBrush}" />
+        </Style>
+        <Style Selector="TabItem:pointerover:not(:selected)">
+            <Setter Property="Background" Value="{DynamicResource AppButtonNormalBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppButtonForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppButtonForegroundBrush}" />
+        </Style>
+        <Style Selector="TabStripItem">
+            <Setter Property="Background" Value="{DynamicResource AppHeaderBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,6" />
+        </Style>
+        <Style Selector="TabStripItem:selected">
+            <Setter Property="Background" Value="{DynamicResource AppButtonNormalBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppButtonForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppButtonForegroundBrush}" />
+        </Style>
+        <Style Selector="TabStripItem:pointerover:not(:selected)">
+            <Setter Property="Background" Value="{DynamicResource AppButtonNormalBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppButtonForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppButtonForegroundBrush}" />
+        </Style>
+        <Style Selector="TabStripItem:pointerover:not(:selected) /template/ ContentPresenter">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource AppButtonForegroundBrush}" />
+        </Style>
+        <Style Selector="TabStripItem:selected /template/ ContentPresenter">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource AppButtonForegroundBrush}" />
+        </Style>
+        <Style Selector="TabItem:pointerover:not(:selected) /template/ ContentPresenter">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource AppButtonForegroundBrush}" />
+        </Style>
+        <Style Selector="TabItem:selected /template/ ContentPresenter">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource AppButtonForegroundBrush}" />
+        </Style>
+        <Style Selector="Button:pointerover">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="Foreground" Value="{DynamicResource AppButtonForegroundBrush}" />
+        </Style>
+        <Style Selector="Button:pressed">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="Foreground" Value="{DynamicResource AppButtonForegroundBrush}" />
+        </Style>
+        <Style Selector="Button:pointerover /template/ ContentPresenter">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource AppButtonForegroundBrush}" />
+        </Style>
+        <Style Selector="Button:pressed /template/ ContentPresenter">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource AppButtonForegroundBrush}" />
+        </Style>
     </Application.Styles>
 </Application>

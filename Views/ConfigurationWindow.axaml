@@ -34,7 +34,7 @@
                         <TextBox Text="{Binding NewProfileName}"
                                  Watermark="New name (blank = auto)"
                                  Width="280" />
-                        <Button Content="Clone Profile" Click="OnCloneProfileClicked" Padding="12,6" />
+                        <Button Content="Clone Profile" Click="OnCloneProfileClicked" Padding="12,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
                     </StackPanel>
                 </StackPanel>
             </TabItem>
@@ -45,7 +45,9 @@
                     <StackPanel Spacing="6">
                         <TextBlock Text="Background Color" FontWeight="SemiBold" />
                         <StackPanel Orientation="Horizontal" Spacing="12">
-                            <ColorPicker Name="BgColorPicker" />
+                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                <ColorPicker Name="BgColorPicker" />
+                            </Border>
                             <TextBlock Name="BgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
                         </StackPanel>
                     </StackPanel>
@@ -53,10 +55,106 @@
                     <StackPanel Spacing="6">
                         <TextBlock Text="Foreground Color" FontWeight="SemiBold" />
                         <StackPanel Orientation="Horizontal" Spacing="12">
-                            <ColorPicker Name="FgColorPicker" />
+                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                <ColorPicker Name="FgColorPicker" />
+                            </Border>
                             <TextBlock Name="FgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
                         </StackPanel>
                     </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Menu Background" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                <ColorPicker Name="MenuBgColorPicker" />
+                            </Border>
+                            <TextBlock Name="MenuBgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Menu Foreground" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                <ColorPicker Name="MenuFgColorPicker" />
+                            </Border>
+                            <TextBlock Name="MenuFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Button: Normal" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                <ColorPicker Name="BtnNormalColorPicker" />
+                            </Border>
+                            <TextBlock Name="BtnNormalColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Button: Caution" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                <ColorPicker Name="BtnCautionColorPicker" />
+                            </Border>
+                            <TextBlock Name="BtnCautionColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Button: Danger" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                <ColorPicker Name="BtnDangerColorPicker" />
+                            </Border>
+                            <TextBlock Name="BtnDangerColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Button Foreground" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                <ColorPicker Name="BtnFgColorPicker" />
+                            </Border>
+                            <TextBlock Name="BtnFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="10" Background="{DynamicResource AppPanelBackgroundBrush}" Margin="0,8,0,0">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="Live Preview" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource AppForegroundBrush}" />
+
+                            <Border Background="{DynamicResource AppMenuBackgroundBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="8">
+                                <TextBlock Text="Menu Preview" Foreground="{DynamicResource AppMenuForegroundBrush}" FontWeight="SemiBold" />
+                            </Border>
+                            <TextBlock Name="MenuContrastLabel" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Border Background="{DynamicResource AppButtonNormalBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10,5">
+                                    <TextBlock Text="Selected Tab" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                                </Border>
+                                <Border Background="{DynamicResource AppHeaderBackgroundBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10,5">
+                                    <TextBlock Text="Tab" Foreground="{DynamicResource AppForegroundBrush}" />
+                                </Border>
+                                <Border Background="{DynamicResource AppPanelBackgroundBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10,5">
+                                    <TextBlock Text="Hover Tab" Foreground="{DynamicResource AppForegroundBrush}" />
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Normal" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="12,6" />
+                                <Button Content="Caution" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="12,6" />
+                                <Button Content="Danger" Background="{DynamicResource AppButtonDangerBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="12,6" />
+                            </StackPanel>
+                            <StackPanel Spacing="2">
+                                <TextBlock Name="ButtonNormalContrastLabel" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                                <TextBlock Name="ButtonCautionContrastLabel" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                                <TextBlock Name="ButtonDangerContrastLabel" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </TabItem>
 
@@ -90,12 +188,12 @@
                                       SelectedItem="{Binding SelectedSerialPort}"
                                       Width="360"
                                       IsEditable="True" />
-                            <Button Content="Refresh" Click="OnRefreshSerialPortsClicked" Padding="10,6" />
+                            <Button Content="Refresh" Click="OnRefreshSerialPortsClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
                         </StackPanel>
                         <TextBlock Grid.Row="3" Grid.Column="0" Text="Rig List File" VerticalAlignment="Center" />
                         <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="6">
                             <TextBox Text="{Binding RiglistFilePath}" Watermark="Path to rigctld --list output file..." Width="360" />
-                            <Button Content="Browse..." Click="OnBrowseRiglistClicked" Padding="10,6" />
+                            <Button Content="Browse..." Click="OnBrowseRiglistClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
                         </StackPanel>
                     </Grid>
 
@@ -106,8 +204,8 @@
                         <TextBox Text="{Binding RigCatalog.FilePath}"
                                  Width="420"
                                  IsReadOnly="True" />
-                        <Button Content="Browse..." Click="OnCatalogBrowseClicked" Padding="10,6" />
-                        <Button Content="Reload" Click="OnCatalogReloadClicked" Padding="10,6" />
+                        <Button Content="Browse..." Click="OnCatalogBrowseClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                        <Button Content="Reload" Click="OnCatalogReloadClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
                     </StackPanel>
 
                     <StackPanel Grid.Row="5" Spacing="8">
@@ -121,7 +219,7 @@
                                       SelectedItem="{Binding RigCatalog.SelectedSerialPort}"
                                       Width="300"
                                       IsEditable="True" />
-                            <Button Content="Refresh Ports" Click="OnCatalogRefreshSerialPortsClicked" Padding="10,6" />
+                            <Button Content="Refresh Ports" Click="OnCatalogRefreshSerialPortsClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
                         </StackPanel>
 
                         <DataGrid ItemsSource="{Binding RigCatalog.FilteredEntries}"
@@ -148,7 +246,7 @@
                                  IsReadOnly="True"
                                  Margin="8,0,8,0"
                                  FontFamily="Monospace" />
-                        <Button Grid.Column="2" Content="Copy Command" Click="OnCatalogCopyCommandClicked" Padding="10,6" />
+                        <Button Grid.Column="2" Content="Copy Command" Click="OnCatalogCopyCommandClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
                     </Grid>
 
                     <TextBlock Grid.Row="7"
@@ -164,8 +262,8 @@
         <!-- ── Footer ───────────────────────────────────────────── -->
         <StackPanel Grid.Row="2" Spacing="6" Margin="0,8,0,4">
             <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Save" Click="OnSaveClicked" Padding="14,8" />
-                <Button Content="Close" Click="OnCloseClicked" Padding="14,8" />
+                <Button Content="Save" Click="OnSaveClicked" Padding="14,8" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                <Button Content="Close" Click="OnCloseClicked" Padding="14,8" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
             </StackPanel>
             <TextBlock Text="{Binding ConfigFilePath}" FontSize="11" Foreground="{DynamicResource AppMutedForegroundBrush}" />
             <TextBlock Text="{Binding StatusMessage}" FontStyle="Italic" Foreground="{DynamicResource AppAccentBrush}" />
