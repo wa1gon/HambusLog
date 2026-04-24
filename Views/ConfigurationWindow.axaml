@@ -1,0 +1,175 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="HamBusLog.Views.ConfigurationWindow"
+        Title="Configuration"
+        Width="1020"
+        Height="760"
+        MinWidth="760"
+        MinHeight="620"
+        WindowStartupLocation="CenterOwner">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+
+        <!-- ── Active Profile (always visible) ─────────────────── -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,10" Spacing="6">
+            <TextBlock Text="Configuration" FontSize="22" FontWeight="Bold" />
+            <Grid ColumnDefinitions="120,300,Auto" ColumnSpacing="8">
+                <TextBlock Grid.Column="0" Text="Active Profile" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1"
+                          ItemsSource="{Binding AvailableProfiles}"
+                          SelectedItem="{Binding SelectedProfile}"
+                          HorizontalAlignment="Stretch" />
+            </Grid>
+        </StackPanel>
+
+        <TabControl Grid.Row="1">
+
+            <!-- ── Config Tab ───────────────────────────────────── -->
+            <TabItem Header="Config">
+                <StackPanel Margin="12" Spacing="12">
+                    <TextBlock Text="Clone Profile" FontWeight="SemiBold" FontSize="14" />
+                    <TextBlock Text="Optionally enter a name below, then click Clone to duplicate the active profile." Foreground="#888" FontSize="12" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBox Text="{Binding NewProfileName}"
+                                 Watermark="New name (blank = auto)"
+                                 Width="280" />
+                        <Button Content="Clone Profile" Click="OnCloneProfileClicked" Padding="12,6" />
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+
+            <!-- ── Colors Tab ────────────────────────────────────── -->
+            <TabItem Header="Colors">
+                <StackPanel Margin="12" Spacing="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Background Color" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <ColorPicker Name="BgColorPicker" />
+                            <TextBlock Name="BgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Foreground Color" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <ColorPicker Name="FgColorPicker" />
+                            <TextBlock Name="FgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+
+            <!-- ── Database Tab ──────────────────────────────────── -->
+            <TabItem Header="Database">
+                <StackPanel Margin="12" Spacing="12">
+                    <TextBlock Text="Connection String" FontWeight="SemiBold" FontSize="14" />
+                    <TextBlock Text="SQLite example: Data Source=hambuslog.db" Foreground="#888" FontSize="12" />
+                    <TextBlock Text="PostgreSQL example: Host=localhost;Database=hamlog;Username=ham;Password=..." Foreground="#888" FontSize="12" />
+                    <TextBox Text="{Binding ConnectionString}"
+                             Watermark="Data Source=hambuslog.db"
+                             AcceptsReturn="False" />
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Rig Control">
+                <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto">
+                    <TextBlock Grid.Row="0" Text="rigctld Configuration" FontWeight="SemiBold" FontSize="14" />
+                    <TextBlock Grid.Row="1" Text="Configure daemon connection and generate commands from the rig catalog." Foreground="#888" FontSize="12" Margin="0,0,0,6" />
+                    <Grid Grid.Row="2" ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10" ColumnSpacing="8" Margin="0,0,0,12">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Host" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding RigctldHost}" Watermark="127.0.0.1" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Port" VerticalAlignment="Center" />
+                        <NumericUpDown Grid.Row="1" Grid.Column="1"
+                                       Minimum="1" Maximum="65535"
+                                       Value="{Binding RigctldPort}"
+                                       HorizontalAlignment="Left" Width="160" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Serial Port" VerticalAlignment="Center" />
+                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                            <ComboBox ItemsSource="{Binding AvailableSerialPorts}"
+                                      SelectedItem="{Binding SelectedSerialPort}"
+                                      Width="360"
+                                      IsEditable="True" />
+                            <Button Content="Refresh" Click="OnRefreshSerialPortsClicked" Padding="10,6" />
+                        </StackPanel>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Rig List File" VerticalAlignment="Center" />
+                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                            <TextBox Text="{Binding RiglistFilePath}" Watermark="Path to rigctld --list output file..." Width="360" />
+                            <Button Content="Browse..." Click="OnBrowseRiglistClicked" Padding="10,6" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Separator Grid.Row="3" Margin="0,0,0,10" />
+
+                    <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
+                        <TextBlock Text="Rig List File:" VerticalAlignment="Center" />
+                        <TextBox Text="{Binding RigCatalog.FilePath}"
+                                 Width="420"
+                                 IsReadOnly="True" />
+                        <Button Content="Browse..." Click="OnCatalogBrowseClicked" Padding="10,6" />
+                        <Button Content="Reload" Click="OnCatalogReloadClicked" Padding="10,6" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="5" Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
+                            <TextBlock Text="Search Model:" VerticalAlignment="Center" />
+                            <ComboBox ItemsSource="{Binding RigCatalog.AvailableModels}"
+                                      SelectedItem="{Binding RigCatalog.SelectedSearchModel}"
+                                      Width="280" />
+                            <TextBlock Text="Serial Port:" VerticalAlignment="Center" Margin="12,0,0,0" />
+                            <ComboBox ItemsSource="{Binding RigCatalog.AvailableSerialPorts}"
+                                      SelectedItem="{Binding RigCatalog.SelectedSerialPort}"
+                                      Width="300"
+                                      IsEditable="True" />
+                            <Button Content="Refresh Ports" Click="OnCatalogRefreshSerialPortsClicked" Padding="10,6" />
+                        </StackPanel>
+
+                        <DataGrid ItemsSource="{Binding RigCatalog.FilteredEntries}"
+                                  SelectedItem="{Binding RigCatalog.SelectedEntry, Mode=TwoWay}"
+                                  IsReadOnly="True"
+                                  AutoGenerateColumns="False"
+                                  CanUserSortColumns="True"
+                                  GridLinesVisibility="Horizontal">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Rig #" Binding="{Binding RigNum}" Width="70" />
+                                <DataGridTextColumn Header="Mfg" Binding="{Binding Mfg}" Width="120" />
+                                <DataGridTextColumn Header="Model" Binding="{Binding Model}" Width="180" />
+                                <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="100" />
+                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="90" />
+                                <DataGridTextColumn Header="Macro" Binding="{Binding Macro}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+
+                    <Grid Grid.Row="6" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
+                        <TextBlock Grid.Column="0" Text="rigctld Command:" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding RigCatalog.RigctldCommandLine}"
+                                 IsReadOnly="True"
+                                 Margin="8,0,8,0"
+                                 FontFamily="Monospace" />
+                        <Button Grid.Column="2" Content="Copy Command" Click="OnCatalogCopyCommandClicked" Padding="10,6" />
+                    </Grid>
+
+                    <TextBlock Grid.Row="7"
+                               Text="{Binding RigCatalog.StatusMessage}"
+                               FontStyle="Italic"
+                               Foreground="#3498DB"
+                               Margin="0,8,0,0" />
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+
+        <!-- ── Footer ───────────────────────────────────────────── -->
+        <StackPanel Grid.Row="2" Spacing="6" Margin="0,8,0,4">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Save" Click="OnSaveClicked" Padding="14,8" />
+                <Button Content="Close" Click="OnCloseClicked" Padding="14,8" />
+            </StackPanel>
+            <TextBlock Text="{Binding ConfigFilePath}" FontSize="11" Foreground="#888" />
+            <TextBlock Text="{Binding StatusMessage}" FontStyle="Italic" Foreground="#3498DB" />
+        </StackPanel>
+    </Grid>
+</Window>
+
+
+

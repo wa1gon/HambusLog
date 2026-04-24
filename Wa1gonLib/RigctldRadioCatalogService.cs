@@ -1,11 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using Wa1gonLib.Models;
-
 namespace Wa1gonLib;
 
 public sealed class RigctldRadioCatalogService
@@ -61,5 +53,52 @@ public sealed class RigctldRadioCatalogService
 
         return entries;
     }
-}
 
+    public static IReadOnlyList<RigCatalogEntry> FilterByModel(IEnumerable<RigCatalogEntry> entries, string? searchText)
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+            return entries.ToList();
+
+        var term = searchText.Trim();
+        return entries
+            .Where(entry => entry.Model.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    public static string CreateRigctldCommandLine(
+        RigCatalogEntry? entry,
+        string host = "127.0.0.1",
+        int port = 4532,
+        string? serialPortName = null)
+    {
+        if (entry is null)
+            return string.Empty;
+
+        var safeHost = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host.Trim();
+        var safePort = port <= 0 ? 4532 : port;
+        var command = $"rigctld -m {entry.RigNum} -T {safeHost} -t {safePort}";
+        if (!string.IsNullOrWhiteSpace(serialPortName))
+            command += $" -r {QuoteArgument(serialPortName.Trim())}";
+
+        return command;
+    }
+
+    private static string QuoteArgument(string value)
+    {
+        if (value.Length == 0)
+            return "\"\"";
+
+        var escaped = value.Replace("\"", "\\\"");
+        var needsQuotes = false;
+        foreach (var ch in escaped)
+        {
+            if (!char.IsWhiteSpace(ch))
+                continue;
+
+            needsQuotes = true;
+            break;
+        }
+
+        return needsQuotes ? $"\"{escaped}\"" : escaped;
+    }
+}

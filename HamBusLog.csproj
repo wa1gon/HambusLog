@@ -5,16 +5,10 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <CompileAvaloniaXaml>true</CompileAvaloniaXaml>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Wa1gonLib.Tests\UnitTest1.cs" />
-    <Compile Include="Wa1gonLib\Abstractions\ICommandRunner.cs" />
-    <Compile Include="Wa1gonLib\Class1.cs" />
-    <Compile Include="Wa1gonLib\Internal\ProcessCommandRunner.cs" />
-    <Compile Include="Wa1gonLib\Models\RigCatalogEntry.cs" />
-    <Compile Include="Wa1gonLib\RigctldRadioCatalogService.cs" />
-    <Folder Include="Models\" />
     <AvaloniaResource Include="Assets\**" />
     <Compile Remove="Wa1gonLib\**\*.cs" />
     <Compile Remove="Wa1gonLib.Tests\**\*.cs" />
@@ -22,6 +16,7 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.3.11" />
+    <PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.3.11" />
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.11" />
     <PackageReference Include="Avalonia.Desktop" Version="11.3.11" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.11" />
@@ -36,11 +31,16 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.7" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.0" />
     <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="Wa1gonLib.Tests\Wa1gonLib.Tests.csproj" />
     <Content Include="Wa1gonLib\Wa1gonLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Wa1gonLib\Wa1gonLib.csproj" />
   </ItemGroup>
 </Project>

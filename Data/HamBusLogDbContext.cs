@@ -1,6 +1,3 @@
-using HamBlocks.Library.Models;
-using Microsoft.EntityFrameworkCore;
-
 namespace HamBusLog.Data;
 
 /// <summary>

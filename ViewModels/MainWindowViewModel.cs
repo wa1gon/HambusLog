@@ -12,7 +12,7 @@ public partial class MainWindowViewModel : ViewModelBase
             new MenuNode("Remove Dups"),
             new MenuNode("Watch List")),
         new MenuNode("Edit"),
-        new MenuNode("Settings"),
+        new MenuNode("Configuration"),
         new MenuNode("Callbook"),
         new MenuNode("List"),
         new MenuNode("Search"),

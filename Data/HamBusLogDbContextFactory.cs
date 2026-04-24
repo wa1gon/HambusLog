@@ -1,6 +1,3 @@
-using System;
-using Microsoft.EntityFrameworkCore;
-
 namespace HamBusLog.Data;
 
 /// <summary>
@@ -55,5 +52,3 @@ public static class HamBusLogDbContextFactory
         return builder.Options;
     }
 }
-
-
