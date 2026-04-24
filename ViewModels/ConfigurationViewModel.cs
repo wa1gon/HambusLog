@@ -7,6 +7,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _selectedProfile = "default";
     private Color _backgroundColor = Color.Parse("#1F2937");
     private Color _foregroundColor = Color.Parse("#FFFFFF");
+    private Color _menuBackgroundColor = Color.Parse("#111827");
+    private Color _menuForegroundColor = Color.Parse("#FFFFFF");
+    private Color _buttonNormalColor = Color.Parse("#2563EB");
+    private Color _buttonCautionColor = Color.Parse("#D97706");
+    private Color _buttonDangerColor = Color.Parse("#DC2626");
+    private Color _buttonForegroundColor = Color.Parse("#FFFFFF");
     private string _connectionString = "Data Source=hambuslog.db";
     private string _rigctldHost = "127.0.0.1";
     private int _rigctldPort = 4532;
@@ -52,6 +58,42 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     {
         get => _foregroundColor;
         set => SetProperty(ref _foregroundColor, value);
+    }
+
+    public Color MenuBackgroundColor
+    {
+        get => _menuBackgroundColor;
+        set => SetProperty(ref _menuBackgroundColor, value);
+    }
+
+    public Color MenuForegroundColor
+    {
+        get => _menuForegroundColor;
+        set => SetProperty(ref _menuForegroundColor, value);
+    }
+
+    public Color ButtonNormalColor
+    {
+        get => _buttonNormalColor;
+        set => SetProperty(ref _buttonNormalColor, value);
+    }
+
+    public Color ButtonCautionColor
+    {
+        get => _buttonCautionColor;
+        set => SetProperty(ref _buttonCautionColor, value);
+    }
+
+    public Color ButtonDangerColor
+    {
+        get => _buttonDangerColor;
+        set => SetProperty(ref _buttonDangerColor, value);
+    }
+
+    public Color ButtonForegroundColor
+    {
+        get => _buttonForegroundColor;
+        set => SetProperty(ref _buttonForegroundColor, value);
     }
 
     public string ConnectionString
@@ -113,6 +155,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 Name = _selectedProfile,
                 BackgroundColor = ToHexRgb(BackgroundColor),
                 ForegroundColor = ToHexRgb(ForegroundColor),
+                MenuBackgroundColor = ToHexRgb(MenuBackgroundColor),
+                MenuForegroundColor = ToHexRgb(MenuForegroundColor),
+                ButtonNormalColor = ToHexRgb(ButtonNormalColor),
+                ButtonCautionColor = ToHexRgb(ButtonCautionColor),
+                ButtonDangerColor = ToHexRgb(ButtonDangerColor),
+                ButtonForegroundColor = ToHexRgb(ButtonForegroundColor),
                 ConnectionString = string.IsNullOrWhiteSpace(ConnectionString) ? "Data Source=hambuslog.db" : ConnectionString.Trim(),
                 Rigctld = new RigctldConfiguration
                 {
@@ -126,6 +174,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             _appConfig.Profiles[_selectedProfile] = profile;
             _appConfig.ActiveProfile = _selectedProfile;
             AppConfigurationStore.Save(_appConfig);
+            App.ApplyThemeFromProfile(profile);
             StatusMessage = $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss}";
         }
         catch (Exception ex)
@@ -154,6 +203,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             Name = cloneName,
             BackgroundColor = ToHexRgb(BackgroundColor),
             ForegroundColor = ToHexRgb(ForegroundColor),
+            MenuBackgroundColor = ToHexRgb(MenuBackgroundColor),
+            MenuForegroundColor = ToHexRgb(MenuForegroundColor),
+            ButtonNormalColor = ToHexRgb(ButtonNormalColor),
+            ButtonCautionColor = ToHexRgb(ButtonCautionColor),
+            ButtonDangerColor = ToHexRgb(ButtonDangerColor),
+            ButtonForegroundColor = ToHexRgb(ButtonForegroundColor),
             ConnectionString = src.ConnectionString,
             Rigctld = new RigctldConfiguration
             {
@@ -181,12 +236,31 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         try { ForegroundColor = Color.Parse(profile.ForegroundColor); }
         catch { ForegroundColor = Color.Parse("#FFFFFF"); }
 
+        try { MenuBackgroundColor = Color.Parse(profile.MenuBackgroundColor); }
+        catch { MenuBackgroundColor = Color.Parse("#111827"); }
+
+        try { MenuForegroundColor = Color.Parse(profile.MenuForegroundColor); }
+        catch { MenuForegroundColor = Color.Parse("#FFFFFF"); }
+
+        try { ButtonNormalColor = Color.Parse(profile.ButtonNormalColor); }
+        catch { ButtonNormalColor = Color.Parse("#2563EB"); }
+
+        try { ButtonCautionColor = Color.Parse(profile.ButtonCautionColor); }
+        catch { ButtonCautionColor = Color.Parse("#D97706"); }
+
+        try { ButtonDangerColor = Color.Parse(profile.ButtonDangerColor); }
+        catch { ButtonDangerColor = Color.Parse("#DC2626"); }
+
+        try { ButtonForegroundColor = Color.Parse(profile.ButtonForegroundColor); }
+        catch { ButtonForegroundColor = Color.Parse("#FFFFFF"); }
+
         ConnectionString = profile.ConnectionString;
         RigctldHost = profile.Rigctld.Host;
         RigctldPort = profile.Rigctld.Port;
         SelectedSerialPort = profile.Rigctld.SerialPortName;
         RiglistFilePath = profile.Rigctld.RiglistFilePath;
         RefreshSerialPorts();
+        App.ApplyThemeFromProfile(profile);
     }
 
     public void RefreshSerialPorts()

@@ -9,10 +9,13 @@ public enum ContestType
 public class GridViewModel
 {
     public ObservableCollection<Qso> LogEntries { get; }
+    private readonly ObservableCollection<Qso> _filteredEntries = [];
+    public ObservableCollection<Qso> FilteredEntries { get; }
     public List<ContestType> ContestTypes { get; } = new() { ContestType.Normal, ContestType.ArrlFieldDay };
     
     private ContestType _selectedContestType = ContestType.Normal;
-    
+    private string _searchCall = string.Empty;
+
     public event PropertyChangedEventHandler? PropertyChanged;
     
     public ContestType SelectedContestType
@@ -25,6 +28,19 @@ public class GridViewModel
                 _selectedContestType = value;
                 OnPropertyChanged(nameof(SelectedContestType));
             }
+        }
+    }
+
+    public string SearchCall
+    {
+        get => _searchCall;
+        set
+        {
+            if (_searchCall == value)
+                return;
+            _searchCall = value;
+            OnPropertyChanged(nameof(SearchCall));
+            RefreshFilter();
         }
     }
     
@@ -106,6 +122,9 @@ public class GridViewModel
             new Qso { Call = "VE2XYZ", QsoDate = Convert.ToDateTime("2026-04-21 16:30"), Freq = 21.350m, Mode = "CW", RstRcvd = "569" },
             new Qso { Call = "W7ABC", QsoDate = Convert.ToDateTime("2026-04-21 16:45"), Freq = 10.120m, Mode = "CW", RstRcvd = "579" }
         };
+        FilteredEntries = _filteredEntries;
+        LogEntries.CollectionChanged += (_, _) => RefreshFilter();
+        RefreshFilter();
     }
     
     public void AddNewEntry()
@@ -187,6 +206,7 @@ public class GridViewModel
         }
         
         LogEntries.Add(newEntry);
+        RefreshFilter();
         ClearInputs();
     }
 
@@ -260,6 +280,18 @@ public class GridViewModel
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    private void RefreshFilter()
+    {
+        var term = _searchCall.Trim();
+        _filteredEntries.Clear();
+        foreach (var q in LogEntries)
+        {
+            if (string.IsNullOrWhiteSpace(term) ||
+                q.Call.Contains(term, StringComparison.OrdinalIgnoreCase))
+                _filteredEntries.Add(q);
+        }
     }
 }
 

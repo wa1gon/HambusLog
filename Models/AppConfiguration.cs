@@ -14,6 +14,12 @@ public sealed class ConfigProfile
     public string Name { get; set; } = "default";
     public string BackgroundColor { get; set; } = "#1F2937";
     public string ForegroundColor { get; set; } = "#FFFFFF";
+    public string MenuBackgroundColor { get; set; } = "#111827";
+    public string MenuForegroundColor { get; set; } = "#FFFFFF";
+    public string ButtonNormalColor { get; set; } = "#2563EB";
+    public string ButtonCautionColor { get; set; } = "#D97706";
+    public string ButtonDangerColor { get; set; } = "#DC2626";
+    public string ButtonForegroundColor { get; set; } = "#FFFFFF";
     public string ConnectionString { get; set; } = "Data Source=hambuslog.db";
     public RigctldConfiguration Rigctld { get; set; } = new();
 }
