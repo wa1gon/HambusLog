@@ -5,6 +5,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public MenuNode[] MenuItems { get; } =
     [
         new MenuNode("Grid"),
+        new MenuNode("Add New Contact"),
         new MenuNode("File", true,
             new MenuNode("Open/Reopen Grid"),
             new MenuNode("Import ADIF"),

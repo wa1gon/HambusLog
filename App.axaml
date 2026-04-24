@@ -8,6 +8,18 @@
     <Application.DataTemplates>
         <local:ViewLocator/>
     </Application.DataTemplates>
+
+    <Application.Resources>
+        <SolidColorBrush x:Key="AppWindowBackgroundBrush" Color="#1F2937" />
+        <SolidColorBrush x:Key="AppPanelBackgroundBrush" Color="#2C3E50" />
+        <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#1F2937" />
+        <SolidColorBrush x:Key="AppForegroundBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#9CA3AF" />
+        <SolidColorBrush x:Key="AppBorderBrush" Color="#34495E" />
+        <SolidColorBrush x:Key="AppAccentBrush" Color="#3498DB" />
+        <SolidColorBrush x:Key="AppErrorBrush" Color="#FF6B6B" />
+        <SolidColorBrush x:Key="AppWarningBrush" Color="#FFD700" />
+    </Application.Resources>
   
     <Application.Styles>
         <FluentTheme />

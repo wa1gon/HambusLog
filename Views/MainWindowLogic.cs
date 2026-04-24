@@ -19,6 +19,11 @@ public partial class MainWindow
                 ToggleGridWindow();
                 ResetTreeSelection(sender);
             }
+            else if (node.Title == "Add New Contact")
+            {
+                OpenNewContactWindow();
+                ResetTreeSelection(sender);
+            }
             else if (node.Title == "Configuration")
             {
                 OpenConfigurationWindow();
@@ -52,6 +57,24 @@ public partial class MainWindow
     {
         var configurationWindow = new ConfigurationWindow();
         configurationWindow.Show();
+    }
+
+    private void OpenNewContactWindow()
+    {
+        EnsureGridWindowVisible();
+        _gridWindow?.OpenLogInputWindow();
+    }
+
+    private void EnsureGridWindowVisible()
+    {
+        if (_gridWindow is null)
+        {
+            _gridWindow = new GridWindow();
+            _gridWindow.Closed += (_, _) => _gridWindow = null;
+        }
+
+        if (!_gridWindow.IsVisible)
+            _gridWindow.Show();
     }
 
     private void ResetTreeSelection(object? sender)

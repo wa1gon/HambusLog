@@ -126,6 +126,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             _appConfig.Profiles[_selectedProfile] = profile;
             _appConfig.ActiveProfile = _selectedProfile;
             AppConfigurationStore.Save(_appConfig);
+            App.ApplyThemeFromProfile(profile);
             StatusMessage = $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss}";
         }
         catch (Exception ex)
@@ -187,6 +188,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         SelectedSerialPort = profile.Rigctld.SerialPortName;
         RiglistFilePath = profile.Rigctld.RiglistFilePath;
         RefreshSerialPorts();
+        App.ApplyThemeFromProfile(profile);
     }
 
     public void RefreshSerialPorts()

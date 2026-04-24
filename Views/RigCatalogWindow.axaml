@@ -6,7 +6,9 @@
         Height="560"
         MinWidth="640"
         MinHeight="400"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppWindowBackgroundBrush}"
+        Foreground="{DynamicResource AppForegroundBrush}">
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto" Margin="14">
 
         <!-- File picker bar -->
@@ -68,7 +70,7 @@
         <TextBlock Grid.Row="5"
                    Text="{Binding StatusMessage}"
                    FontStyle="Italic"
-                   Foreground="#3498DB"
+                   Foreground="{DynamicResource AppAccentBrush}"
                    Margin="0,8,0,0" />
     </Grid>
 </Window>
