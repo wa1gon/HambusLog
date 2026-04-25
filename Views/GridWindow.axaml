@@ -30,7 +30,7 @@
             <ListBox Grid.Row="1" ItemsSource="{Binding FilteredEntries}" Background="{DynamicResource AppPanelBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource AppForegroundBrush}" IsVisible="{Binding !IsLoading}">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Border Padding="3" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1">
+                        <Border Padding="3" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" PointerPressed="OnGridRowPointerPressed">
                             <Grid ColumnDefinitions="120,220,140,120,100" ColumnSpacing="8">
                                 <TextBlock Grid.Column="0" Text="{Binding Call}" FontSize="12" Foreground="{DynamicResource AppForegroundBrush}" />
                                 <TextBlock Grid.Column="1" Text="{Binding QsoDate, StringFormat={}{0:yyyy-MM-dd HH:mm}}" FontSize="12" Foreground="{DynamicResource AppForegroundBrush}" />

@@ -14,6 +14,17 @@ public sealed class InMemoryQsoRepository : IQsoRepository, IUnitOfWork
         return Task.CompletedTask;
     }
 
+    public Task<Qso?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => Task.FromResult(_items.FirstOrDefault(x => x.Id == id));
+
+    public Task UpdateAsync(Qso qso, CancellationToken cancellationToken = default)
+    {
+        var existing = _items.FindIndex(x => x.Id == qso.Id);
+        if (existing >= 0)
+            _items[existing] = qso;
+        return Task.CompletedTask;
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         => Task.CompletedTask;
 }
