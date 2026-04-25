@@ -159,24 +159,25 @@ public readonly record struct AdifImportProgress(
     string FilePath,
     string StatusText,
     int RecordsRead = 0,
+    int? TotalRecords = null,
     int SavedChanges = 0,
     bool IsIndeterminate = true,
     double ProgressFraction = 0d)
 {
     public static AdifImportProgress Starting(string filePath) =>
-        new(AdifImportStage.Starting, filePath, $"Opening {Path.GetFileName(filePath)}...", 0, 0, true, 0d);
+        new(AdifImportStage.Starting, filePath, $"Opening {Path.GetFileName(filePath)}...", 0, null, 0, true, 0d);
 
     public static AdifImportProgress Scanning(string filePath, int recordsRead, double progressFraction) =>
-        new(AdifImportStage.Scanning, filePath, $"Scanning ADIF records in {Path.GetFileName(filePath)}...", recordsRead, 0, false, progressFraction);
+        new(AdifImportStage.Scanning, filePath, $"Scanning ADIF records in {Path.GetFileName(filePath)}...", recordsRead, null, 0, false, progressFraction);
 
     public static AdifImportProgress Parsing(string filePath, int recordsRead) =>
-        new(AdifImportStage.Parsing, filePath, $"Parsing {recordsRead:N0} record(s)...", recordsRead, 0, true, 0d);
+        new(AdifImportStage.Parsing, filePath, $"Parsing {recordsRead:N0} record(s)...", recordsRead, recordsRead, 0, true, 0d);
 
     public static AdifImportProgress Saving(string filePath, int recordsRead) =>
-        new(AdifImportStage.Saving, filePath, $"Saving {recordsRead:N0} record(s) to the database...", recordsRead, 0, true, 0d);
+        new(AdifImportStage.Saving, filePath, $"Saving {recordsRead:N0} record(s) to the database...", recordsRead, recordsRead, 0, true, 0d);
 
     public static AdifImportProgress Completed(string filePath, int recordsRead, int savedChanges) =>
-        new(AdifImportStage.Completed, filePath, $"Imported {recordsRead:N0} record(s) from {Path.GetFileName(filePath)}.", recordsRead, savedChanges, false, 1d);
+        new(AdifImportStage.Completed, filePath, $"Imported {recordsRead:N0} record(s) from {Path.GetFileName(filePath)}.", recordsRead, recordsRead, savedChanges, false, 1d);
 }
 
 

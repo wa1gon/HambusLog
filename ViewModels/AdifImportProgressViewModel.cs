@@ -7,6 +7,7 @@ public sealed class AdifImportProgressViewModel : ViewModelBase
     private string _fileName = string.Empty;
     private AdifImportStage _stage;
     private int _recordsRead;
+    private int? _totalRecords;
     private int _savedChanges;
     private bool _isIndeterminate = true;
     private double _progressPercent;
@@ -39,6 +40,19 @@ public sealed class AdifImportProgressViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(RecordsText));
                 OnPropertyChanged(nameof(RecordCounterValueText));
+            }
+        }
+    }
+
+    public int? TotalRecords
+    {
+        get => _totalRecords;
+        set
+        {
+            if (SetProperty(ref _totalRecords, value))
+            {
+                OnPropertyChanged(nameof(RecordCounterValueText));
+                OnPropertyChanged(nameof(RecordsText));
             }
         }
     }
@@ -93,8 +107,12 @@ public sealed class AdifImportProgressViewModel : ViewModelBase
         _ => "Records read"
     };
 
-    public string RecordCounterValueText => $"{RecordsRead:N0}";
-    public string RecordsText => $"{RecordCounterLabel}: {RecordsRead:N0}";
+    public string RecordCounterValueText => TotalRecords is > 0
+        ? $"{RecordsRead:N0} / {TotalRecords.Value:N0}"
+        : $"{RecordsRead:N0}";
+    public string RecordsText => TotalRecords is > 0
+        ? $"{RecordCounterLabel}: {RecordsRead:N0} / {TotalRecords.Value:N0}"
+        : $"{RecordCounterLabel}: {RecordsRead:N0}";
     public string SavedChangesText => SavedChanges > 0 ? $"Database changes: {SavedChanges:N0}" : string.Empty;
 
     public void Update(AdifImportProgress progress)
@@ -103,11 +121,13 @@ public sealed class AdifImportProgressViewModel : ViewModelBase
         FileName = Path.GetFileName(progress.FilePath);
         StatusText = progress.StatusText;
         RecordsRead = progress.RecordsRead;
+        TotalRecords = progress.TotalRecords;
         SavedChanges = progress.SavedChanges;
         IsIndeterminate = progress.IsIndeterminate;
         ProgressPercent = Math.Clamp(progress.ProgressFraction * 100d, 0d, 100d);
         IsCompleted = progress.Stage == AdifImportStage.Completed;
     }
 }
+
 
 
