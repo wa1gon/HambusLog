@@ -190,6 +190,9 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     {
         try
         {
+            var currentProfile = _appConfig.Profiles.TryGetValue(_selectedProfile, out var existingProfile)
+                ? existingProfile
+                : null;
             var normalizedDatabaseFolderPath = NormalizeDatabaseFolderPath(DatabaseFolderPath);
             var normalizedDatabaseFileName = NormalizeDatabaseFileName(DatabaseFileName);
             var normalizedDatabaseFilePath = BuildDatabasePath(normalizedDatabaseFolderPath, normalizedDatabaseFileName);
@@ -216,7 +219,8 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                     Host = string.IsNullOrWhiteSpace(RigctldHost) ? "127.0.0.1" : RigctldHost.Trim(),
                     Port = RigctldPort <= 0 ? 4532 : RigctldPort,
                     SerialPortName = SelectedSerialPort.Trim(),
-                    RiglistFilePath = RiglistFilePath.Trim()
+                    RiglistFilePath = RiglistFilePath.Trim(),
+                    ActiveRigNum = currentProfile?.Rigctld.ActiveRigNum
                 }
             };
 
@@ -271,7 +275,8 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 Host = src.Rigctld.Host,
                 Port = src.Rigctld.Port,
                 SerialPortName = src.Rigctld.SerialPortName,
-                RiglistFilePath = src.Rigctld.RiglistFilePath
+                RiglistFilePath = src.Rigctld.RiglistFilePath,
+                ActiveRigNum = src.Rigctld.ActiveRigNum
             }
         };
 
@@ -353,10 +358,24 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private void Load()
     {
         _appConfig = AppConfigurationStore.Load();
+
+        if (string.IsNullOrWhiteSpace(_appConfig.ActiveProfile))
+            _appConfig.ActiveProfile = "default";
+
+        if (_appConfig.Profiles.Count == 0)
+            _appConfig.Profiles["default"] = new ConfigProfile { Name = "default" };
+
+        if (!_appConfig.Profiles.ContainsKey(_appConfig.ActiveProfile))
+            _appConfig.Profiles[_appConfig.ActiveProfile] = new ConfigProfile { Name = _appConfig.ActiveProfile };
+
         AvailableProfiles.Clear();
         foreach (var key in _appConfig.Profiles.Keys)
             AvailableProfiles.Add(key);
+
         _selectedProfile = _appConfig.ActiveProfile;
+        if (!AvailableProfiles.Contains(_selectedProfile))
+            AvailableProfiles.Add(_selectedProfile);
+
         OnPropertyChanged(nameof(SelectedProfile));
         LoadProfile(_selectedProfile);
         ConfigFilePath = AppConfigurationStore.GetConfigFilePath();

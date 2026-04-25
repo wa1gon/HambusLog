@@ -10,37 +10,22 @@ public sealed class SqliteQsoRepository : IQsoRepository, IUnitOfWork
     public SqliteQsoRepository(HamBusLogDbContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        System.Diagnostics.Debug.WriteLine("SqliteQsoRepository created with DbContext");
     }
 
     public async Task<IReadOnlyList<Qso>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            System.Diagnostics.Debug.WriteLine("SqliteQsoRepository.GetAllAsync() called");
-            
             // Test connection
-            var canConnect = await _context.Database.CanConnectAsync(cancellationToken);
-            System.Diagnostics.Debug.WriteLine($"Database connection successful: {canConnect}");
-            
-            // First, try without includes to see if basic query works
+            _ = await _context.Database.CanConnectAsync(cancellationToken);
+
             var qsos = await _context.Qsos
                 .ToListAsync(cancellationToken);
-            
-            System.Diagnostics.Debug.WriteLine($"SqliteQsoRepository: Retrieved {qsos.Count} QSOs from database");
-            
-            // Log details of each QSO
-            foreach (var qso in qsos)
-            {
-                System.Diagnostics.Debug.WriteLine($"  QSO: Call={qso.Call}, Date={qso.QsoDate}, Freq={qso.Freq}, Mode={qso.Mode}");
-            }
-            
+
             return qsos;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Error in GetAllAsync: {ex.Message}");
-            System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
             throw;
         }
     }

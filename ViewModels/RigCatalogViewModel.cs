@@ -38,7 +38,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         RefreshSerialPorts();
         RefreshAvailableModels();
         RefreshFilteredEntries();
-        if (_store.Entries.Count > 0)
+        if (SelectedEntry is null && _store.Entries.Count > 0)
             SelectedEntry = _store.Entries[0];
     }
 
@@ -86,7 +86,10 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         set
         {
             if (SetProperty(ref _selectedEntry, value))
+            {
+                _store.SetActiveRig(value?.RigNum);
                 UpdateCommandLine();
+            }
         }
     }
 
@@ -142,6 +145,18 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
             RefreshFilteredEntries();
         }
 
+        if (e.PropertyName is nameof(RigCatalogStore.ActiveRigNum))
+        {
+            var active = _store.ActiveRigNum;
+            if (active is int rigNum)
+            {
+                var match = FilteredEntries.FirstOrDefault(x => x.RigNum == rigNum)
+                            ?? _store.Entries.FirstOrDefault(x => x.RigNum == rigNum);
+                if (match is not null && !ReferenceEquals(SelectedEntry, match))
+                    SelectedEntry = match;
+            }
+        }
+
         if (e.PropertyName is nameof(RigCatalogStore.FilePath))
             OnPropertyChanged(nameof(FilePath));
 
@@ -154,6 +169,16 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         var searchModel = SelectedSearchModel == AllModelsOption ? null : SelectedSearchModel;
         var filtered = RigctldRadioCatalogService.FilterByModel(_store.Entries, searchModel);
         FilteredEntries = new ObservableCollection<RigCatalogEntry>(filtered);
+
+        if (_store.ActiveRigNum is int activeRigNum)
+        {
+            var active = FilteredEntries.FirstOrDefault(x => x.RigNum == activeRigNum);
+            if (active is not null)
+            {
+                SelectedEntry = active;
+                return;
+            }
+        }
 
         if (SelectedEntry is not null && FilteredEntries.Any(x => x.RigNum == SelectedEntry.RigNum))
         {

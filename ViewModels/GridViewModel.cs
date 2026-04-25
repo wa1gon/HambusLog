@@ -158,14 +158,10 @@ public class GridViewModel
     {
         try
         {
-            System.Diagnostics.Debug.WriteLine("Starting to load QSOs from database (synchronous)...");
-            
             // Load data synchronously
             var task = _repository.GetAllAsync();
             task.Wait();
             var qsos = task.Result;
-            
-            System.Diagnostics.Debug.WriteLine($"Database returned {qsos.Count} QSOs");
             
             BatchUpdateLogEntries(() =>
             {
@@ -176,20 +172,16 @@ public class GridViewModel
             if (LogEntries.Count == 0)
             {
                 LoadingMessage = "No QSO records found. Add your first entry!";
-                System.Diagnostics.Debug.WriteLine("No QSOs found in database");
             }
             else
             {
                 LoadingMessage = $"Loaded {LogEntries.Count} QSO record(s)";
-                System.Diagnostics.Debug.WriteLine($"Successfully loaded {LogEntries.Count} QSOs");
             }
             IsLoading = false;
         }
         catch (Exception ex)
         {
             LoadingMessage = $"Error loading QSOs: {ex.Message}";
-            System.Diagnostics.Debug.WriteLine($"Error loading QSOs: {ex.Message}");
-            System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
             IsLoading = false;
         }
     }
@@ -200,10 +192,8 @@ public class GridViewModel
         {
             IsLoading = true;
             LoadingMessage = "Loading QSO records...";
-            System.Diagnostics.Debug.WriteLine("Starting to load QSOs from database...");
             
             var qsos = await _repository.GetAllAsync();
-            System.Diagnostics.Debug.WriteLine($"Database returned {qsos.Count} QSOs");
             
             BatchUpdateLogEntries(() =>
             {
@@ -214,19 +204,15 @@ public class GridViewModel
             if (LogEntries.Count == 0)
             {
                 LoadingMessage = "No QSO records found. Add your first entry!";
-                System.Diagnostics.Debug.WriteLine("No QSOs found in database");
             }
             else
             {
                 LoadingMessage = $"Loaded {LogEntries.Count} QSO record(s)";
-                System.Diagnostics.Debug.WriteLine($"Successfully loaded {LogEntries.Count} QSOs");
             }
         }
         catch (Exception ex)
         {
             LoadingMessage = $"Error loading QSOs: {ex.Message}";
-            System.Diagnostics.Debug.WriteLine($"Error loading QSOs: {ex.Message}");
-            System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
         }
         finally
         {
