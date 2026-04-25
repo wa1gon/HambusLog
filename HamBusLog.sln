@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wa1gonLib", "Wa1gonLib\Wa1g
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wa1gonLib.Tests", "Wa1gonLib.Tests\Wa1gonLib.Tests.csproj", "{D889A8E9-94BE-42A3-9B66-8D10DD5670CD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HamBusLog.Tests", "HamBusLog.Tests\HamBusLog.Tests.csproj", "{A7B52C2D-6E4A-4A59-903C-3CA2A8A15F52}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{D889A8E9-94BE-42A3-9B66-8D10DD5670CD}.Release|x64.Build.0 = Release|Any CPU
 		{D889A8E9-94BE-42A3-9B66-8D10DD5670CD}.Release|x86.ActiveCfg = Release|Any CPU
 		{D889A8E9-94BE-42A3-9B66-8D10DD5670CD}.Release|x86.Build.0 = Release|Any CPU
+		{A7B52C2D-6E4A-4A59-903C-3CA2A8A15F52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7B52C2D-6E4A-4A59-903C-3CA2A8A15F52}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7B52C2D-6E4A-4A59-903C-3CA2A8A15F52}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A7B52C2D-6E4A-4A59-903C-3CA2A8A15F52}.Debug|x64.Build.0 = Debug|Any CPU
+		{A7B52C2D-6E4A-4A59-903C-3CA2A8A15F52}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A7B52C2D-6E4A-4A59-903C-3CA2A8A15F52}.Debug|x86.Build.0 = Debug|Any CPU
+		{A7B52C2D-6E4A-4A59-903C-3CA2A8A15F52}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7B52C2D-6E4A-4A59-903C-3CA2A8A15F52}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7B52C2D-6E4A-4A59-903C-3CA2A8A15F52}.Release|x64.ActiveCfg = Release|Any CPU
+		{A7B52C2D-6E4A-4A59-903C-3CA2A8A15F52}.Release|x64.Build.0 = Release|Any CPU
+		{A7B52C2D-6E4A-4A59-903C-3CA2A8A15F52}.Release|x86.ActiveCfg = Release|Any CPU
+		{A7B52C2D-6E4A-4A59-903C-3CA2A8A15F52}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

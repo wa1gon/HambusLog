@@ -320,6 +320,35 @@ public partial class ConfigurationWindow
         }
     }
 
+    public async void OnBrowseAdifDirectoryClicked(object? sender, RoutedEventArgs e)
+    {
+        if (!StorageProvider.CanPickFolder)
+            return;
+
+        var suggestedStartLocation = await TryGetFolderFromPathAsync(_viewModel.AdifDirectory);
+        var folders = await StorageProvider.OpenFolderPickerAsync(new Avalonia.Platform.Storage.FolderPickerOpenOptions
+        {
+            Title = "Select ADIF import directory",
+            AllowMultiple = false,
+            SuggestedStartLocation = suggestedStartLocation
+        });
+
+        if (folders.Count > 0)
+            _viewModel.AdifDirectory = folders[0].Path.LocalPath;
+    }
+
+    private async Task<Avalonia.Platform.Storage.IStorageFolder?> TryGetFolderFromPathAsync(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !Path.Exists(path))
+            return null;
+
+        var fullPath = Path.GetFullPath(path);
+        if (!Path.EndsInDirectorySeparator(fullPath))
+            fullPath += Path.DirectorySeparatorChar;
+
+        return await StorageProvider.TryGetFolderFromPathAsync(new Uri(fullPath));
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _viewModel.Dispose();

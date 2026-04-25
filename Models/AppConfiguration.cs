@@ -12,6 +12,7 @@ public sealed class AppConfiguration
 public sealed class ConfigProfile
 {
     public string Name { get; set; } = "default";
+    public string AdifDirectory { get; set; } = string.Empty;
     public string BackgroundColor { get; set; } = "#1F2937";
     public string ForegroundColor { get; set; } = "#FFFFFF";
     public string MenuBackgroundColor { get; set; } = "#111827";
