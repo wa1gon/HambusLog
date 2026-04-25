@@ -13,6 +13,11 @@ sealed class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .With(new X11PlatformOptions
+            {
+                // Avoid noisy non-fatal IBus Destroy DBus errors on some Linux setups.
+                EnableIme = false
+            })
             .WithInterFont()
             .LogToTrace();
 }

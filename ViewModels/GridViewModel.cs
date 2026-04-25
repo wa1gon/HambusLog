@@ -15,8 +15,39 @@ public class GridViewModel
     
     private ContestType _selectedContestType = ContestType.Normal;
     private string _searchCall = string.Empty;
+    private readonly IQsoRepository _repository;
+    private bool _isLoading = true;
+    private string _loadingMessage = "Loading QSO records...";
 
+    private bool _isBatchUpdating;
+    
     public event PropertyChangedEventHandler? PropertyChanged;
+    
+    public bool IsLoading
+    {
+        get => _isLoading;
+        private set
+        {
+            if (_isLoading != value)
+            {
+                _isLoading = value;
+                OnPropertyChanged(nameof(IsLoading));
+            }
+        }
+    }
+    
+    public string LoadingMessage
+    {
+        get => _loadingMessage;
+        private set
+        {
+            if (_loadingMessage != value)
+            {
+                _loadingMessage = value;
+                OnPropertyChanged(nameof(LoadingMessage));
+            }
+        }
+    }
     
     public ContestType SelectedContestType
     {
@@ -107,25 +138,102 @@ public class GridViewModel
     public bool HasSectionError => !string.IsNullOrWhiteSpace(SectionError);
     public bool HasClassError => !string.IsNullOrWhiteSpace(ClassError);
     
-    public GridViewModel()
+    public GridViewModel(IQsoRepository repository)
     {
-        LogEntries = new ObservableCollection<Qso>
-        {
-            new Qso { Call = "W5XYZ", QsoDate = Convert.ToDateTime("2026-04-21 14:30"), Freq = 7.250m, Mode = "SSB", RstRcvd = "59" },
-            new Qso { Call = "K0ABC", QsoDate = Convert.ToDateTime("2026-04-21 14:45"), Freq = 14.250m, Mode = "CW", RstRcvd = "579" },
-            new Qso { Call = "N1XYZ", QsoDate = Convert.ToDateTime("2026-04-21 15:00"), Freq = 21.250m, Mode = "SSB", RstRcvd = "57" },
-            new Qso { Call = "VE3XYZ", QsoDate = Convert.ToDateTime("2026-04-21 15:15"), Freq = 3.650m, Mode = "LSB", RstRcvd = "549" },
-            new Qso { Call = "W4ABC", QsoDate = Convert.ToDateTime("2026-04-21 15:30"), Freq = 28.400m, Mode = "FM", RstRcvd = "59+" },
-            new Qso { Call = "K5XYZ", QsoDate = Convert.ToDateTime("2026-04-21 15:45"), Freq = 7.180m, Mode = "CW", RstRcvd = "589" },
-            new Qso { Call = "W6ZZZ", QsoDate = Convert.ToDateTime("2026-04-21 16:00"), Freq = 14.200m, Mode = "SSB", RstRcvd = "55" },
-            new Qso { Call = "N2ABC", QsoDate = Convert.ToDateTime("2026-04-21 16:15"), Freq = 3.750m, Mode = "USB", RstRcvd = "559" },
-            new Qso { Call = "VE2XYZ", QsoDate = Convert.ToDateTime("2026-04-21 16:30"), Freq = 21.350m, Mode = "CW", RstRcvd = "569" },
-            new Qso { Call = "W7ABC", QsoDate = Convert.ToDateTime("2026-04-21 16:45"), Freq = 10.120m, Mode = "CW", RstRcvd = "579" }
-        };
+        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        LogEntries = new ObservableCollection<Qso>();
         FilteredEntries = _filteredEntries;
-        LogEntries.CollectionChanged += (_, _) => RefreshFilter();
-        RefreshFilter();
+        LogEntries.CollectionChanged += (_, _) =>
+        {
+            if (_isBatchUpdating)
+                return;
+            RefreshFilter();
+        };
+        
+        // Load data synchronously to ensure it's available when the ViewModel is constructed
+        LoadDataSync();
     }
+
+    private void LoadDataSync()
+    {
+        try
+        {
+            System.Diagnostics.Debug.WriteLine("Starting to load QSOs from database (synchronous)...");
+            
+            // Load data synchronously
+            var task = _repository.GetAllAsync();
+            task.Wait();
+            var qsos = task.Result;
+            
+            System.Diagnostics.Debug.WriteLine($"Database returned {qsos.Count} QSOs");
+            
+            BatchUpdateLogEntries(() =>
+            {
+                foreach (var qso in qsos)
+                    LogEntries.Add(qso);
+            });
+            
+            if (LogEntries.Count == 0)
+            {
+                LoadingMessage = "No QSO records found. Add your first entry!";
+                System.Diagnostics.Debug.WriteLine("No QSOs found in database");
+            }
+            else
+            {
+                LoadingMessage = $"Loaded {LogEntries.Count} QSO record(s)";
+                System.Diagnostics.Debug.WriteLine($"Successfully loaded {LogEntries.Count} QSOs");
+            }
+            IsLoading = false;
+        }
+        catch (Exception ex)
+        {
+            LoadingMessage = $"Error loading QSOs: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"Error loading QSOs: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+            IsLoading = false;
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            IsLoading = true;
+            LoadingMessage = "Loading QSO records...";
+            System.Diagnostics.Debug.WriteLine("Starting to load QSOs from database...");
+            
+            var qsos = await _repository.GetAllAsync();
+            System.Diagnostics.Debug.WriteLine($"Database returned {qsos.Count} QSOs");
+            
+            BatchUpdateLogEntries(() =>
+            {
+                foreach (var qso in qsos)
+                    LogEntries.Add(qso);
+            });
+            
+            if (LogEntries.Count == 0)
+            {
+                LoadingMessage = "No QSO records found. Add your first entry!";
+                System.Diagnostics.Debug.WriteLine("No QSOs found in database");
+            }
+            else
+            {
+                LoadingMessage = $"Loaded {LogEntries.Count} QSO record(s)";
+                System.Diagnostics.Debug.WriteLine($"Successfully loaded {LogEntries.Count} QSOs");
+            }
+        }
+        catch (Exception ex)
+        {
+            LoadingMessage = $"Error loading QSOs: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"Error loading QSOs: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+    
     
     public void AddNewEntry()
     {
@@ -206,8 +314,24 @@ public class GridViewModel
         }
         
         LogEntries.Add(newEntry);
-        RefreshFilter();
+        SaveEntryAsync(newEntry);
         ClearInputs();
+    }
+
+    private async void SaveEntryAsync(Qso qso)
+    {
+        try
+        {
+            await _repository.AddAsync(qso);
+            if (_repository is IUnitOfWork unitOfWork)
+            {
+                await unitOfWork.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error saving QSO: {ex.Message}");
+        }
     }
 
     public void SortBy(string column)
@@ -239,11 +363,29 @@ public class GridViewModel
         };
 
         var snapshot = sorted.ToList();
-        LogEntries.Clear();
-        foreach (var item in snapshot)
-            LogEntries.Add(item);
+        BatchUpdateLogEntries(() =>
+        {
+            LogEntries.Clear();
+            foreach (var item in snapshot)
+                LogEntries.Add(item);
+        });
     }
-    
+
+    private void BatchUpdateLogEntries(Action action)
+    {
+        _isBatchUpdating = true;
+        try
+        {
+            action();
+        }
+        finally
+        {
+            _isBatchUpdating = false;
+        }
+
+        RefreshFilter();
+    }
+
     private void ClearInputs()
     {
         InputCall = string.Empty;
@@ -284,6 +426,9 @@ public class GridViewModel
 
     private void RefreshFilter()
     {
+        if (_isBatchUpdating)
+            return;
+
         var term = _searchCall.Trim();
         _filteredEntries.Clear();
         foreach (var q in LogEntries)

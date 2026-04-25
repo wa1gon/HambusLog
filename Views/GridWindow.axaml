@@ -18,7 +18,7 @@
             </Grid>
         </Border>
         <Grid Grid.Row="1" RowDefinitions="Auto,*" ColumnDefinitions="*" Background="{DynamicResource AppPanelBackgroundBrush}">
-            <Border Grid.Row="0" Background="{DynamicResource AppHeaderBackgroundBrush}" Padding="4" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1">
+            <Border Grid.Row="0" Background="{DynamicResource AppHeaderBackgroundBrush}" Padding="4" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" IsVisible="{Binding !IsLoading}">
                 <Grid ColumnDefinitions="120,220,140,120,100" ColumnSpacing="8">
                     <Button Grid.Column="0" Content="Call"      Tag="Call"    Click="OnSortHeaderClick" Background="{DynamicResource AppHeaderBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" BorderBrush="{DynamicResource AppBorderBrush}" />
                     <Button Grid.Column="1" Content="Date/Time" Tag="QsoDate" Click="OnSortHeaderClick" Background="{DynamicResource AppHeaderBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" BorderBrush="{DynamicResource AppBorderBrush}" />
@@ -27,7 +27,7 @@
                     <Button Grid.Column="4" Content="RST"       Tag="RstRcvd" Click="OnSortHeaderClick" Background="{DynamicResource AppHeaderBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" BorderBrush="{DynamicResource AppBorderBrush}" />
                 </Grid>
             </Border>
-            <ListBox Grid.Row="1" ItemsSource="{Binding FilteredEntries}" Background="{DynamicResource AppPanelBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource AppForegroundBrush}">
+            <ListBox Grid.Row="1" ItemsSource="{Binding FilteredEntries}" Background="{DynamicResource AppPanelBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource AppForegroundBrush}" IsVisible="{Binding !IsLoading}">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <Border Padding="3" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1">
@@ -42,6 +42,10 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
+            <!-- Show message when no data (after loading completes) -->
+            <TextBlock Grid.Row="1" Text="{Binding LoadingMessage}" IsVisible="{Binding FilteredEntries.Count, Converter={x:Static ObjectConverters.IsNull}}" 
+                       FontSize="14" Foreground="{DynamicResource AppMutedForegroundBrush}" 
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Grid>
         <Border Grid.Row="2" Background="{DynamicResource AppHeaderBackgroundBrush}" Padding="8,4" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
             <TextBlock Text="{Binding FilteredEntries.Count, StringFormat={}{0} QSO(s)}" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
