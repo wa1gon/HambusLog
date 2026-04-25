@@ -36,6 +36,17 @@
                                  Width="280" />
                         <Button Content="Clone Profile" Click="OnCloneProfileClicked" Padding="12,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
                     </StackPanel>
+
+                    <Separator Margin="0,6,0,0" />
+
+                    <TextBlock Text="ADIF Import Directory" FontWeight="SemiBold" FontSize="14" />
+                    <TextBlock Text="Used as the default starting folder when selecting ADIF files to import." Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBox Text="{Binding AdifDirectory}"
+                                 Watermark="/home/you/logs/adif"
+                                 Width="420" />
+                        <Button Content="Browse..." Click="OnBrowseAdifDirectoryClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                    </StackPanel>
                 </StackPanel>
             </TabItem>
 

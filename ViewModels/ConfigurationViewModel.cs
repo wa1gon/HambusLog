@@ -13,6 +13,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private Color _buttonCautionColor = Color.Parse("#D97706");
     private Color _buttonDangerColor = Color.Parse("#DC2626");
     private Color _buttonForegroundColor = Color.Parse("#FFFFFF");
+    private string _adifDirectory = string.Empty;
     private string _connectionString = "Data Source=hambuslog.db";
     private string _rigctldHost = "127.0.0.1";
     private int _rigctldPort = 4532;
@@ -102,6 +103,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _connectionString, value);
     }
 
+    public string AdifDirectory
+    {
+        get => _adifDirectory;
+        set => SetProperty(ref _adifDirectory, value ?? string.Empty);
+    }
+
     public string RigctldHost
     {
         get => _rigctldHost;
@@ -155,6 +162,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 Name = _selectedProfile,
                 BackgroundColor = ToHexRgb(BackgroundColor),
                 ForegroundColor = ToHexRgb(ForegroundColor),
+                AdifDirectory = AdifDirectory.Trim(),
                 MenuBackgroundColor = ToHexRgb(MenuBackgroundColor),
                 MenuForegroundColor = ToHexRgb(MenuForegroundColor),
                 ButtonNormalColor = ToHexRgb(ButtonNormalColor),
@@ -203,6 +211,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             Name = cloneName,
             BackgroundColor = ToHexRgb(BackgroundColor),
             ForegroundColor = ToHexRgb(ForegroundColor),
+            AdifDirectory = src.AdifDirectory,
             MenuBackgroundColor = ToHexRgb(MenuBackgroundColor),
             MenuForegroundColor = ToHexRgb(MenuForegroundColor),
             ButtonNormalColor = ToHexRgb(ButtonNormalColor),
@@ -255,6 +264,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         catch { ButtonForegroundColor = Color.Parse("#FFFFFF"); }
 
         ConnectionString = profile.ConnectionString;
+        AdifDirectory = profile.AdifDirectory;
         RigctldHost = profile.Rigctld.Host;
         RigctldPort = profile.Rigctld.Port;
         SelectedSerialPort = profile.Rigctld.SerialPortName;

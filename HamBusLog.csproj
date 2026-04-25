@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <Compile Remove="HamBusLog.Tests\**\*.cs" />
     <Compile Remove="Wa1gonLib\**\*.cs" />
     <Compile Remove="Wa1gonLib.Tests\**\*.cs" />
   </ItemGroup>
@@ -36,6 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="HamBusLog.Tests\HamBusLog.Tests.csproj" />
     <Content Include="Wa1gonLib.Tests\Wa1gonLib.Tests.csproj" />
     <Content Include="Wa1gonLib\Wa1gonLib.csproj" />
   </ItemGroup>
