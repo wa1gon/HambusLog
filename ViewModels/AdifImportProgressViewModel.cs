@@ -5,6 +5,7 @@ public sealed class AdifImportProgressViewModel : ViewModelBase
     private string _windowTitle = "Importing ADIF";
     private string _statusText = "Preparing import...";
     private string _fileName = string.Empty;
+    private AdifImportStage _stage;
     private int _recordsRead;
     private int _savedChanges;
     private bool _isIndeterminate = true;
@@ -35,7 +36,23 @@ public sealed class AdifImportProgressViewModel : ViewModelBase
         set
         {
             if (SetProperty(ref _recordsRead, value))
+            {
                 OnPropertyChanged(nameof(RecordsText));
+                OnPropertyChanged(nameof(RecordCounterValueText));
+            }
+        }
+    }
+
+    public AdifImportStage Stage
+    {
+        get => _stage;
+        set
+        {
+            if (SetProperty(ref _stage, value))
+            {
+                OnPropertyChanged(nameof(RecordCounterLabel));
+                OnPropertyChanged(nameof(RecordsText));
+            }
         }
     }
 
@@ -67,11 +84,22 @@ public sealed class AdifImportProgressViewModel : ViewModelBase
         set => SetProperty(ref _isCompleted, value);
     }
 
-    public string RecordsText => $"Records read: {RecordsRead:N0}";
+    public string RecordCounterLabel => Stage switch
+    {
+        AdifImportStage.Scanning => "Records found so far",
+        AdifImportStage.Parsing => "Records parsed",
+        AdifImportStage.Saving => "Records to import",
+        AdifImportStage.Completed => "Records imported",
+        _ => "Records read"
+    };
+
+    public string RecordCounterValueText => $"{RecordsRead:N0}";
+    public string RecordsText => $"{RecordCounterLabel}: {RecordsRead:N0}";
     public string SavedChangesText => SavedChanges > 0 ? $"Database changes: {SavedChanges:N0}" : string.Empty;
 
     public void Update(AdifImportProgress progress)
     {
+        Stage = progress.Stage;
         FileName = Path.GetFileName(progress.FilePath);
         StatusText = progress.StatusText;
         RecordsRead = progress.RecordsRead;
@@ -81,4 +109,5 @@ public sealed class AdifImportProgressViewModel : ViewModelBase
         IsCompleted = progress.Stage == AdifImportStage.Completed;
     }
 }
+
 
