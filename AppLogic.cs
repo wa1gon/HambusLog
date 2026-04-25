@@ -3,7 +3,59 @@ namespace HamBusLog;
 public partial class App
 {
     public static RigCatalogStore RigCatalogStore { get; } = new();
+    
+    private static HamBusLogDbContext? _dbContext;
+    public static HamBusLogDbContext DbContext
+    {
+        get
+        {
+            if (_dbContext == null)
+            {
+                var connectionString = ResolveAppConnectionString();
+                var dbPath = ExtractDataSourcePath(connectionString);
 
+                if (!string.IsNullOrWhiteSpace(dbPath))
+                {
+                    var directory = Path.GetDirectoryName(dbPath);
+                    if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+                        Directory.CreateDirectory(directory);
+                }
+
+                var options = HamBusLogDbContextFactory.BuildOptions(DatabaseProvider.Sqlite, connectionString);
+                _dbContext = new HamBusLogDbContext(options);
+                _dbContext.Database.EnsureCreated();
+                System.Diagnostics.Debug.WriteLine($"Database context created: {connectionString}");
+            }
+            return _dbContext;
+        }
+    }
+
+    private static string ResolveAppConnectionString()
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+
+        if (!string.IsNullOrWhiteSpace(profile.ConnectionString))
+            return profile.ConnectionString.Trim();
+
+        // Default for both Windows and Linux: user home under HamBusLog.
+        var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var defaultDbPath = Path.Combine(homeDir, "HamBusLog", "hambuslog.db");
+        return $"Data Source={defaultDbPath}";
+    }
+
+    private static string ExtractDataSourcePath(string connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            return string.Empty;
+
+        var match = Regex.Match(connectionString, @"(?:^|;)\s*Data\s+Source\s*=\s*([^;]+)", RegexOptions.IgnoreCase);
+        if (!match.Success)
+            return string.Empty;
+
+        return match.Groups[1].Value.Trim().Trim('\'', '"');
+    }
+    
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -110,8 +162,3 @@ public partial class App
         }
     }
 }
-
-
-
-
-

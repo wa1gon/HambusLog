@@ -6,6 +6,7 @@ global using System.Diagnostics.CodeAnalysis;
 global using System.IO;
 global using System.Linq;
 global using System.Runtime.CompilerServices;
+global using System.Runtime.InteropServices;
 global using System.Text.Json;
 global using System.Text.RegularExpressions;
 global using System.Threading;
@@ -29,6 +30,7 @@ global using HamBusLog.ViewModels;
 global using HamBusLog.Views;
 global using Microsoft.EntityFrameworkCore;
 global using HamBusLog.Data.Repositories.Abstractions;
+global using HamBusLog.Data.Repositories.Sqlite;
 global using Wa1gonLib;
 global using Wa1gonLib.Models;
 
