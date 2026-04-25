@@ -337,12 +337,40 @@ public partial class ConfigurationWindow
             _viewModel.AdifDirectory = folders[0].Path.LocalPath;
     }
 
+    public async void OnBrowseDatabaseDirectoryClicked(object? sender, RoutedEventArgs e)
+    {
+        if (!StorageProvider.CanPickFolder)
+            return;
+
+        var suggestedStartLocation = await TryGetFolderFromPathAsync(_viewModel.DatabaseFolderPath);
+        var folders = await StorageProvider.OpenFolderPickerAsync(new Avalonia.Platform.Storage.FolderPickerOpenOptions
+        {
+            Title = "Select SQLite database folder",
+            AllowMultiple = false,
+            SuggestedStartLocation = suggestedStartLocation
+        });
+
+        if (folders.Count > 0)
+            _viewModel.DatabaseFolderPath = folders[0].Path.LocalPath;
+    }
+
     private async Task<Avalonia.Platform.Storage.IStorageFolder?> TryGetFolderFromPathAsync(string? path)
     {
-        if (string.IsNullOrWhiteSpace(path) || !Path.Exists(path))
+        if (string.IsNullOrWhiteSpace(path))
             return null;
 
-        var fullPath = Path.GetFullPath(path);
+        var candidate = path;
+        if (File.Exists(candidate))
+        {
+            candidate = Path.GetDirectoryName(candidate);
+            if (string.IsNullOrWhiteSpace(candidate))
+                return null;
+        }
+
+        if (!Directory.Exists(candidate))
+            return null;
+
+        var fullPath = Path.GetFullPath(candidate);
         if (!Path.EndsInDirectorySeparator(fullPath))
             fullPath += Path.DirectorySeparatorChar;
 

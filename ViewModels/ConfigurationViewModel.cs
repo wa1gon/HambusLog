@@ -14,6 +14,8 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private Color _buttonDangerColor = Color.Parse("#DC2626");
     private Color _buttonForegroundColor = Color.Parse("#FFFFFF");
     private string _adifDirectory = string.Empty;
+    private string _databaseFolderPath = string.Empty;
+    private string _databaseFileName = "hambuslog.db";
     private string _connectionString = "Data Source=hambuslog.db";
     private string _rigctldHost = "127.0.0.1";
     private int _rigctldPort = 4532;
@@ -103,6 +105,37 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _connectionString, value);
     }
 
+    public string DatabaseFolderPath
+    {
+        get => _databaseFolderPath;
+        set
+        {
+            if (SetProperty(ref _databaseFolderPath, value ?? string.Empty))
+                OnPropertyChanged(nameof(DatabaseFilePath));
+        }
+    }
+
+    public string DatabaseFileName
+    {
+        get => _databaseFileName;
+        set
+        {
+            if (SetProperty(ref _databaseFileName, value ?? string.Empty))
+                OnPropertyChanged(nameof(DatabaseFilePath));
+        }
+    }
+
+    public string DatabaseFilePath
+    {
+        get => BuildDatabasePath(DatabaseFolderPath, DatabaseFileName);
+        set
+        {
+            var (folderPath, fileName) = SplitDatabasePath(value);
+            DatabaseFolderPath = folderPath;
+            DatabaseFileName = fileName;
+        }
+    }
+
     public string AdifDirectory
     {
         get => _adifDirectory;
@@ -157,19 +190,27 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     {
         try
         {
+            var normalizedDatabaseFolderPath = NormalizeDatabaseFolderPath(DatabaseFolderPath);
+            var normalizedDatabaseFileName = NormalizeDatabaseFileName(DatabaseFileName);
+            var normalizedDatabaseFilePath = BuildDatabasePath(normalizedDatabaseFolderPath, normalizedDatabaseFileName);
+            var resolvedConnectionString = BuildConnectionString(ConnectionString, normalizedDatabaseFilePath);
+
             var profile = new ConfigProfile
             {
                 Name = _selectedProfile,
                 BackgroundColor = ToHexRgb(BackgroundColor),
                 ForegroundColor = ToHexRgb(ForegroundColor),
                 AdifDirectory = AdifDirectory.Trim(),
+                DatabaseFolderPath = normalizedDatabaseFolderPath,
+                DatabaseFileName = normalizedDatabaseFileName,
+                DatabaseFilePath = normalizedDatabaseFilePath,
                 MenuBackgroundColor = ToHexRgb(MenuBackgroundColor),
                 MenuForegroundColor = ToHexRgb(MenuForegroundColor),
                 ButtonNormalColor = ToHexRgb(ButtonNormalColor),
                 ButtonCautionColor = ToHexRgb(ButtonCautionColor),
                 ButtonDangerColor = ToHexRgb(ButtonDangerColor),
                 ButtonForegroundColor = ToHexRgb(ButtonForegroundColor),
-                ConnectionString = string.IsNullOrWhiteSpace(ConnectionString) ? "Data Source=hambuslog.db" : ConnectionString.Trim(),
+                ConnectionString = resolvedConnectionString,
                 Rigctld = new RigctldConfiguration
                 {
                     Host = string.IsNullOrWhiteSpace(RigctldHost) ? "127.0.0.1" : RigctldHost.Trim(),
@@ -181,6 +222,9 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
             _appConfig.Profiles[_selectedProfile] = profile;
             _appConfig.ActiveProfile = _selectedProfile;
+            DatabaseFolderPath = normalizedDatabaseFolderPath;
+            DatabaseFileName = normalizedDatabaseFileName;
+            ConnectionString = resolvedConnectionString;
             AppConfigurationStore.Save(_appConfig);
             App.ApplyThemeFromProfile(profile);
             StatusMessage = $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss}";
@@ -212,6 +256,9 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             BackgroundColor = ToHexRgb(BackgroundColor),
             ForegroundColor = ToHexRgb(ForegroundColor),
             AdifDirectory = src.AdifDirectory,
+            DatabaseFolderPath = src.DatabaseFolderPath,
+            DatabaseFileName = src.DatabaseFileName,
+            DatabaseFilePath = src.DatabaseFilePath,
             MenuBackgroundColor = ToHexRgb(MenuBackgroundColor),
             MenuForegroundColor = ToHexRgb(MenuForegroundColor),
             ButtonNormalColor = ToHexRgb(ButtonNormalColor),
@@ -264,6 +311,21 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         catch { ButtonForegroundColor = Color.Parse("#FFFFFF"); }
 
         ConnectionString = profile.ConnectionString;
+        var configuredDatabasePath = !string.IsNullOrWhiteSpace(profile.DatabaseFilePath)
+            ? profile.DatabaseFilePath
+            : ExtractDatabaseFilePathFromConnectionString(profile.ConnectionString);
+
+        DatabaseFolderPath = !string.IsNullOrWhiteSpace(profile.DatabaseFolderPath)
+            ? profile.DatabaseFolderPath
+            : ExtractDatabaseFolderFromPath(configuredDatabasePath);
+
+        DatabaseFileName = !string.IsNullOrWhiteSpace(profile.DatabaseFileName)
+            ? profile.DatabaseFileName
+            : ExtractDatabaseFileNameFromPath(configuredDatabasePath);
+
+        if (string.IsNullOrWhiteSpace(DatabaseFileName))
+            DatabaseFileName = "hambuslog.db";
+
         AdifDirectory = profile.AdifDirectory;
         RigctldHost = profile.Rigctld.Host;
         RigctldPort = profile.Rigctld.Port;
@@ -301,6 +363,87 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     }
 
     private static string ToHexRgb(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+
+    private static string NormalizeDatabaseFolderPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return string.Empty;
+
+        return Path.GetFullPath(path.Trim());
+    }
+
+    private static string NormalizeDatabaseFileName(string? fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return "hambuslog.db";
+
+        var trimmed = fileName.Trim();
+        var normalized = Path.GetFileName(trimmed);
+        return string.IsNullOrWhiteSpace(normalized) ? "hambuslog.db" : normalized;
+    }
+
+    private static string BuildDatabasePath(string? folderPath, string? fileName)
+    {
+        var normalizedFileName = NormalizeDatabaseFileName(fileName);
+        if (string.IsNullOrWhiteSpace(folderPath))
+            return normalizedFileName;
+
+        return Path.Combine(folderPath.Trim(), normalizedFileName);
+    }
+
+    private static (string FolderPath, string FileName) SplitDatabasePath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return (string.Empty, "hambuslog.db");
+
+        var trimmed = path.Trim();
+        var fileName = Path.GetFileName(trimmed);
+        var directory = Path.GetDirectoryName(trimmed) ?? string.Empty;
+
+        return (directory, string.IsNullOrWhiteSpace(fileName) ? "hambuslog.db" : fileName);
+    }
+
+    private static string BuildConnectionString(string? currentConnectionString, string normalizedDatabaseFilePath)
+    {
+        if (!string.IsNullOrWhiteSpace(normalizedDatabaseFilePath))
+            return $"Data Source={normalizedDatabaseFilePath}";
+
+        return string.IsNullOrWhiteSpace(currentConnectionString)
+            ? "Data Source=hambuslog.db"
+            : currentConnectionString.Trim();
+    }
+
+    private static string ExtractDatabaseFilePathFromConnectionString(string? connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            return string.Empty;
+
+        var match = Regex.Match(connectionString, @"(?:^|;)\s*Data\s+Source\s*=\s*([^;]+)", RegexOptions.IgnoreCase);
+        if (!match.Success)
+            return string.Empty;
+
+        var rawPath = match.Groups[1].Value.Trim().Trim('\'', '"');
+        if (string.IsNullOrWhiteSpace(rawPath))
+            return string.Empty;
+
+        return rawPath;
+    }
+
+    private static string ExtractDatabaseFolderFromPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return string.Empty;
+
+        return Path.GetDirectoryName(path) ?? string.Empty;
+    }
+
+    private static string ExtractDatabaseFileNameFromPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return string.Empty;
+
+        return Path.GetFileName(path);
+    }
 
     public void Dispose()
     {
