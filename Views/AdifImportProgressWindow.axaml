@@ -1,0 +1,36 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="HamBusLog.Views.AdifImportProgressWindow"
+        Width="460"
+        Height="210"
+        MinWidth="420"
+        MinHeight="190"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Title="Importing ADIF"
+        Background="{DynamicResource AppWindowBackgroundBrush}"
+        Foreground="{DynamicResource AppForegroundBrush}">
+    <Border Padding="18" Background="{DynamicResource AppWindowBackgroundBrush}">
+        <StackPanel Spacing="12">
+            <TextBlock Text="ADIF Import" FontSize="20" FontWeight="Bold" />
+            <TextBlock Text="{Binding FileName, StringFormat=File: {0}}"
+                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                       TextWrapping="Wrap" />
+            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
+            <ProgressBar Minimum="0"
+                         Maximum="100"
+                         Value="{Binding ProgressPercent}"
+                         IsIndeterminate="{Binding IsIndeterminate}"
+                         Height="18" />
+            <TextBlock Text="{Binding RecordsText}" />
+            <TextBlock Text="{Binding SavedChangesText}"
+                       Foreground="{DynamicResource AppMutedForegroundBrush}" />
+            <TextBlock Text="This window will close automatically when the import finishes."
+                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                       FontSize="12"
+                       TextWrapping="Wrap" />
+        </StackPanel>
+    </Border>
+</Window>
+

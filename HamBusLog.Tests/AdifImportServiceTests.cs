@@ -45,13 +45,18 @@ public sealed class AdifImportServiceTests : IDisposable
         var adifPath = Path.Combine(_tempDirectory, "sample.adi");
         var dbPath = Path.Combine(_tempDirectory, "sample.sqlite");
         await File.WriteAllTextAsync(adifPath, CreateSampleAdif());
+        var progressUpdates = new List<AdifImportProgress>();
+        var progress = new Progress<AdifImportProgress>(update => progressUpdates.Add(update));
 
         var result = await AdifImportService.ImportFromFileAsync(
             adifPath,
-            new AdifImportOptions(ConnectionString: $"Data Source={dbPath}"));
+            new AdifImportOptions(ConnectionString: $"Data Source={dbPath}"),
+            progress);
 
         Assert.Equal(1, result.ParsedCount);
         Assert.True(result.SavedChanges >= 1);
+        Assert.Contains(progressUpdates, x => x.Stage == AdifImportStage.Scanning && x.RecordsRead >= 1);
+        Assert.Contains(progressUpdates, x => x.Stage == AdifImportStage.Completed && x.RecordsRead == 1);
 
         await using var db = HamBusLogDbContextFactory.Create(DatabaseProvider.Sqlite, $"Data Source={dbPath}");
         var storedQso = await db.Qsos
