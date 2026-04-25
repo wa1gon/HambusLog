@@ -124,26 +124,50 @@ public partial class MainWindow
             return;
 
         var path = files[0].Path.LocalPath;
+        var progressWindow = new AdifImportProgressWindow();
+        var owner = GetPreferredDialogOwner();
+        var progress = new Progress<AdifImportProgress>(update => progressWindow.UpdateProgress(update));
+        AdifImportResult? result = null;
+        Exception? importException = null;
+
         try
         {
             _isImportingAdif = true;
-            var result = await Task.Run(() => AdifImportService.ImportFromFileAsync(path));
-            RememberAdifDirectory(config, path);
-            var message = result.ParsedCount == 0
-                ? $"No QSO records were found in:\n{result.FilePath}"
-                : $"Imported {result.ParsedCount} QSO record(s) from:\n{result.FilePath}\n\nDatabase change count: {result.SavedChanges}";
+            progressWindow.UpdateProgress(AdifImportProgress.Starting(path));
+            if (owner is not null)
+                progressWindow.Show(owner);
+            else
+                progressWindow.Show();
 
-            await ShowMessageAsync(
-                "ADIF Import Complete",
-                message);
+            result = await Task.Run(() => AdifImportService.ImportFromFileAsync(path, progress: progress));
+            RememberAdifDirectory(config, path);
         }
         catch (Exception ex)
         {
-            await ShowMessageAsync("ADIF Import Failed", ex.Message);
+            importException = ex;
         }
         finally
         {
+            if (result is null)
+                progressWindow.UpdateProgress(AdifImportProgress.Completed(path, 0, 0));
+
+            progressWindow.Close();
             _isImportingAdif = false;
+        }
+
+        if (importException is not null)
+        {
+            await ShowMessageAsync("ADIF Import Failed", importException.Message);
+            return;
+        }
+
+        if (result is not null)
+        {
+            var message = result.Value.ParsedCount == 0
+                ? $"No QSO records were found in:\n{result.Value.FilePath}"
+                : $"Imported {result.Value.ParsedCount} QSO record(s) from:\n{result.Value.FilePath}\n\nDatabase change count: {result.Value.SavedChanges}";
+
+            await ShowMessageAsync("ADIF Import Complete", message);
         }
     }
 

@@ -1,0 +1,133 @@
+namespace HamBusLog.ViewModels;
+
+public sealed class AdifImportProgressViewModel : ViewModelBase
+{
+    private string _windowTitle = "Importing ADIF";
+    private string _statusText = "Preparing import...";
+    private string _fileName = string.Empty;
+    private AdifImportStage _stage;
+    private int _recordsRead;
+    private int? _totalRecords;
+    private int _savedChanges;
+    private bool _isIndeterminate = true;
+    private double _progressPercent;
+    private bool _isCompleted;
+
+    public string WindowTitle
+    {
+        get => _windowTitle;
+        set => SetProperty(ref _windowTitle, value);
+    }
+
+    public string StatusText
+    {
+        get => _statusText;
+        set => SetProperty(ref _statusText, value);
+    }
+
+    public string FileName
+    {
+        get => _fileName;
+        set => SetProperty(ref _fileName, value);
+    }
+
+    public int RecordsRead
+    {
+        get => _recordsRead;
+        set
+        {
+            if (SetProperty(ref _recordsRead, value))
+            {
+                OnPropertyChanged(nameof(RecordsText));
+                OnPropertyChanged(nameof(RecordCounterValueText));
+            }
+        }
+    }
+
+    public int? TotalRecords
+    {
+        get => _totalRecords;
+        set
+        {
+            if (SetProperty(ref _totalRecords, value))
+            {
+                OnPropertyChanged(nameof(RecordCounterValueText));
+                OnPropertyChanged(nameof(RecordsText));
+            }
+        }
+    }
+
+    public AdifImportStage Stage
+    {
+        get => _stage;
+        set
+        {
+            if (SetProperty(ref _stage, value))
+            {
+                OnPropertyChanged(nameof(RecordCounterLabel));
+                OnPropertyChanged(nameof(RecordsText));
+            }
+        }
+    }
+
+    public int SavedChanges
+    {
+        get => _savedChanges;
+        set
+        {
+            if (SetProperty(ref _savedChanges, value))
+                OnPropertyChanged(nameof(SavedChangesText));
+        }
+    }
+
+    public bool IsIndeterminate
+    {
+        get => _isIndeterminate;
+        set => SetProperty(ref _isIndeterminate, value);
+    }
+
+    public double ProgressPercent
+    {
+        get => _progressPercent;
+        set => SetProperty(ref _progressPercent, value);
+    }
+
+    public bool IsCompleted
+    {
+        get => _isCompleted;
+        set => SetProperty(ref _isCompleted, value);
+    }
+
+    public string RecordCounterLabel => Stage switch
+    {
+        AdifImportStage.Scanning => "Records found so far",
+        AdifImportStage.Parsing => "Records parsed",
+        AdifImportStage.Saving => "Records to import",
+        AdifImportStage.Completed => "Records imported",
+        _ => "Records read"
+    };
+
+    public string RecordCounterValueText => TotalRecords is > 0
+        ? $"{RecordsRead:N0} / {TotalRecords.Value:N0}"
+        : $"{RecordsRead:N0}";
+    public string RecordsText => TotalRecords is > 0
+        ? $"{RecordCounterLabel}: {RecordsRead:N0} / {TotalRecords.Value:N0}"
+        : $"{RecordCounterLabel}: {RecordsRead:N0}";
+    public string SavedChangesText => SavedChanges > 0 ? $"Database changes: {SavedChanges:N0}" : string.Empty;
+
+    public void Update(AdifImportProgress progress)
+    {
+        Stage = progress.Stage;
+        FileName = Path.GetFileName(progress.FilePath);
+        StatusText = progress.StatusText;
+        RecordsRead = progress.RecordsRead;
+        TotalRecords = progress.TotalRecords;
+        SavedChanges = progress.SavedChanges;
+        IsIndeterminate = progress.IsIndeterminate;
+        ProgressPercent = Math.Clamp(progress.ProgressFraction * 100d, 0d, 100d);
+        IsCompleted = progress.Stage == AdifImportStage.Completed;
+    }
+}
+
+
+
