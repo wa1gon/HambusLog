@@ -1,5 +1,3 @@
-using System.Collections.Immutable;
-
 namespace HamBusLog.Wa1gonLib.RigControl;
 
 public class RigCapabilities

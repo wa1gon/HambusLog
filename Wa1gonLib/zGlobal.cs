@@ -1,10 +1,15 @@
 global using System;
 global using System.Collections.Generic;
+global using System.Collections.Immutable;
 global using System.Diagnostics;
 global using System.Globalization;
+global using System.Net.Sockets;
+global using System.Text;
 global using System.Text.RegularExpressions;
 global using System.Threading;
 global using System.Threading.Tasks;
-global using Wa1gonLib.Abstractions;
-global using Wa1gonLib.Models;
-
+global using HamBusLog.Wa1gonLib;
+global using HamBusLog.Wa1gonLib.Models;
+global using System.ComponentModel.DataAnnotations;
+global using System.ComponentModel.DataAnnotations.Schema;
+global using System.Text.Json.Serialization;
