@@ -24,7 +24,6 @@ public partial class App
                 var options = HamBusLogDbContextFactory.BuildOptions(DatabaseProvider.Sqlite, connectionString);
                 _dbContext = new HamBusLogDbContext(options);
                 _dbContext.Database.EnsureCreated();
-                System.Diagnostics.Debug.WriteLine($"Database context created: {connectionString}");
             }
             return _dbContext;
         }

@@ -1,0 +1,84 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="HamBusLog.Views.QsoEditWindow"
+        Title="Edit QSO"
+        RequestedThemeVariant="Dark"
+        Background="{DynamicResource AppWindowBackgroundBrush}"
+        Foreground="{DynamicResource AppForegroundBrush}"
+        Width="860"
+        Height="680"
+        MinWidth="680"
+        MinHeight="520"
+        WindowStartupLocation="CenterOwner">
+    <Grid RowDefinitions="*,Auto" Margin="14">
+        <ScrollViewer Grid.Row="0">
+            <StackPanel Spacing="12">
+                <TextBlock Text="Edit QSO" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource AppForegroundBrush}" />
+                <Grid ColumnDefinitions="1*,1*,1*,1*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                    <StackPanel Grid.Column="0" Grid.Row="0" Spacing="3">
+                        <TextBlock Text="Callsign" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" FontWeight="Bold" />
+                        <TextBox Text="{Binding Call}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Grid.Row="0" Spacing="3">
+                        <TextBlock Text="Band" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" FontWeight="Bold" />
+                        <TextBox Text="{Binding Band}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Grid.Row="0" Spacing="3">
+                        <TextBlock Text="Mode" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" FontWeight="Bold" />
+                        <TextBox Text="{Binding Mode}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="3" Grid.Row="0" Spacing="3">
+                        <TextBlock Text="Frequency (MHz)" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
+                        <TextBox Text="{Binding Freq}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="0" Grid.Row="1" Spacing="3">
+                        <TextBlock Text="QSO Date/Time" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
+                        <TextBox Text="{Binding QsoDateText}" Watermark="YYYY-MM-DD HH:MM" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Grid.Row="1" Spacing="3">
+                        <TextBlock Text="RST Sent" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
+                        <TextBox Text="{Binding RstSent}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Grid.Row="1" Spacing="3">
+                        <TextBlock Text="RST Rcvd" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
+                        <TextBox Text="{Binding RstRcvd}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="QSO Details" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AppForegroundBrush}" Margin="0,8,0,0" />
+                <Grid ColumnDefinitions="*,*,Auto,Auto" ColumnSpacing="6">
+                    <TextBox Grid.Column="0" Text="{Binding NewDetailField}" Watermark="Field name" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                    <TextBox Grid.Column="1" Text="{Binding NewDetailValue}" Watermark="Value" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                    <Button Grid.Column="2" Content="Add" Click="OnAddDetailClicked" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="10,6" />
+                    <Button Grid.Column="3" Content="Remove" Click="OnRemoveDetailClicked" Background="{DynamicResource AppButtonDangerBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="10,6" />
+                </Grid>
+                <DataGrid ItemsSource="{Binding Details}"
+                          SelectedItem="{Binding SelectedDetail, Mode=TwoWay}"
+                          IsReadOnly="False"
+                          AutoGenerateColumns="False"
+                          CanUserSortColumns="False"
+                          GridLinesVisibility="Horizontal"
+                          MinHeight="180"
+                          Background="{DynamicResource AppPanelBackgroundBrush}"
+                          Foreground="{DynamicResource AppForegroundBrush}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Field" Binding="{Binding FieldName}" Width="220" IsReadOnly="False" />
+                        <DataGridTextColumn Header="Value" Binding="{Binding FieldValue}" Width="*" IsReadOnly="False" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" Padding="0,10,0,2" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
+            <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Save" Click="OnSaveClicked" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="16,8" FontWeight="Bold" />
+                    <Button Content="Cancel" Click="OnCancelClicked" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="16,8" />
+                </StackPanel>
+                <TextBlock Name="StatusLabel" Foreground="{DynamicResource AppErrorBrush}" FontSize="12" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
+
+

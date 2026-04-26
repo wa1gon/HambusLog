@@ -34,4 +34,5 @@ public sealed class RigctldConfiguration
     public int Port { get; set; } = 4532;
     public string SerialPortName { get; set; } = string.Empty;
     public string RiglistFilePath { get; set; } = string.Empty;
+    public int? ActiveRigNum { get; set; }
 }

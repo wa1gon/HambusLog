@@ -5,6 +5,7 @@ public sealed class RigCatalogStore : ObservableObject
     private ObservableCollection<RigCatalogEntry> _entries = [];
     private string _filePath = string.Empty;
     private string _statusMessage = string.Empty;
+    private int? _activeRigNum;
 
     public ObservableCollection<RigCatalogEntry> Entries
     {
@@ -24,11 +25,22 @@ public sealed class RigCatalogStore : ObservableObject
         private set => SetProperty(ref _statusMessage, value);
     }
 
+    public int? ActiveRigNum
+    {
+        get => _activeRigNum;
+        private set => SetProperty(ref _activeRigNum, value);
+    }
+
+    public RigCatalogEntry? ActiveRig => ActiveRigNum is int rigNum
+        ? Entries.FirstOrDefault(x => x.RigNum == rigNum)
+        : null;
+
     public void InitializeFromConfiguration()
     {
         var config = AppConfigurationStore.Load();
         var profile = AppConfigurationStore.GetActiveProfile(config);
         var path = profile.Rigctld.RiglistFilePath;
+        ActiveRigNum = profile.Rigctld.ActiveRigNum;
 
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -37,6 +49,7 @@ public sealed class RigCatalogStore : ObservableObject
         }
 
         LoadFromFile(path);
+        OnPropertyChanged(nameof(ActiveRig));
     }
 
     public void LoadFromFile(string path)
@@ -59,15 +72,45 @@ public sealed class RigCatalogStore : ObservableObject
             FilePath = path;
             StatusMessage = $"✓ Loaded {parsed.Count} entries from {Path.GetFileName(path)}";
 
+            if (Entries.Count > 0)
+            {
+                if (ActiveRigNum is not int activeRigNum || !Entries.Any(x => x.RigNum == activeRigNum))
+                    ActiveRigNum = Entries[0].RigNum;
+            }
+            else
+            {
+                ActiveRigNum = null;
+            }
+            OnPropertyChanged(nameof(ActiveRig));
+
             var config = AppConfigurationStore.Load();
             var profile = AppConfigurationStore.GetActiveProfile(config);
             profile.Rigctld.RiglistFilePath = path;
+            profile.Rigctld.ActiveRigNum = ActiveRigNum;
             AppConfigurationStore.Save(config);
         }
         catch (Exception ex)
         {
             StatusMessage = $"✗ {ex.Message}";
         }
+    }
+
+    public void SetActiveRig(int? rigNum)
+    {
+        var normalized = rigNum;
+        if (normalized is int value && !Entries.Any(x => x.RigNum == value))
+            normalized = null;
+
+        if (ActiveRigNum == normalized)
+            return;
+
+        ActiveRigNum = normalized;
+        OnPropertyChanged(nameof(ActiveRig));
+
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        profile.Rigctld.ActiveRigNum = ActiveRigNum;
+        AppConfigurationStore.Save(config);
     }
 }
 

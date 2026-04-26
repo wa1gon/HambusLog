@@ -25,7 +25,13 @@ public static class AppConfigurationStore
 
             var json = File.ReadAllText(ConfigFilePath);
             var config = JsonSerializer.Deserialize<AppConfiguration>(json, JsonOptions);
-            return config ?? new AppConfiguration();
+            config ??= new AppConfiguration();
+            EnsureActiveProfile(config, json);
+
+            if (!ContainsActiveProfileProperty(json))
+                Save(config);
+
+            return config;
         }
         catch (Exception ex)
         {
@@ -38,6 +44,8 @@ public static class AppConfigurationStore
     {
         try
         {
+            EnsureActiveProfile(configuration, null);
+
             var directory = Path.GetDirectoryName(ConfigFilePath);
             if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
             {
@@ -57,11 +65,63 @@ public static class AppConfigurationStore
 
     public static ConfigProfile GetActiveProfile(AppConfiguration config)
     {
+        EnsureActiveProfile(config, null);
         if (!config.Profiles.TryGetValue(config.ActiveProfile, out var profile))
         {
             profile = new ConfigProfile { Name = config.ActiveProfile };
             config.Profiles[config.ActiveProfile] = profile;
         }
         return profile;
+    }
+
+    private static void EnsureActiveProfile(AppConfiguration config, string? rawJson)
+    {
+        if (config.Profiles.Count == 0)
+            config.Profiles["default"] = new ConfigProfile { Name = "default" };
+
+        if (string.IsNullOrWhiteSpace(config.ActiveProfile))
+            config.ActiveProfile = ExtractLegacyCurrentProfile(rawJson) ?? "default";
+
+        if (!config.Profiles.ContainsKey(config.ActiveProfile))
+            config.Profiles[config.ActiveProfile] = new ConfigProfile { Name = config.ActiveProfile };
+    }
+
+    private static string? ExtractLegacyCurrentProfile(string? rawJson)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson))
+            return null;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(rawJson);
+            if (!doc.RootElement.TryGetProperty("ActiveProfile", out var activeElement))
+            {
+                if (!doc.RootElement.TryGetProperty("CurrentProfile", out activeElement))
+                    return null;
+            }
+
+            var active = activeElement.GetString();
+            return string.IsNullOrWhiteSpace(active) ? null : active.Trim();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool ContainsActiveProfileProperty(string? rawJson)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson))
+            return false;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(rawJson);
+            return doc.RootElement.TryGetProperty("ActiveProfile", out _);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
