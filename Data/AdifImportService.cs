@@ -1,3 +1,5 @@
+using HamBusLog.Wa1gonLib.Models;
+
 namespace HamBusLog.Data;
 
 public static class AdifImportService
@@ -20,7 +22,7 @@ public static class AdifImportService
         var scannedRecords = await CountRecordsAsync(fullPath, progress, cancellationToken);
         progress?.Report(AdifImportProgress.Parsing(fullPath, scannedRecords));
 
-        var parsed = HbLibrary.Adif.AdifReader.ReadFromAdifFile(fullPath) ?? [];
+        var parsed = HamBusLog.Wa1gonLib.Adif.AdifReader.ReadFromAdifFile(fullPath) ?? [];
         if (parsed.Count == 0)
         {
             progress?.Report(AdifImportProgress.Completed(fullPath, 0, 0));
@@ -179,5 +181,4 @@ public readonly record struct AdifImportProgress(
     public static AdifImportProgress Completed(string filePath, int recordsRead, int savedChanges) =>
         new(AdifImportStage.Completed, filePath, $"Imported {recordsRead:N0} record(s) from {Path.GetFileName(filePath)}.", recordsRead, recordsRead, savedChanges, false, 1d);
 }
-
 

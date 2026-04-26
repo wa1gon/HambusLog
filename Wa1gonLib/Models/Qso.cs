@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace HamBusLog.Wa1gonLib.Models;
 
 public class Qso

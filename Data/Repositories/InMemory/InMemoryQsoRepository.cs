@@ -1,3 +1,5 @@
+using HamBusLog.Wa1gonLib.Models;
+
 namespace HamBusLog.Data.Repositories.InMemory;
 
 // In-memory repository for early development; replace with persistent store implementation.

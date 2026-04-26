@@ -13,12 +13,16 @@
     <Compile Remove="HamBusLog.Tests\**\*.cs" />
     <Compile Remove="Wa1gonLib\**\*.cs" />
     <Compile Remove="Wa1gonLib.Tests\**\*.cs" />
+    <Compile Include="Wa1gonLib\Adif\AdifReader.cs" />
+    <Compile Include="Wa1gonLib\IRegControlClient.cs" />
+    <Compile Include="Wa1gonLib\Models\CallSign.cs" />
     <Compile Include="Wa1gonLib\Models\DxccEntry.cs" />
     <Compile Include="Wa1gonLib\Models\DxSpot.cs" />
     <Compile Include="Wa1gonLib\Models\OperatorProfile.cs" />
     <Compile Include="Wa1gonLib\Models\Qso.cs" />
     <Compile Include="Wa1gonLib\Models\QsoDetails.cs" />
     <Compile Include="Wa1gonLib\Models\QsoQslnfo.cs" />
+    <Compile Include="Wa1gonLib\zGlobal.cs" />
     <Compile Include="Wa1gonLib\RigControl\FrequencyRange.cs" />
     <Compile Include="Wa1gonLib\RigControl\HamlibrigCtlClient.cs" />
     <Compile Include="Wa1gonLib\RigControl\RigCapabilities.cs" />
@@ -37,7 +41,6 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
-    <PackageReference Include="HbLibrary" Version="1.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.7" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />

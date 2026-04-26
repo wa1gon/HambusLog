@@ -1,3 +1,5 @@
+using HamBusLog.Wa1gonLib.Models;
+
 namespace HamBusLog.ViewModels;
 
 public sealed partial class QsoEditViewModel : ObservableObject
