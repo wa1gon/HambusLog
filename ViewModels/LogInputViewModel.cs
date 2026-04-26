@@ -34,11 +34,16 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _newDetailField = string.Empty;
     private string _newDetailValue = string.Empty;
     private QsoDetailRow? _selectedDetail;
+    private AppConfiguration _appConfig = new();
+    private string _selectedProfile = "default";
 
     public LogInputViewModel()
     {
+        _appConfig = AppConfigurationStore.Load();
         ContestTypes    = [ContestType.Normal, ContestType.ArrlFieldDay];
         Details         = [];
+        AvailableProfiles = new ObservableCollection<string>();
+        LoadProfiles();
         InputDate       = DateTime.UtcNow.ToString("yyyyMMdd");
         InputTimeOn     = DateTime.UtcNow.ToString("HHmm");
     }
@@ -46,6 +51,19 @@ public sealed class LogInputViewModel : ViewModelBase
     // ── Properties ────────────────────────────────────────────────────
     public List<ContestType> ContestTypes { get; }
     public ObservableCollection<QsoDetailRow> Details { get; }
+    public ObservableCollection<string> AvailableProfiles { get; }
+
+    public string SelectedProfile
+    {
+        get => _selectedProfile;
+        set
+        {
+            if (!SetProperty(ref _selectedProfile, value ?? string.Empty))
+                return;
+
+            PersistSelectedProfile();
+        }
+    }
 
     public ContestType SelectedContestType
     {
@@ -207,6 +225,38 @@ public sealed class LogInputViewModel : ViewModelBase
     {
         var r = _classValidator.Validate(InputFieldDayClass.Trim().ToUpperInvariant());
         ClassError = r.IsValid ? string.Empty : r.ErrorMessage;
+    }
+
+    private void LoadProfiles()
+    {
+        AvailableProfiles.Clear();
+        foreach (var key in _appConfig.Profiles.Keys)
+            AvailableProfiles.Add(key);
+
+        if (AvailableProfiles.Count == 0)
+            AvailableProfiles.Add("default");
+
+        var active = string.IsNullOrWhiteSpace(_appConfig.ActiveProfile)
+            ? "default"
+            : _appConfig.ActiveProfile;
+
+        if (!AvailableProfiles.Contains(active))
+            AvailableProfiles.Add(active);
+
+        _selectedProfile = active;
+        OnPropertyChanged(nameof(SelectedProfile));
+    }
+
+    private void PersistSelectedProfile()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedProfile))
+            return;
+
+        if (!_appConfig.Profiles.ContainsKey(_selectedProfile))
+            _appConfig.Profiles[_selectedProfile] = new ConfigProfile { Name = _selectedProfile };
+
+        _appConfig.ActiveProfile = _selectedProfile;
+        AppConfigurationStore.Save(_appConfig);
     }
 }
 

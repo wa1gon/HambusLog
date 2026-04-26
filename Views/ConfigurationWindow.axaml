@@ -22,7 +22,14 @@
                           Background="{DynamicResource AppPanelBackgroundBrush}"
                           Foreground="{DynamicResource AppForegroundBrush}"
                           MaxDropDownHeight="260"
-                          HorizontalAlignment="Stretch" />
+                          HorizontalAlignment="Stretch">
+                    <ComboBox.Styles>
+                        <Style Selector="ComboBoxItem">
+                            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
+                            <Setter Property="Background" Value="{DynamicResource AppPanelBackgroundBrush}" />
+                        </Style>
+                    </ComboBox.Styles>
+                </ComboBox>
                 <TextBlock Grid.Column="2"
                            Margin="8,0,0,0"
                            VerticalAlignment="Center"
