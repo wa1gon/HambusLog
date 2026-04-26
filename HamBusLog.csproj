@@ -13,6 +13,12 @@
     <Compile Remove="HamBusLog.Tests\**\*.cs" />
     <Compile Remove="Wa1gonLib\**\*.cs" />
     <Compile Remove="Wa1gonLib.Tests\**\*.cs" />
+    <Compile Include="Wa1gonLib\Models\DxccEntry.cs" />
+    <Compile Include="Wa1gonLib\Models\DxSpot.cs" />
+    <Compile Include="Wa1gonLib\Models\OperatorProfile.cs" />
+    <Compile Include="Wa1gonLib\Models\Qso.cs" />
+    <Compile Include="Wa1gonLib\Models\QsoDetails.cs" />
+    <Compile Include="Wa1gonLib\Models\QsoQslnfo.cs" />
     <Compile Include="Wa1gonLib\RigControl\FrequencyRange.cs" />
     <Compile Include="Wa1gonLib\RigControl\HamlibrigCtlClient.cs" />
     <Compile Include="Wa1gonLib\RigControl\RigCapabilities.cs" />
