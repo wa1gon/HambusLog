@@ -13,6 +13,9 @@
     <Compile Remove="HamBusLog.Tests\**\*.cs" />
     <Compile Remove="Wa1gonLib\**\*.cs" />
     <Compile Remove="Wa1gonLib.Tests\**\*.cs" />
+    <Compile Include="Wa1gonLib\RigControl\FrequencyRange.cs" />
+    <Compile Include="Wa1gonLib\RigControl\HamlibrigCtlClient.cs" />
+    <Compile Include="Wa1gonLib\RigControl\RigCapabilities.cs" />
   </ItemGroup>
 
   <ItemGroup>
