@@ -7,6 +7,8 @@ public sealed class AppConfiguration
     {
         { "default", new ConfigProfile { Name = "default" } }
     };
+
+    public RigctldConfiguration Rigctld { get; set; } = new();
 }
 
 public sealed class ConfigProfile
@@ -25,14 +27,44 @@ public sealed class ConfigProfile
     public string ButtonDangerColor { get; set; } = "#DC2626";
     public string ButtonForegroundColor { get; set; } = "#FFFFFF";
     public string ConnectionString { get; set; } = "Data Source=hambuslog.db";
-    public RigctldConfiguration Rigctld { get; set; } = new();
+
+    // Legacy location for Rigctld settings (profile-scoped). Read only for migration.
+    [JsonPropertyName("Rigctld")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public RigctldConfiguration? LegacyRigctld { get; set; }
 }
 
 public sealed class RigctldConfiguration
 {
+    public string ActiveRadioTag { get; set; } = "radio-1";
+    public List<string> ActiveRadioTags { get; set; } = [];
+    // Legacy numeric active radio id; kept for migration.
+    public int ActiveRadioId { get; set; } = 1;
+    public List<RigctldRadioConfiguration> Radios { get; set; } = [];
+
+    // Legacy single-radio fields kept for backward compatibility/migration.
+    public string Executable { get; set; } = "rigctld";
+    public string ArgumentsTemplate { get; set; } = "-m {rigNum} -T {host} -t {port}{serialArg}";
     public string Host { get; set; } = "127.0.0.1";
     public int Port { get; set; } = 4532;
     public string SerialPortName { get; set; } = string.Empty;
     public string RiglistFilePath { get; set; } = string.Empty;
     public int? ActiveRigNum { get; set; }
+}
+
+public sealed class RigctldRadioConfiguration
+{
+    public string TagName { get; set; } = string.Empty;
+    // Legacy numeric radio id; kept for migration.
+    public int RadioId { get; set; }
+    public bool IsActive { get; set; }
+    public string DisplayName { get; set; } = string.Empty;
+    public string Executable { get; set; } = "rigctld";
+    public string ArgumentsTemplate { get; set; } = "-m {rigNum} -T {host} -t {port}{serialArg}";
+    public string Host { get; set; } = "127.0.0.1";
+    public int Port { get; set; } = 4532;
+    public string SerialPortName { get; set; } = string.Empty;
+    public string RiglistFilePath { get; set; } = string.Empty;
+    public int? ActiveRigNum { get; set; }
+    public List<int> ActiveRigNums { get; set; } = [];
 }

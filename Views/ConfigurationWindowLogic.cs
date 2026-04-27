@@ -23,6 +23,8 @@ public partial class ConfigurationWindow
     private TextBlock? _buttonNormalContrastLabel;
     private TextBlock? _buttonCautionContrastLabel;
     private TextBlock? _buttonDangerContrastLabel;
+    private ListBox? _activeRadiosListBox;
+    private bool _syncingActiveRadiosSelection;
 
     public ConfigurationWindow()
     {
@@ -55,12 +57,14 @@ public partial class ConfigurationWindow
         _buttonNormalContrastLabel = this.FindControl<TextBlock>("ButtonNormalContrastLabel");
         _buttonCautionContrastLabel = this.FindControl<TextBlock>("ButtonCautionContrastLabel");
         _buttonDangerContrastLabel = this.FindControl<TextBlock>("ButtonDangerContrastLabel");
+        _activeRadiosListBox = this.FindControl<ListBox>("ActiveRadiosListBox");
 
         // Push initial colors into pickers now that controls are fully rendered
         SyncPickersFromViewModel();
 
         // ViewModel → pickers (profile switch)
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        SyncActiveRadioSelectionsFromViewModel();
 
         // Pickers → ViewModel
         if (_bgPicker != null)
@@ -172,6 +176,9 @@ public partial class ConfigurationWindow
 
         if (needsContrastRefresh)
             UpdateContrastLabels();
+
+        if (e.PropertyName is nameof(ConfigurationViewModel.SelectedProfile) or nameof(ConfigurationViewModel.AvailableRigRadioOptions))
+            SyncActiveRadioSelectionsFromViewModel();
     }
 
     private void SyncPickersFromViewModel()
@@ -273,6 +280,27 @@ public partial class ConfigurationWindow
     public void OnCatalogRefreshSerialPortsClicked(object? sender, RoutedEventArgs e)
     {
         _viewModel.RigCatalog.RefreshSerialPorts();
+    }
+
+    public void OnCatalogSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not DataGrid grid)
+            return;
+
+        var selected = grid.SelectedItems?.Cast<RigCatalogEntry>() ?? [];
+        _viewModel.RigCatalog.SetSelectedEntries(selected);
+    }
+
+    public void OnActiveRigRadiosSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_syncingActiveRadiosSelection || sender is not ListBox listBox)
+            return;
+
+        var selectedTags = listBox.SelectedItems?
+            .OfType<RigRadioOption>()
+            .Select(x => x.TagName)
+            .ToList() ?? [];
+        _viewModel.SetActiveRigRadioTags(selectedTags);
     }
 
     public async void OnCatalogCopyCommandClicked(object? sender, RoutedEventArgs e)
@@ -382,10 +410,30 @@ public partial class ConfigurationWindow
         _viewModel.Dispose();
         base.OnClosed(e);
     }
+
+    private void SyncActiveRadioSelectionsFromViewModel()
+    {
+        if (_activeRadiosListBox?.ItemsSource is not IEnumerable<RigRadioOption> options)
+            return;
+        var selectedItems = _activeRadiosListBox.SelectedItems;
+        if (selectedItems is null)
+            return;
+
+        _syncingActiveRadiosSelection = true;
+        try
+        {
+            var selectedTagSet = _viewModel.GetActiveRigRadioTags()
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            selectedItems.Clear();
+            foreach (var option in options.Where(x => selectedTagSet.Contains(x.TagName)))
+                selectedItems.Add(option);
+        }
+        finally
+        {
+            _syncingActiveRadiosSelection = false;
+        }
+    }
 }
-
-
-
-
-
 
