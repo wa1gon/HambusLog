@@ -26,6 +26,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _rigctldRadioName = "Radio 1";
     private string _rigctldExecutable = "rigctld";
     private string _rigctldArgumentsTemplate = "-m {rigNum} -T {host} -t {port}{serialArg}";
+    private string _rigctldAdditionalArguments = string.Empty;
     private string _rigctldHost = "127.0.0.1";
     private int _rigctldPort = 4532;
     private string _selectedSerialPort = string.Empty;
@@ -199,7 +200,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 return;
 
             LoadSelectedRigRadioSettings();
-            RigCatalog.ReloadFromConfiguration();
+            ApplyEditorSettingsToRigCatalog();
         }
     }
 
@@ -243,10 +244,16 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _rigctldArgumentsTemplate, value ?? string.Empty);
     }
 
+    public string RigctldAdditionalArguments
+    {
+        get => _rigctldAdditionalArguments;
+        set => SetProperty(ref _rigctldAdditionalArguments, value ?? string.Empty);
+    }
+
     public string RigctldHost
     {
         get => _rigctldHost;
-        set => SetProperty(ref _rigctldHost, value);
+        set => SetProperty(ref _rigctldHost, value ?? string.Empty);
     }
 
     public int RigctldPort
@@ -258,13 +265,19 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     public string SelectedSerialPort
     {
         get => _selectedSerialPort;
-        set => SetProperty(ref _selectedSerialPort, value ?? string.Empty);
+        set
+        {
+            if (!SetProperty(ref _selectedSerialPort, value ?? string.Empty))
+                return;
+
+            EnsureSelectedSerialPortInList(_selectedSerialPort);
+        }
     }
 
     public string RiglistFilePath
     {
         get => _riglistFilePath;
-        set => SetProperty(ref _riglistFilePath, value);
+        set => SetProperty(ref _riglistFilePath, value ?? string.Empty);
     }
 
     public string StatusMessage
@@ -334,6 +347,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             radio.ArgumentsTemplate = string.IsNullOrWhiteSpace(RigctldArgumentsTemplate)
                 ? "-m {rigNum} -T {host} -t {port}{serialArg}"
                 : RigctldArgumentsTemplate;
+            radio.AdditionalArguments = RigctldAdditionalArguments.Trim();
             radio.Host = string.IsNullOrWhiteSpace(RigctldHost) ? "127.0.0.1" : RigctldHost.Trim();
             radio.Port = RigctldPort <= 0 ? 4532 : RigctldPort;
             radio.SerialPortName = SelectedSerialPort.Trim();
@@ -501,8 +515,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         foreach (var port in discovered)
             AvailableSerialPorts.Add(port);
 
-        if (!string.IsNullOrWhiteSpace(currentSelection) && !AvailableSerialPorts.Contains(currentSelection))
-            AvailableSerialPorts.Insert(0, currentSelection);
+        EnsureSelectedSerialPortInList(currentSelection);
 
         OnPropertyChanged(nameof(AvailableSerialPorts));
     }
@@ -561,11 +574,25 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         RigctldArgumentsTemplate = string.IsNullOrWhiteSpace(radio.ArgumentsTemplate)
             ? "-m {rigNum} -T {host} -t {port}{serialArg}"
             : radio.ArgumentsTemplate;
+        RigctldAdditionalArguments = radio.AdditionalArguments ?? string.Empty;
         RigctldHost = string.IsNullOrWhiteSpace(radio.Host) ? "127.0.0.1" : radio.Host;
         RigctldPort = radio.Port <= 0 ? 4532 : radio.Port;
         SelectedSerialPort = radio.SerialPortName;
         RiglistFilePath = radio.RiglistFilePath;
+        EnsureSelectedSerialPortInList(SelectedSerialPort);
         OnPropertyChanged(nameof(SelectedRigRadio));
+    }
+
+    private void EnsureSelectedSerialPortInList(string? serialPort)
+    {
+        if (string.IsNullOrWhiteSpace(serialPort))
+            return;
+
+        if (AvailableSerialPorts.Contains(serialPort))
+            return;
+
+        AvailableSerialPorts.Insert(0, serialPort);
+        OnPropertyChanged(nameof(AvailableSerialPorts));
     }
 
     public IReadOnlyList<string> GetActiveRigRadioTags() => _activeRigRadioTags.ToList();
@@ -607,6 +634,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             DisplayName = $"Radio {nextId}",
             Executable = "rigctld",
             ArgumentsTemplate = "-m {rigNum} -T {host} -t {port}{serialArg}",
+            AdditionalArguments = string.Empty,
             Host = string.IsNullOrWhiteSpace(rigctld.Host) ? "127.0.0.1" : rigctld.Host,
             Port = rigctld.Port <= 0 ? 4532 : rigctld.Port,
             SerialPortName = rigctld.SerialPortName,
@@ -749,10 +777,38 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         radio.ArgumentsTemplate = string.IsNullOrWhiteSpace(RigctldArgumentsTemplate)
             ? "-m {rigNum} -T {host} -t {port}{serialArg}"
             : RigctldArgumentsTemplate;
+        radio.AdditionalArguments = RigctldAdditionalArguments.Trim();
         radio.Host = string.IsNullOrWhiteSpace(RigctldHost) ? "127.0.0.1" : RigctldHost.Trim();
         radio.Port = RigctldPort <= 0 ? 4532 : RigctldPort;
         radio.SerialPortName = SelectedSerialPort.Trim();
         radio.RiglistFilePath = RiglistFilePath.Trim();
+    }
+
+    public void CommitSelectedRigRadioEdits()
+    {
+        PersistRigRadioSettings(SelectedRigRadioTag);
+        ApplyEditorSettingsToRigCatalog();
+    }
+
+    public void RevertSelectedRigRadioEdits()
+    {
+        LoadSelectedRigRadioSettings();
+        ApplyEditorSettingsToRigCatalog();
+    }
+
+    private void ApplyEditorSettingsToRigCatalog()
+    {
+        RigCatalog.RigctldExecutable = RigctldExecutable;
+        RigCatalog.RigctldArgumentsTemplate = RigctldArgumentsTemplate;
+        RigCatalog.RigctldAdditionalArguments = RigctldAdditionalArguments;
+        RigCatalog.RigctldHost = RigctldHost;
+        RigCatalog.RigctldPort = RigctldPort;
+        RigCatalog.SelectedSerialPort = SelectedSerialPort;
+
+        var configuredPath = RiglistFilePath.Trim();
+        if (!string.IsNullOrWhiteSpace(configuredPath)
+            && !string.Equals(configuredPath, RigCatalog.FilePath, StringComparison.Ordinal))
+            RigCatalog.LoadFromFile(configuredPath);
     }
 
     public void Dispose()

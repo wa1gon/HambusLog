@@ -269,10 +269,10 @@
             </TabItem>
 
             <TabItem Header="Rig Control">
-                <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto">
+                <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto">
                     <TextBlock Grid.Row="0" Text="rigctld Configuration" FontWeight="SemiBold" FontSize="14" />
-                    <TextBlock Grid.Row="1" Text="Configure daemon connection and generate commands from the rig catalog." Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" Margin="0,0,0,6" />
-                    <Grid Grid.Row="2" ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10" ColumnSpacing="8" Margin="0,0,0,12">
+                    <TextBlock Grid.Row="1" Text="Manage radios here, then open the editor dialog for detailed rigctld fields." Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" Margin="0,0,0,6" />
+                    <Grid Grid.Row="2" ColumnDefinitions="160,*" RowDefinitions="Auto,Auto" RowSpacing="10" ColumnSpacing="8" Margin="0,0,0,12">
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Radio Tag" VerticalAlignment="Center" />
                         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="6">
                             <ComboBox ItemsSource="{Binding AvailableRigRadioOptions}"
@@ -285,13 +285,10 @@
                                       HorizontalAlignment="Left" />
                             <Button Content="Add Radio" Click="OnAddRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
                             <Button Content="Remove" Click="OnRemoveRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonDangerBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                            <Button Content="Edit" Click="OnEditSelectedRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
                         </StackPanel>
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Radio Name" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="1" Grid.Column="1"
-                                 Text="{Binding RigctldRadioName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 Watermark="My FT-710" />
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Active Radios" VerticalAlignment="Top" />
-                        <ListBox Grid.Row="2" Grid.Column="1"
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Active Radios" VerticalAlignment="Top" />
+                        <ListBox Grid.Row="1" Grid.Column="1"
                                  Name="ActiveRadiosListBox"
                                  ItemsSource="{Binding AvailableRigRadioOptions}"
                                  SelectionMode="Multiple,Toggle"
@@ -309,93 +306,11 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Executable" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding RigctldExecutable}" Watermark="rigctld" />
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Args Template" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="4" Grid.Column="1"
-                                 Text="{Binding RigctldArgumentsTemplate}"
-                                 Watermark="-m {rigNum} -T {host} -t {port}{serialArg}" />
-                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Host" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding RigctldHost}" Watermark="127.0.0.1" />
-                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Port" VerticalAlignment="Center" />
-                        <NumericUpDown Grid.Row="6" Grid.Column="1"
-                                       Minimum="1" Maximum="65535"
-                                       Value="{Binding RigctldPort}"
-                                       HorizontalAlignment="Left" Width="160" />
-                        <TextBlock Grid.Row="7" Grid.Column="0" Text="Serial Port" VerticalAlignment="Center" />
-                        <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                            <ComboBox ItemsSource="{Binding AvailableSerialPorts}"
-                                      SelectedItem="{Binding SelectedSerialPort}"
-                                      Background="{DynamicResource AppPanelBackgroundBrush}"
-                                      Foreground="{DynamicResource AppForegroundBrush}"
-                                      Width="360"
-                                      IsEditable="True" />
-                            <Button Content="Refresh" Click="OnRefreshSerialPortsClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
-                        </StackPanel>
-                        <TextBlock Grid.Row="8" Grid.Column="0" Text="Rig List File" VerticalAlignment="Center" />
-                        <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                            <TextBox Text="{Binding RiglistFilePath}" Watermark="Path to rigctld --list output file..." Width="360" />
-                            <Button Content="Browse..." Click="OnBrowseRiglistClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
-                        </StackPanel>
                     </Grid>
 
-                    <Separator Grid.Row="3" Margin="0,0,0,10" />
-
-                    <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
-                        <TextBlock Text="Rig List File:" VerticalAlignment="Center" />
-                        <TextBox Text="{Binding RigCatalog.FilePath}"
-                                 Width="420"
-                                 IsReadOnly="True" />
-                        <Button Content="Browse..." Click="OnCatalogBrowseClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
-                        <Button Content="Reload" Click="OnCatalogReloadClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
+                        <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource AppMutedForegroundBrush}" Text="Use Edit to configure radio name, args template, additional args, host/port, serial port, rig list, and model search." />
                     </StackPanel>
-
-                    <StackPanel Grid.Row="5" Spacing="8">
-                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
-                            <TextBlock Text="Search Model:" VerticalAlignment="Center" />
-                            <TextBox Name="RigModelSearchBox"
-                                     Text="{Binding RigCatalog.SearchModelText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     Watermark="Type model to filter..."
-                                     Width="280"
-                                     Background="{DynamicResource AppPanelBackgroundBrush}"
-                                     Foreground="{DynamicResource AppForegroundBrush}"
-                                     CaretBrush="{DynamicResource AppForegroundBrush}" />
-                        </StackPanel>
-
-                        <DataGrid ItemsSource="{Binding RigCatalog.FilteredEntries}"
-                                  SelectedItem="{Binding RigCatalog.SelectedEntry, Mode=TwoWay}"
-                                  SelectionMode="Extended"
-                                  SelectionChanged="OnCatalogSelectionChanged"
-                                  IsReadOnly="True"
-                                  AutoGenerateColumns="False"
-                                  CanUserSortColumns="True"
-                                  GridLinesVisibility="Horizontal">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Rig #" Binding="{Binding RigNum}" Width="70" />
-                                <DataGridTextColumn Header="Mfg" Binding="{Binding Mfg}" Width="120" />
-                                <DataGridTextColumn Header="Model" Binding="{Binding Model}" Width="180" />
-                                <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="100" />
-                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="90" />
-                                <DataGridTextColumn Header="Macro" Binding="{Binding Macro}" Width="*" />
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </StackPanel>
-
-                    <Grid Grid.Row="6" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
-                        <TextBlock Grid.Column="0" Text="rigctld Command:" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1"
-                                 Text="{Binding RigCatalog.RigctldCommandLine}"
-                                 IsReadOnly="True"
-                                 Margin="8,0,8,0"
-                                 FontFamily="Monospace" />
-                        <Button Grid.Column="2" Content="Copy Command" Click="OnCatalogCopyCommandClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
-                    </Grid>
-
-                    <TextBlock Grid.Row="7"
-                               Text="{Binding RigCatalog.StatusMessage}"
-                               FontStyle="Italic"
-                               Foreground="{DynamicResource AppAccentBrush}"
-                               Margin="0,8,0,0" />
                 </Grid>
             </TabItem>
 

@@ -321,6 +321,12 @@ public partial class ConfigurationWindow
     public void OnCloneProfileClicked(object? sender, RoutedEventArgs e) => _viewModel.CloneProfile();
     public void OnAddRadioClicked(object? sender, RoutedEventArgs e) => _viewModel.AddRigRadio();
     public void OnRemoveRadioClicked(object? sender, RoutedEventArgs e) => _viewModel.RemoveSelectedRigRadio();
+    public async void OnEditSelectedRadioClicked(object? sender, RoutedEventArgs e)
+    {
+        _viewModel.RevertSelectedRigRadioEdits();
+        var editor = new RigRadioEditorWindow(_viewModel);
+        await editor.ShowDialog(this);
+    }
     public void OnRefreshSerialPortsClicked(object? sender, RoutedEventArgs e) => _viewModel.RefreshSerialPorts();
     public void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
 

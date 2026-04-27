@@ -218,6 +218,9 @@ public static class AppConfigurationStore
             radio.ArgumentsTemplate = string.IsNullOrWhiteSpace(radio.ArgumentsTemplate)
                 ? "-m {rigNum} -T {host} -t {port}{serialArg}"
                 : radio.ArgumentsTemplate;
+            radio.AdditionalArguments = string.IsNullOrWhiteSpace(radio.AdditionalArguments)
+                ? string.Empty
+                : radio.AdditionalArguments.Trim();
             radio.Host = string.IsNullOrWhiteSpace(radio.Host) ? rigctld.Host : radio.Host.Trim();
             radio.Port = radio.Port <= 0 ? rigctld.Port : radio.Port;
 

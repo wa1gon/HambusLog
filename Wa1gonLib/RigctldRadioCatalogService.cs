@@ -71,7 +71,8 @@ public sealed class RigctldRadioCatalogService
         int port = 4532,
         string? serialPortName = null,
         string executable = "rigctld",
-        string? argumentsTemplate = null)
+        string? argumentsTemplate = null,
+        string? additionalArguments = null)
     {
         if (entry is null)
             return string.Empty;
@@ -82,6 +83,9 @@ public sealed class RigctldRadioCatalogService
         var safeTemplate = string.IsNullOrWhiteSpace(argumentsTemplate)
             ? "-m {rigNum} -T {host} -t {port}{serialArg}"
             : argumentsTemplate.Trim();
+        var safeAdditionalArguments = string.IsNullOrWhiteSpace(additionalArguments)
+            ? string.Empty
+            : additionalArguments.Trim();
 
         var safeSerialPortName = serialPortName?.Trim() ?? string.Empty;
         var serialArg = string.IsNullOrWhiteSpace(safeSerialPortName) ? string.Empty : $" -r {QuoteArgument(safeSerialPortName)}";
@@ -90,7 +94,12 @@ public sealed class RigctldRadioCatalogService
             .Replace("{host}", safeHost, StringComparison.OrdinalIgnoreCase)
             .Replace("{port}", safePort.ToString(CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase)
             .Replace("{serialPort}", QuoteArgument(safeSerialPortName), StringComparison.OrdinalIgnoreCase)
-            .Replace("{serialArg}", serialArg, StringComparison.OrdinalIgnoreCase);
+            .Replace("{serialArg}", serialArg, StringComparison.OrdinalIgnoreCase)
+            .Replace("{additionalArgs}", safeAdditionalArguments, StringComparison.OrdinalIgnoreCase);
+
+        if (!string.IsNullOrWhiteSpace(safeAdditionalArguments)
+            && !safeTemplate.Contains("{additionalArgs}", StringComparison.OrdinalIgnoreCase))
+            arguments = $"{arguments} {safeAdditionalArguments}";
 
         var command = $"{safeExecutable} {arguments}".Trim();
 

@@ -18,6 +18,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
     private string _searchModelText = string.Empty;
     private string _rigctldExecutable = "rigctld";
     private string _rigctldArgumentsTemplate = "-m {rigNum} -T {host} -t {port}{serialArg}";
+    private string _rigctldAdditionalArguments = string.Empty;
     private string _rigctldHost = "127.0.0.1";
     private int _rigctldPort = 4532;
 
@@ -148,6 +149,16 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         set
         {
             if (SetProperty(ref _rigctldArgumentsTemplate, value ?? string.Empty))
+                UpdateCommandLine();
+        }
+    }
+
+    public string RigctldAdditionalArguments
+    {
+        get => _rigctldAdditionalArguments;
+        set
+        {
+            if (SetProperty(ref _rigctldAdditionalArguments, value ?? string.Empty))
                 UpdateCommandLine();
         }
     }
@@ -286,7 +297,8 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
             RigctldPort,
             SelectedSerialPort,
             RigctldExecutable,
-            RigctldArgumentsTemplate);
+            RigctldArgumentsTemplate,
+            RigctldAdditionalArguments);
         _statusMessageOverride = null;
         OnPropertyChanged(nameof(StatusMessage));
     }
@@ -308,6 +320,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         RigctldArgumentsTemplate = string.IsNullOrWhiteSpace(radio.ArgumentsTemplate)
             ? "-m {rigNum} -T {host} -t {port}{serialArg}"
             : radio.ArgumentsTemplate;
+        RigctldAdditionalArguments = radio.AdditionalArguments ?? string.Empty;
         RigctldHost = string.IsNullOrWhiteSpace(radio.Host) ? rigctld.Host : radio.Host;
         RigctldPort = radio.Port <= 0 ? rigctld.Port : radio.Port;
         SelectedSerialPort = string.IsNullOrWhiteSpace(radio.SerialPortName) ? rigctld.SerialPortName : radio.SerialPortName;
