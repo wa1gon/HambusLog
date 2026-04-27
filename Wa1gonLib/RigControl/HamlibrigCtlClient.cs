@@ -116,7 +116,16 @@ public class HamLibRigCtlClient(string _host, int _port) : IDisposable, IRigCont
     {
         EnsureConnected();
         await SendCommandAsync("m\n");
+
         var response = await ReadLineAsync();
+        if (string.IsNullOrWhiteSpace(response))
+            throw new IOException("Failed to parse mode from rigctld response.");
+
+        // Typical responses are like: "USB 2400".
+        var mode = response.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(mode) && !string.Equals(mode, "RPRT", StringComparison.OrdinalIgnoreCase))
+            return mode;
+
         throw new IOException("Failed to parse mode from rigctld response.");
     }
 
@@ -124,11 +133,17 @@ public class HamLibRigCtlClient(string _host, int _port) : IDisposable, IRigCont
     {
         EnsureConnected();
         await SendCommandAsync("f\n");
-        var buffer = new byte[64];
-        var bytesRead = await _stream!.ReadAsync(buffer, 0, buffer.Length);
-        var response = Encoding.ASCII.GetString(buffer, 0, bytesRead).Trim();
+
+        var response = await ReadLineAsync();
         if (long.TryParse(response, out var freq))
             return freq;
+
+        // Some backends include extra tokens; keep first numeric token.
+        var token = response.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .FirstOrDefault(x => long.TryParse(x, out _));
+        if (!string.IsNullOrWhiteSpace(token) && long.TryParse(token, out freq))
+            return freq;
+
         throw new IOException("Failed to parse frequency from rigctld response.");
     }
 

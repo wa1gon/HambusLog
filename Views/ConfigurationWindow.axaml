@@ -148,6 +148,60 @@
                         </StackPanel>
                     </StackPanel>
 
+                    <Separator Margin="0,2,0,2" />
+
+                    <TextBlock Text="Input Controls" FontWeight="SemiBold" FontSize="14" />
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Input Background" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                <ColorPicker Name="InputBgColorPicker" />
+                            </Border>
+                            <TextBlock Name="InputBgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Input Foreground" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                <ColorPicker Name="InputFgColorPicker" />
+                            </Border>
+                            <TextBlock Name="InputFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Input Border" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                <ColorPicker Name="InputBorderColorPicker" />
+                            </Border>
+                            <TextBlock Name="InputBorderColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Input Selection Background" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                <ColorPicker Name="InputSelectionBgColorPicker" />
+                            </Border>
+                            <TextBlock Name="InputSelectionBgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Input Selection Foreground" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                <ColorPicker Name="InputSelectionFgColorPicker" />
+                            </Border>
+                            <TextBlock Name="InputSelectionFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+
                     <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="10" Background="{DynamicResource AppPanelBackgroundBrush}" Margin="0,8,0,0">
                         <StackPanel Spacing="10">
                             <TextBlock Text="Live Preview" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource AppForegroundBrush}" />
@@ -220,22 +274,27 @@
                     <TextBlock Grid.Row="1" Text="Configure daemon connection and generate commands from the rig catalog." Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" Margin="0,0,0,6" />
                     <Grid Grid.Row="2" ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10" ColumnSpacing="8" Margin="0,0,0,12">
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Radio Tag" VerticalAlignment="Center" />
-                        <ComboBox Grid.Row="0" Grid.Column="1"
-                                  ItemsSource="{Binding AvailableRigRadioOptions}"
-                                  SelectedItem="{Binding SelectedRigRadio, Mode=TwoWay}"
-                                  DisplayMemberBinding="{Binding Display}"
-                                  Background="{DynamicResource AppPanelBackgroundBrush}"
-                                  Foreground="{DynamicResource AppForegroundBrush}"
-                                  Width="220"
-                                  IsEditable="False"
-                                  HorizontalAlignment="Left" />
+                        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                            <ComboBox ItemsSource="{Binding AvailableRigRadioOptions}"
+                                      SelectedItem="{Binding SelectedRigRadio, Mode=TwoWay}"
+                                      DisplayMemberBinding="{Binding Display}"
+                                      Background="{DynamicResource AppPanelBackgroundBrush}"
+                                      Foreground="{DynamicResource AppForegroundBrush}"
+                                      Width="220"
+                                      IsEditable="False"
+                                      HorizontalAlignment="Left" />
+                            <Button Content="Add Radio" Click="OnAddRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                            <Button Content="Remove" Click="OnRemoveRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonDangerBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                        </StackPanel>
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Radio Name" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding RigctldRadioName}" Watermark="My FT-710" />
+                        <TextBox Grid.Row="1" Grid.Column="1"
+                                 Text="{Binding RigctldRadioName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Watermark="My FT-710" />
                         <TextBlock Grid.Row="2" Grid.Column="0" Text="Active Radios" VerticalAlignment="Top" />
                         <ListBox Grid.Row="2" Grid.Column="1"
                                  Name="ActiveRadiosListBox"
                                  ItemsSource="{Binding AvailableRigRadioOptions}"
-                                 SelectionMode="Toggle"
+                                 SelectionMode="Multiple,Toggle"
                                  SelectionChanged="OnActiveRigRadiosSelectionChanged"
                                  Height="110"
                                  BorderBrush="{DynamicResource AppBorderBrush}"
@@ -243,7 +302,10 @@
                                  Foreground="{DynamicResource AppForegroundBrush}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Display}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <CheckBox IsChecked="{Binding IsActive}" IsHitTestVisible="False" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Display}" VerticalAlignment="Center" />
+                                    </StackPanel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>

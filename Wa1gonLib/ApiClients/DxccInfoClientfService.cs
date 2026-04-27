@@ -11,6 +11,7 @@ namespace HamBusLog.Wa1gonLib.ApiClients;
 public class DxccInfoClientService(IHttpClientFactory httpClientFactory, ILogger<DxccInfoClientService> logger)
 {
     private readonly HttpClient httpClient = httpClientFactory.CreateClient("SharedClient");
+    private readonly ILogger<DxccInfoClientService> _logger = logger;
     private List<DxccEntity>? _dxccList = [];
 
     private JsonSerializerOptions _jsonOptions = new()
@@ -25,12 +26,16 @@ public class DxccInfoClientService(IHttpClientFactory httpClientFactory, ILogger
     public async Task<List<DxccEntity>> GetAllAsync(CancellationToken ct = default)
     {
         if (_dxccList is not null && _dxccList.Any())
+        {
+            _logger.LogDebug("Returning cached DXCC list with {Count} entries.", _dxccList.Count);
             return _dxccList;
+        }
 
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         };
+        _logger.LogDebug("Fetching DXCC list from API endpoint 'dxcc'.");
         _dxccList = await httpClient.GetFromJsonAsync<List<DxccEntity>>("dxcc", _jsonOptions, ct);
 
         return _dxccList ?? new List<DxccEntity>();

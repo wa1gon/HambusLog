@@ -84,7 +84,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void RefreshActiveRadioOptions()
     {
         var options = _rigCatalogStore.Entries
-            .Select(entry => new ActiveRadioOption(entry.RigNum, $"{entry.RigNum} - {entry.Model}"))
+            .Select(entry => new ActiveRadioOption(entry.RigNum, $"{entry.RigNum} - {entry.Mfg} {entry.Model}"))
             .ToList();
 
         AvailableRadios = new ObservableCollection<ActiveRadioOption>(options);

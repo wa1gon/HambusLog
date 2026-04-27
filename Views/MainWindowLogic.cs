@@ -252,14 +252,6 @@ public partial class MainWindow
 
         return await StorageProvider.TryGetFolderFromPathAsync(new Uri(fullPath));
     }
-
-    protected override void OnClosed(EventArgs e)
-    {
-        if (DataContext is MainWindowViewModel vm)
-            vm.Dispose();
-
-        base.OnClosed(e);
-    }
 }
 
 

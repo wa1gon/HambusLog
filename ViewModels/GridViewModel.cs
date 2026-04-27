@@ -1,5 +1,3 @@
-using HamBusLog.Wa1gonLib.Models;
-
 namespace HamBusLog.ViewModels;
 
 public enum ContestType

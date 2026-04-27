@@ -6,7 +6,6 @@ public sealed class RigCatalogStore : ObservableObject
     private string _filePath = string.Empty;
     private string _statusMessage = string.Empty;
     private int? _activeRigNum;
-    private ObservableCollection<int> _activeRigNums = [];
 
     public ObservableCollection<RigCatalogEntry> Entries
     {
@@ -32,12 +31,6 @@ public sealed class RigCatalogStore : ObservableObject
         private set => SetProperty(ref _activeRigNum, value);
     }
 
-    public ObservableCollection<int> ActiveRigNums
-    {
-        get => _activeRigNums;
-        private set => SetProperty(ref _activeRigNums, value);
-    }
-
     public RigCatalogEntry? ActiveRig => ActiveRigNum is int rigNum
         ? Entries.FirstOrDefault(x => x.RigNum == rigNum)
         : null;
@@ -45,16 +38,9 @@ public sealed class RigCatalogStore : ObservableObject
     public void InitializeFromConfiguration()
     {
         var config = AppConfigurationStore.Load();
-        var radio = AppConfigurationStore.GetActiveRigctldRadio(config);
-        var path = radio.RiglistFilePath;
-        var activeList = (radio.ActiveRigNums ?? [])
-            .Where(x => x > 0)
-            .Distinct()
-            .ToList();
-        ActiveRigNums = new ObservableCollection<int>(activeList);
-        ActiveRigNum = activeList.FirstOrDefault();
-        if (ActiveRigNum is null)
-            ActiveRigNum = radio.ActiveRigNum;
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        var path = profile.Rigctld.RiglistFilePath;
+        ActiveRigNum = profile.Rigctld.ActiveRigNum;
 
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -90,23 +76,17 @@ public sealed class RigCatalogStore : ObservableObject
             {
                 if (ActiveRigNum is not int activeRigNum || !Entries.Any(x => x.RigNum == activeRigNum))
                     ActiveRigNum = Entries[0].RigNum;
-                var valid = ActiveRigNums.Where(x => Entries.Any(e => e.RigNum == x)).Distinct().ToList();
-                if (valid.Count == 0 && ActiveRigNum is int single)
-                    valid.Add(single);
-                ActiveRigNums = new ObservableCollection<int>(valid);
             }
             else
             {
                 ActiveRigNum = null;
-                ActiveRigNums = [];
             }
             OnPropertyChanged(nameof(ActiveRig));
 
             var config = AppConfigurationStore.Load();
-            var radio = AppConfigurationStore.GetActiveRigctldRadio(config);
-            radio.RiglistFilePath = path;
-            radio.ActiveRigNum = ActiveRigNum;
-            radio.ActiveRigNums = ActiveRigNums.ToList();
+            var profile = AppConfigurationStore.GetActiveProfile(config);
+            profile.Rigctld.RiglistFilePath = path;
+            profile.Rigctld.ActiveRigNum = ActiveRigNum;
             AppConfigurationStore.Save(config);
         }
         catch (Exception ex)
@@ -125,31 +105,12 @@ public sealed class RigCatalogStore : ObservableObject
             return;
 
         ActiveRigNum = normalized;
-        ActiveRigNums = normalized is int selectedRigNum ? [selectedRigNum] : [];
         OnPropertyChanged(nameof(ActiveRig));
 
         var config = AppConfigurationStore.Load();
-        var radio = AppConfigurationStore.GetActiveRigctldRadio(config);
-        radio.ActiveRigNum = ActiveRigNum;
-        radio.ActiveRigNums = ActiveRigNums.ToList();
-        AppConfigurationStore.Save(config);
-    }
-
-    public void SetActiveRigs(IEnumerable<int>? rigNums)
-    {
-        var selected = (rigNums ?? [])
-            .Where(x => Entries.Any(e => e.RigNum == x))
-            .Distinct()
-            .ToList();
-
-        ActiveRigNums = new ObservableCollection<int>(selected);
-        ActiveRigNum = selected.FirstOrDefault();
-        OnPropertyChanged(nameof(ActiveRig));
-
-        var config = AppConfigurationStore.Load();
-        var radio = AppConfigurationStore.GetActiveRigctldRadio(config);
-        radio.ActiveRigNums = selected;
-        radio.ActiveRigNum = ActiveRigNum;
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        profile.Rigctld.ActiveRigNum = ActiveRigNum;
         AppConfigurationStore.Save(config);
     }
 }
+
