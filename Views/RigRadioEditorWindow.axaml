@@ -2,10 +2,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="HamBusLog.Views.RigRadioEditorWindow"
         Title="Edit Radio"
-        Width="980"
-        Height="760"
-        MinWidth="820"
-        MinHeight="620"
+        Width="1220"
+        Height="900"
+        MinWidth="980"
+        MinHeight="720"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource AppWindowBackgroundBrush}"
         Foreground="{DynamicResource AppForegroundBrush}">
@@ -79,12 +79,19 @@
                             Foreground="{DynamicResource AppButtonForegroundBrush}" />
                 </StackPanel>
 
-                <TextBlock Grid.Row="9" Grid.Column="0" Text="Search Model" VerticalAlignment="Center" />
-                <TextBox Grid.Row="9" Grid.Column="1"
-                         Text="{Binding RigCatalog.SearchModelText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         Watermark="Type model to filter..."
-                         Width="320"
-                         HorizontalAlignment="Left" />
+                <TextBlock Grid.Row="9" Grid.Column="0" Text="Search Model" VerticalAlignment="Top" />
+                <StackPanel Grid.Row="9" Grid.Column="1" Spacing="4" Width="420" HorizontalAlignment="Left">
+                    <TextBox Text="{Binding RigCatalog.SearchModelText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Watermark="Type any part of model name..." />
+                    <Border BorderBrush="{DynamicResource AppBorderBrush}"
+                            BorderThickness="1"
+                            Background="{DynamicResource AppPanelBackgroundBrush}"
+                            IsVisible="{Binding RigCatalog.HasModelSuggestions}">
+                        <ListBox ItemsSource="{Binding RigCatalog.FilteredModelSuggestions}"
+                                 SelectionChanged="OnModelSuggestionSelectionChanged"
+                                 MaxHeight="140" />
+                    </Border>
+                </StackPanel>
 
                 <TextBlock Grid.Row="10" Grid.Column="0" Text="Selected Rig" VerticalAlignment="Center" />
                 <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding RigCatalog.SelectedEntry.Model, FallbackValue=No rig selected}" VerticalAlignment="Center" />
@@ -92,7 +99,7 @@
                 <DataGrid Grid.Row="11" Grid.Column="0" Grid.ColumnSpan="2"
                           ItemsSource="{Binding RigCatalog.FilteredEntries}"
                           SelectedItem="{Binding RigCatalog.SelectedEntry, Mode=TwoWay}"
-                          SelectionMode="Extended"
+                          SelectionMode="Single"
                           SelectionChanged="OnCatalogSelectionChanged"
                           IsReadOnly="True"
                           AutoGenerateColumns="False"
@@ -144,5 +151,8 @@
         </Border>
     </Grid>
 </Window>
+
+
+
 
 

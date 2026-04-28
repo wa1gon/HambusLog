@@ -35,6 +35,8 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _configFilePath = string.Empty;
     private string _newProfileName = string.Empty;
 
+    private const int DefaultRigctldPort = 4532;
+
     public ConfigurationViewModel()
         : this(new HamBusLog.Hardware.SerialPortCatalogService())
     {
@@ -349,9 +351,11 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 : RigctldArgumentsTemplate;
             radio.AdditionalArguments = RigctldAdditionalArguments.Trim();
             radio.Host = string.IsNullOrWhiteSpace(RigctldHost) ? "127.0.0.1" : RigctldHost.Trim();
-            radio.Port = RigctldPort <= 0 ? 4532 : RigctldPort;
+            radio.Port = RigctldPort <= 0 ? DefaultRigctldPort : RigctldPort;
             radio.SerialPortName = SelectedSerialPort.Trim();
             radio.RiglistFilePath = RiglistFilePath.Trim();
+            EnsureUniqueRigPorts(rigctld, radio.TagName);
+            RigctldPort = radio.Port;
             if (_activeRigRadioTags.Count == 0)
                 _activeRigRadioTags.Add(radio.TagName);
             rigctld.ActiveRadioTags = _activeRigRadioTags
@@ -636,7 +640,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             ArgumentsTemplate = "-m {rigNum} -T {host} -t {port}{serialArg}",
             AdditionalArguments = string.Empty,
             Host = string.IsNullOrWhiteSpace(rigctld.Host) ? "127.0.0.1" : rigctld.Host,
-            Port = rigctld.Port <= 0 ? 4532 : rigctld.Port,
+            Port = GetNextAvailableRigPort(rigctld, null),
             SerialPortName = rigctld.SerialPortName,
             RiglistFilePath = rigctld.RiglistFilePath,
             IsActive = false
@@ -779,7 +783,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             : RigctldArgumentsTemplate;
         radio.AdditionalArguments = RigctldAdditionalArguments.Trim();
         radio.Host = string.IsNullOrWhiteSpace(RigctldHost) ? "127.0.0.1" : RigctldHost.Trim();
-        radio.Port = RigctldPort <= 0 ? 4532 : RigctldPort;
+        radio.Port = RigctldPort <= 0 ? DefaultRigctldPort : RigctldPort;
         radio.SerialPortName = SelectedSerialPort.Trim();
         radio.RiglistFilePath = RiglistFilePath.Trim();
     }
@@ -787,6 +791,10 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     public void CommitSelectedRigRadioEdits()
     {
         PersistRigRadioSettings(SelectedRigRadioTag);
+        var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
+        EnsureUniqueRigPorts(rigctld, SelectedRigRadioTag);
+        var selectedRadio = AppConfigurationStore.GetRigctldRadio(rigctld, SelectedRigRadioTag);
+        RigctldPort = selectedRadio.Port;
         ApplyEditorSettingsToRigCatalog();
     }
 
@@ -809,6 +817,57 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         if (!string.IsNullOrWhiteSpace(configuredPath)
             && !string.Equals(configuredPath, RigCatalog.FilePath, StringComparison.Ordinal))
             RigCatalog.LoadFromFile(configuredPath);
+    }
+
+    private static int GetNextAvailableRigPort(RigctldConfiguration rigctld, string? excludeTag)
+    {
+        var usedPorts = rigctld.Radios
+            .Where(x => x.Port > 0 && (string.IsNullOrWhiteSpace(excludeTag)
+                || !string.Equals(x.TagName, excludeTag, StringComparison.OrdinalIgnoreCase)))
+            .Select(x => x.Port)
+            .ToHashSet();
+
+        return FindFirstAvailablePort(usedPorts);
+    }
+
+    private static void EnsureUniqueRigPorts(RigctldConfiguration rigctld, string? priorityTag)
+    {
+        var orderedRadios = rigctld.Radios
+            .OrderBy(x => string.Equals(x.TagName, priorityTag, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(x => x.RadioId <= 0 ? int.MaxValue : x.RadioId)
+            .ThenBy(x => x.TagName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var usedPorts = new HashSet<int>();
+        foreach (var radio in orderedRadios)
+        {
+            var candidate = radio.Port <= 0 ? DefaultRigctldPort : radio.Port;
+            while (usedPorts.Contains(candidate) && candidate < 65535)
+                candidate++;
+
+            if (usedPorts.Contains(candidate))
+                candidate = FindFirstAvailablePort(usedPorts);
+
+            radio.Port = candidate;
+            usedPorts.Add(candidate);
+        }
+    }
+
+    private static int FindFirstAvailablePort(HashSet<int> usedPorts)
+    {
+        for (var port = DefaultRigctldPort; port <= 65535; port++)
+        {
+            if (!usedPorts.Contains(port))
+                return port;
+        }
+
+        for (var port = 1; port < DefaultRigctldPort; port++)
+        {
+            if (!usedPorts.Contains(port))
+                return port;
+        }
+
+        return DefaultRigctldPort;
     }
 
     public void Dispose()

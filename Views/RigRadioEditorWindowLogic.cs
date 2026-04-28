@@ -14,6 +14,27 @@ public partial class RigRadioEditorWindow
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = _viewModel;
+
+        Opened += OnWindowOpened;
+        Closed += OnWindowClosed;
+    }
+
+    private void OnWindowOpened(object? sender, EventArgs e)
+    {
+        // Load the rig list for this radio when the editor opens.
+        var path = _viewModel.RiglistFilePath?.Trim();
+        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+            _viewModel.RigCatalog.LoadFromFile(path);
+        else if (!string.IsNullOrWhiteSpace(path))
+            _viewModel.RigCatalog.SetStatusMessage($"Rig list file not found: {path}");
+    }
+
+    private void OnWindowClosed(object? sender, EventArgs e)
+    {
+        // Release the catalog entries so they don't linger in memory.
+        _viewModel.RigCatalog.ClearEntries();
+        Opened -= OnWindowOpened;
+        Closed -= OnWindowClosed;
     }
 
     public void OnRefreshSerialPortsClicked(object? sender, RoutedEventArgs e)
@@ -64,6 +85,19 @@ public partial class RigRadioEditorWindow
 
         var selected = grid.SelectedItems?.Cast<RigCatalogEntry>() ?? [];
         _viewModel.RigCatalog.SetSelectedEntries(selected);
+    }
+
+    public void OnModelSuggestionSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not ListBox listBox)
+            return;
+
+        var selected = listBox.SelectedItem as string;
+        if (string.IsNullOrWhiteSpace(selected))
+            return;
+
+        _viewModel.RigCatalog.SearchModelText = selected;
+        listBox.SelectedItem = null;
     }
 
     public async void OnCatalogCopyCommandClicked(object? sender, RoutedEventArgs e)

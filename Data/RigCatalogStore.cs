@@ -112,5 +112,14 @@ public sealed class RigCatalogStore : ObservableObject
         profile.Rigctld.ActiveRigNum = ActiveRigNum;
         AppConfigurationStore.Save(config);
     }
+
+    public void Clear()
+    {
+        Entries = [];
+        FilePath = string.Empty;
+        StatusMessage = string.Empty;
+        ActiveRigNum = null;
+        OnPropertyChanged(nameof(ActiveRig));
+    }
 }
 

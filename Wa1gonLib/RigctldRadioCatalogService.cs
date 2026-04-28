@@ -62,6 +62,9 @@ public sealed class RigctldRadioCatalogService
         var term = searchText.Trim();
         return entries
             .Where(entry => entry.Model.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(entry => entry.Model.StartsWith(term, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(entry => entry.Model, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(entry => entry.Mfg, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 
