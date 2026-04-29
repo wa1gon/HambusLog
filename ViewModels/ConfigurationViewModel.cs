@@ -23,7 +23,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _databaseFileName = "hambuslog.db";
     private string _connectionString = "Data Source=hambuslog.db";
     private string _selectedRigRadioTag = "radio-1";
-    private string _rigctldRadioName = "Radio 1";
+    private string _rigctldRadioName = "radio-1";
     private string _rigctldExecutable = "rigctld";
     private string _rigctldArgumentsTemplate = "-m {rigNum} -T {host} -t {port}{serialArg}";
     private string _rigctldAdditionalArguments = string.Empty;
@@ -224,13 +224,16 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         get => _rigctldRadioName;
         set
         {
-            if (!SetProperty(ref _rigctldRadioName, value ?? string.Empty))
+            var normalized = string.IsNullOrWhiteSpace(value)
+                ? SelectedRigRadioTag
+                : value.Trim();
+            if (!SetProperty(ref _rigctldRadioName, normalized))
                 return;
 
             var selectedOption = AvailableRigRadioOptions
                 .FirstOrDefault(x => string.Equals(x.TagName, SelectedRigRadioTag, StringComparison.OrdinalIgnoreCase));
             if (selectedOption is not null)
-                selectedOption.DisplayName = string.IsNullOrWhiteSpace(_rigctldRadioName) ? selectedOption.TagName : _rigctldRadioName.Trim();
+                selectedOption.DisplayName = normalized;
         }
     }
 
@@ -344,17 +347,17 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
             rigctld.ActiveRadioTag = SelectedRigRadioTag;
             var radio = AppConfigurationStore.GetRigctldRadio(rigctld, SelectedRigRadioTag);
-            radio.DisplayName = string.IsNullOrWhiteSpace(RigctldRadioName) ? radio.TagName : RigctldRadioName.Trim();
-            radio.Executable = string.IsNullOrWhiteSpace(RigctldExecutable) ? "rigctld" : RigctldExecutable.Trim();
-            radio.ArgumentsTemplate = string.IsNullOrWhiteSpace(RigctldArgumentsTemplate)
-                ? "-m {rigNum} -T {host} -t {port}{serialArg}"
-                : RigctldArgumentsTemplate;
+            radio.DisplayName = string.IsNullOrWhiteSpace(RigctldRadioName)
+                ? radio.TagName
+                : RigctldRadioName.Trim();
+            radio.Executable = RigctldExecutable.Trim();
+            radio.ArgumentsTemplate = RigctldArgumentsTemplate.Trim();
             radio.AdditionalArguments = RigctldAdditionalArguments.Trim();
             radio.Host = string.IsNullOrWhiteSpace(RigctldHost) ? "127.0.0.1" : RigctldHost.Trim();
             radio.Port = RigctldPort <= 0 ? DefaultRigctldPort : RigctldPort;
             radio.SerialPortName = SelectedSerialPort.Trim();
             radio.RiglistFilePath = RiglistFilePath.Trim();
-            EnsureUniqueRigPorts(rigctld, radio.TagName);
+            var portCorrections = EnsureUniqueRigPorts(rigctld, radio.TagName);
             RigctldPort = radio.Port;
             if (_activeRigRadioTags.Count == 0)
                 _activeRigRadioTags.Add(radio.TagName);
@@ -382,7 +385,10 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             RigCatalog.ReloadFromConfiguration();
             App.ApplyThemeFromProfile(profile);
             _ = App.RigctldConnectionManager.RefreshActiveConnectionsAsync();
-            StatusMessage = $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss}";
+            var correctionMessage = BuildPortCorrectionMessage(portCorrections);
+            StatusMessage = string.IsNullOrWhiteSpace(correctionMessage)
+                ? $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss}"
+                : $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss} ({correctionMessage})";
         }
         catch (Exception ex)
         {
@@ -574,10 +580,8 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         rigctld.ActiveRadioTag = radio.TagName;
         SelectedRigRadioTag = radio.TagName;
         RigctldRadioName = string.IsNullOrWhiteSpace(radio.DisplayName) ? radio.TagName : radio.DisplayName;
-        RigctldExecutable = string.IsNullOrWhiteSpace(radio.Executable) ? "rigctld" : radio.Executable;
-        RigctldArgumentsTemplate = string.IsNullOrWhiteSpace(radio.ArgumentsTemplate)
-            ? "-m {rigNum} -T {host} -t {port}{serialArg}"
-            : radio.ArgumentsTemplate;
+        RigctldExecutable = radio.Executable ?? string.Empty;
+        RigctldArgumentsTemplate = radio.ArgumentsTemplate ?? string.Empty;
         RigctldAdditionalArguments = radio.AdditionalArguments ?? string.Empty;
         RigctldHost = string.IsNullOrWhiteSpace(radio.Host) ? "127.0.0.1" : radio.Host;
         RigctldPort = radio.Port <= 0 ? 4532 : radio.Port;
@@ -635,7 +639,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         {
             RadioId = nextId,
             TagName = tag,
-            DisplayName = $"Radio {nextId}",
+            DisplayName = tag,
             Executable = "rigctld",
             ArgumentsTemplate = "-m {rigNum} -T {host} -t {port}{serialArg}",
             AdditionalArguments = string.Empty,
@@ -650,7 +654,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         PopulateAvailableRigRadios(rigctld);
         SelectedRigRadioTag = newRadio.TagName;
         OnPropertyChanged(nameof(SelectedRigRadio));
-        StatusMessage = $"Added {newRadio.DisplayName}.";
+        StatusMessage = $"Added {newRadio.TagName}.";
     }
 
     public void RemoveSelectedRigRadio()
@@ -682,7 +686,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         rigctld.ActiveRadioTag = _activeRigRadioTags[0];
         PopulateAvailableRigRadios(rigctld);
         SelectedRigRadioTag = rigctld.ActiveRadioTag;
-        StatusMessage = $"Removed radio '{selected.DisplayName}'.";
+        StatusMessage = $"Removed radio '{selected.TagName}'.";
     }
 
     private static string ToHexRgb(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
@@ -775,12 +779,11 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
         var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
         var radio = AppConfigurationStore.GetRigctldRadio(rigctld, tagName);
-
-        radio.DisplayName = string.IsNullOrWhiteSpace(RigctldRadioName) ? radio.TagName : RigctldRadioName.Trim();
-        radio.Executable = string.IsNullOrWhiteSpace(RigctldExecutable) ? "rigctld" : RigctldExecutable.Trim();
-        radio.ArgumentsTemplate = string.IsNullOrWhiteSpace(RigctldArgumentsTemplate)
-            ? "-m {rigNum} -T {host} -t {port}{serialArg}"
-            : RigctldArgumentsTemplate;
+        radio.DisplayName = string.IsNullOrWhiteSpace(RigctldRadioName)
+            ? radio.TagName
+            : RigctldRadioName.Trim();
+        radio.Executable = RigctldExecutable.Trim();
+        radio.ArgumentsTemplate = RigctldArgumentsTemplate.Trim();
         radio.AdditionalArguments = RigctldAdditionalArguments.Trim();
         radio.Host = string.IsNullOrWhiteSpace(RigctldHost) ? "127.0.0.1" : RigctldHost.Trim();
         radio.Port = RigctldPort <= 0 ? DefaultRigctldPort : RigctldPort;
@@ -792,10 +795,14 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     {
         PersistRigRadioSettings(SelectedRigRadioTag);
         var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
-        EnsureUniqueRigPorts(rigctld, SelectedRigRadioTag);
+        var portCorrections = EnsureUniqueRigPorts(rigctld, SelectedRigRadioTag);
         var selectedRadio = AppConfigurationStore.GetRigctldRadio(rigctld, SelectedRigRadioTag);
         RigctldPort = selectedRadio.Port;
         ApplyEditorSettingsToRigCatalog();
+
+        var correctionMessage = BuildPortCorrectionMessage(portCorrections);
+        if (!string.IsNullOrWhiteSpace(correctionMessage))
+            StatusMessage = correctionMessage;
     }
 
     public void RevertSelectedRigRadioEdits()
@@ -830,7 +837,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         return FindFirstAvailablePort(usedPorts);
     }
 
-    private static void EnsureUniqueRigPorts(RigctldConfiguration rigctld, string? priorityTag)
+    private static List<(string TagName, int FromPort, int ToPort)> EnsureUniqueRigPorts(RigctldConfiguration rigctld, string? priorityTag)
     {
         var orderedRadios = rigctld.Radios
             .OrderBy(x => string.Equals(x.TagName, priorityTag, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
@@ -838,10 +845,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             .ThenBy(x => x.TagName, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
+        var corrections = new List<(string TagName, int FromPort, int ToPort)>();
         var usedPorts = new HashSet<int>();
         foreach (var radio in orderedRadios)
         {
-            var candidate = radio.Port <= 0 ? DefaultRigctldPort : radio.Port;
+            var original = radio.Port <= 0 ? DefaultRigctldPort : radio.Port;
+            var candidate = original;
             while (usedPorts.Contains(candidate) && candidate < 65535)
                 candidate++;
 
@@ -850,7 +859,23 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
             radio.Port = candidate;
             usedPorts.Add(candidate);
+
+            if (candidate != original)
+                corrections.Add((radio.TagName, original, candidate));
         }
+
+        return corrections;
+    }
+
+    private static string BuildPortCorrectionMessage(IReadOnlyCollection<(string TagName, int FromPort, int ToPort)> corrections)
+    {
+        if (corrections.Count == 0)
+            return string.Empty;
+
+        var items = corrections
+            .Select(x => $"{x.TagName}: {x.FromPort}->{x.ToPort}")
+            .ToList();
+        return $"Port conflict resolved ({string.Join(", ", items)})";
     }
 
     private static int FindFirstAvailablePort(HashSet<int> usedPorts)

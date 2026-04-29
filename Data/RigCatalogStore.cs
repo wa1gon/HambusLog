@@ -113,6 +113,8 @@ public sealed class RigCatalogStore : ObservableObject
         AppConfigurationStore.Save(config);
     }
 
+    
+    
     public void Clear()
     {
         Entries = [];

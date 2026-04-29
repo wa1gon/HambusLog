@@ -51,7 +51,7 @@ public sealed class RigRadioConfig
 {
     public int RadioId { get; set; }
     public string TagName { get; set; } = "radio-1";
-    public string DisplayName { get; set; } = "Radio 1";
+    public string DisplayName { get; set; } = "radio-1";
     public string Executable { get; set; } = "rigctld";
     public string ArgumentsTemplate { get; set; } = "-m {rigNum} -T {host} -t {port}{serialArg}";
     public string AdditionalArguments { get; set; } = string.Empty;

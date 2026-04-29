@@ -99,7 +99,7 @@ public static class AppConfigurationStore
             {
                 RadioId = nextId,
                 TagName = tag,
-                DisplayName = $"Radio {nextId}",
+                DisplayName = tag,
                 Host = string.IsNullOrWhiteSpace(rigctld.Host) ? "127.0.0.1" : rigctld.Host,
                 Port = rigctld.Port <= 0 ? 4532 : rigctld.Port,
                 SerialPortName = rigctld.SerialPortName,
@@ -193,7 +193,7 @@ public static class AppConfigurationStore
             {
                 RadioId = 1,
                 TagName = seedTag,
-                DisplayName = "Radio 1",
+                DisplayName = seedTag,
                 Host = rigctld.Host,
                 Port = rigctld.Port,
                 SerialPortName = rigctld.SerialPortName,
@@ -207,17 +207,18 @@ public static class AppConfigurationStore
         var id = 1;
         foreach (var radio in rigctld.Radios)
         {
-            var tag = string.IsNullOrWhiteSpace(radio.TagName) ? $"radio-{id}" : radio.TagName.Trim();
+            var legacyName = radio.DisplayName?.Trim();
+            var tag = string.IsNullOrWhiteSpace(radio.TagName)
+                ? (string.IsNullOrWhiteSpace(legacyName) ? $"radio-{id}" : legacyName)
+                : radio.TagName.Trim();
             if (!seenTags.Add(tag))
                 continue;
 
             radio.RadioId = radio.RadioId <= 0 ? id : radio.RadioId;
             radio.TagName = tag;
-            radio.DisplayName = string.IsNullOrWhiteSpace(radio.DisplayName) ? tag : radio.DisplayName.Trim();
-            radio.Executable = string.IsNullOrWhiteSpace(radio.Executable) ? "rigctld" : radio.Executable.Trim();
-            radio.ArgumentsTemplate = string.IsNullOrWhiteSpace(radio.ArgumentsTemplate)
-                ? "-m {rigNum} -T {host} -t {port}{serialArg}"
-                : radio.ArgumentsTemplate;
+            radio.DisplayName = string.IsNullOrWhiteSpace(legacyName) ? tag : legacyName;
+            radio.Executable = radio.Executable?.Trim() ?? string.Empty;
+            radio.ArgumentsTemplate = radio.ArgumentsTemplate?.Trim() ?? string.Empty;
             radio.AdditionalArguments = string.IsNullOrWhiteSpace(radio.AdditionalArguments)
                 ? string.Empty
                 : radio.AdditionalArguments.Trim();

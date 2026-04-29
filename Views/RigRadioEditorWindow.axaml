@@ -2,10 +2,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="HamBusLog.Views.RigRadioEditorWindow"
         Title="Edit Radio"
-        Width="1220"
-        Height="900"
-        MinWidth="980"
-        MinHeight="720"
+        Width="980"
+        Height="780"
+        MinWidth="840"
+        MinHeight="620"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource AppWindowBackgroundBrush}"
         Foreground="{DynamicResource AppForegroundBrush}">
@@ -23,21 +23,44 @@
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Executable" VerticalAlignment="Center" />
                 <TextBox Grid.Row="2" Grid.Column="1"
                          Text="{Binding RigctldExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          Width="420"
+                          HorizontalAlignment="Left"
                          Watermark="rigctld" />
+                <TextBlock Grid.Row="2" Grid.Column="1"
+                           Margin="0,34,0,0"
+                           Foreground="{DynamicResource AppMutedForegroundBrush}"
+                           FontSize="11"
+                           Text="Optional. Leave blank to use default executable name." />
 
                 <TextBlock Grid.Row="3" Grid.Column="0" Text="Args Template" VerticalAlignment="Center" />
                 <TextBox Grid.Row="3" Grid.Column="1"
                          Text="{Binding RigctldArgumentsTemplate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          Width="520"
+                          HorizontalAlignment="Left"
                          Watermark="-m {rigNum} -T {host} -t {port}{serialArg} {additionalArgs}" />
+                <TextBlock Grid.Row="3" Grid.Column="1"
+                           Margin="0,34,0,0"
+                           Foreground="{DynamicResource AppMutedForegroundBrush}"
+                           FontSize="11"
+                           Text="Optional. Leave blank to use default command template." />
 
                 <TextBlock Grid.Row="4" Grid.Column="0" Text="Additional Args" VerticalAlignment="Center" />
                 <TextBox Grid.Row="4" Grid.Column="1"
                          Text="{Binding RigctldAdditionalArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          Width="520"
+                          HorizontalAlignment="Left"
                          Watermark="-P RTS -s 38400" />
+                <TextBlock Grid.Row="4" Grid.Column="1"
+                           Margin="0,34,0,0"
+                           Foreground="{DynamicResource AppMutedForegroundBrush}"
+                           FontSize="11"
+                           Text="Use this for any extra rigctld flags not covered by other fields." />
 
                 <TextBlock Grid.Row="5" Grid.Column="0" Text="Host" VerticalAlignment="Center" />
                 <TextBox Grid.Row="5" Grid.Column="1"
                          Text="{Binding RigctldHost, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          Width="300"
+                          HorizontalAlignment="Left"
                          Watermark="127.0.0.1" />
 
                 <TextBlock Grid.Row="6" Grid.Column="0" Text="Port" VerticalAlignment="Center" />
@@ -61,7 +84,7 @@
 
                 <TextBlock Grid.Row="8" Grid.Column="0" Text="Rig List" VerticalAlignment="Center" />
                 <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                    <TextBox Text="{Binding RiglistFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="360" />
+                    <TextBox Text="{Binding RiglistFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="420" />
                     <Button Content="Browse..."
                             Click="OnBrowseRiglistClicked"
                             Padding="10,6"

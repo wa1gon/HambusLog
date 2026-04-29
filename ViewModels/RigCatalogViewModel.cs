@@ -379,10 +379,8 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         var rigctld = AppConfigurationStore.GetRigctld(config);
         var radio = AppConfigurationStore.GetRigctldRadio(rigctld, rigctld.ActiveRadioTag);
 
-        RigctldExecutable = string.IsNullOrWhiteSpace(radio.Executable) ? "rigctld" : radio.Executable;
-        RigctldArgumentsTemplate = string.IsNullOrWhiteSpace(radio.ArgumentsTemplate)
-            ? "-m {rigNum} -T {host} -t {port}{serialArg}"
-            : radio.ArgumentsTemplate;
+        RigctldExecutable = radio.Executable ?? string.Empty;
+        RigctldArgumentsTemplate = radio.ArgumentsTemplate ?? string.Empty;
         RigctldAdditionalArguments = radio.AdditionalArguments ?? string.Empty;
         RigctldHost = string.IsNullOrWhiteSpace(radio.Host) ? rigctld.Host : radio.Host;
         RigctldPort = radio.Port <= 0 ? rigctld.Port : radio.Port;
