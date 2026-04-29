@@ -41,6 +41,15 @@ public partial class RigCatalogWindow
         _viewModel.RefreshSerialPorts();
     }
 
+    public void OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not DataGrid grid)
+            return;
+
+        var selected = grid.SelectedItems?.Cast<RigCatalogEntry>() ?? [];
+        _viewModel.SetSelectedEntries(selected);
+    }
+
     public async void OnCopyCommandClicked(object? sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(_viewModel.RigctldCommandLine))
@@ -73,8 +82,6 @@ public partial class RigCatalogWindow
         _viewModel.Dispose();
         base.OnClosed(e);
     }
+
 }
-
-
-
 

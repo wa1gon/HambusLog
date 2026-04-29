@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using HamBusLog.Wa1gonLib.Models;
 
 namespace HamBusLog.Views;
@@ -5,6 +6,7 @@ namespace HamBusLog.Views;
 public partial class LogInputWindow
 {
     private readonly LogInputViewModel _viewModel;
+    private readonly DispatcherTimer _activeRigRefreshTimer = new() { Interval = TimeSpan.FromSeconds(2) };
 
     /// <summary>Raised when the user successfully logs a QSO.</summary>
     public event EventHandler<Qso>? QsoLogged;
@@ -14,6 +16,10 @@ public partial class LogInputWindow
         InitializeComponent();
         _viewModel = new LogInputViewModel();
         DataContext = _viewModel;
+
+        _activeRigRefreshTimer.Tick += OnActiveRigRefreshTick;
+        _activeRigRefreshTimer.Start();
+        Closed += OnWindowClosed;
     }
 
     public void OnStampNowClicked(object? sender, RoutedEventArgs e)
@@ -52,5 +58,16 @@ public partial class LogInputWindow
         if (label != null)
             label.Text = message;
     }
-}
 
+    private void OnActiveRigRefreshTick(object? sender, EventArgs e)
+    {
+        _viewModel.RefreshActiveRigSnapshot();
+    }
+
+    private void OnWindowClosed(object? sender, EventArgs e)
+    {
+        _activeRigRefreshTimer.Tick -= OnActiveRigRefreshTick;
+        _activeRigRefreshTimer.Stop();
+        Closed -= OnWindowClosed;
+    }
+}

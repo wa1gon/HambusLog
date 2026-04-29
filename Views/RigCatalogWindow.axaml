@@ -9,7 +9,7 @@
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource AppWindowBackgroundBrush}"
         Foreground="{DynamicResource AppForegroundBrush}">
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto" Margin="14">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto" Margin="14">
 
         <!-- File picker bar -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
@@ -25,9 +25,13 @@
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
             <TextBlock Text="Search Model:" VerticalAlignment="Center" />
-            <ComboBox ItemsSource="{Binding AvailableModels}"
-                      SelectedItem="{Binding SelectedSearchModel}"
-                      Width="280" />
+            <TextBox Name="SearchModelBox"
+                     Text="{Binding SearchModelText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     Watermark="Type model to filter..."
+                     Background="{DynamicResource AppPanelBackgroundBrush}"
+                     Foreground="{DynamicResource AppForegroundBrush}"
+                     CaretBrush="{DynamicResource AppForegroundBrush}"
+                     Width="280" />
         </StackPanel>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
@@ -39,10 +43,25 @@
             <Button Content="Refresh Ports" Click="OnRefreshSerialPortsClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
         </StackPanel>
 
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,140,Auto,110,Auto,100,Auto,*" ColumnSpacing="8" Margin="0,0,0,10">
+            <TextBlock Grid.Column="0" Text="Executable:" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding RigctldExecutable}" />
+            <TextBlock Grid.Column="2" Text="Host:" VerticalAlignment="Center" />
+            <TextBox Grid.Column="3" Text="{Binding RigctldHost}" />
+            <TextBlock Grid.Column="4" Text="Port:" VerticalAlignment="Center" />
+            <TextBox Grid.Column="5" Text="{Binding RigctldPort}" />
+            <TextBlock Grid.Column="6" Text="Args:" VerticalAlignment="Center" />
+            <TextBox Grid.Column="7"
+                     Text="{Binding RigctldArgumentsTemplate}"
+                     Watermark="-m {rigNum} -T {host} -t {port}{serialArg} ..." />
+        </Grid>
+
         <!-- DataGrid -->
-        <DataGrid Grid.Row="3"
+        <DataGrid Grid.Row="4"
                   ItemsSource="{Binding FilteredEntries}"
                   SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
+                  SelectionMode="Extended"
+                  SelectionChanged="OnSelectionChanged"
                   IsReadOnly="True"
                   AutoGenerateColumns="False"
                   CanUserSortColumns="True"
@@ -57,7 +76,7 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <Grid Grid.Row="4" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
+        <Grid Grid.Row="5" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
             <TextBlock Grid.Column="0" Text="rigctld Command:" VerticalAlignment="Center" />
             <TextBox Grid.Column="1" Text="{Binding RigctldCommandLine}"
                      IsReadOnly="True"
@@ -67,17 +86,10 @@
         </Grid>
 
         <!-- Status bar -->
-        <TextBlock Grid.Row="5"
+        <TextBlock Grid.Row="6"
                    Text="{Binding StatusMessage}"
                    FontStyle="Italic"
                    Foreground="{DynamicResource AppAccentBrush}"
                    Margin="0,8,0,0" />
     </Grid>
 </Window>
-
-
-
-
-
-
-

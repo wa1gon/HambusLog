@@ -3,7 +3,8 @@ namespace HamBusLog;
 public partial class App
 {
     public static RigCatalogStore RigCatalogStore { get; } = new();
-    
+    public static HamBusLog.Hardware.RigctldConnectionManager RigctldConnectionManager { get; } = new();
+
     private static HamBusLogDbContext? _dbContext;
     public static HamBusLogDbContext DbContext
     {
@@ -24,6 +25,7 @@ public partial class App
                 var options = HamBusLogDbContextFactory.BuildOptions(DatabaseProvider.Sqlite, connectionString);
                 _dbContext = new HamBusLogDbContext(options);
                 _dbContext.Database.EnsureCreated();
+                System.Diagnostics.Debug.WriteLine($"Database context created: {connectionString}");
             }
             return _dbContext;
         }
@@ -65,6 +67,8 @@ public partial class App
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
             DisableAvaloniaDataAnnotationValidation();
             RigCatalogStore.InitializeFromConfiguration();
+            _ = RigctldConnectionManager.RefreshActiveConnectionsAsync();
+            desktop.Exit += (_, _) => RigctldConnectionManager.Dispose();
             desktop.MainWindow = new MainWindow
             {
                 DataContext = new MainWindowViewModel(),

@@ -8,12 +8,20 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
     private readonly HamBusLog.Hardware.ISerialPortCatalogService _serialPortCatalogService;
     private ObservableCollection<RigCatalogEntry> _filteredEntries = [];
     private ObservableCollection<string> _availableModels = [];
+    private ObservableCollection<string> _filteredModelSuggestions = [];
     private ObservableCollection<string> _availableSerialPorts = [];
     private string _selectedSearchModel = AllModelsOption;
     private string _selectedSerialPort = string.Empty;
     private RigCatalogEntry? _selectedEntry;
     private string _rigctldCommandLine = string.Empty;
     private string? _statusMessageOverride;
+
+    private string _searchModelText = string.Empty;
+    private string _rigctldExecutable = "rigctld";
+    private string _rigctldArgumentsTemplate = "-m {rigNum} -T {host} -t {port}{serialArg}";
+    private string _rigctldAdditionalArguments = string.Empty;
+    private string _rigctldHost = "127.0.0.1";
+    private int _rigctldPort = 4532;
 
     public RigCatalogViewModel()
         : this(App.RigCatalogStore, new HamBusLog.Hardware.SerialPortCatalogService())
@@ -27,9 +35,15 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         _store.PropertyChanged += OnStorePropertyChanged;
 
         var config = AppConfigurationStore.Load();
-        var profile = AppConfigurationStore.GetActiveProfile(config);
-        var configuredPath = profile.Rigctld.RiglistFilePath;
-        _selectedSerialPort = profile.Rigctld.SerialPortName;
+        var rigctld = AppConfigurationStore.GetRigctld(config);
+        var activeRadio = AppConfigurationStore.GetRigctldRadio(rigctld, rigctld.ActiveRadioTag);
+        // Per-radio path takes priority; fall back to global rigctld path.
+        var configuredPath = !string.IsNullOrWhiteSpace(activeRadio.RiglistFilePath)
+            ? activeRadio.RiglistFilePath
+            : rigctld.RiglistFilePath;
+        _selectedSerialPort = !string.IsNullOrWhiteSpace(activeRadio.SerialPortName)
+            ? activeRadio.SerialPortName
+            : rigctld.SerialPortName;
         if (!string.IsNullOrWhiteSpace(configuredPath) && !string.Equals(configuredPath, _store.FilePath, StringComparison.Ordinal))
         {
             _store.LoadFromFile(configuredPath);
@@ -54,6 +68,20 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _availableModels, value);
     }
 
+    public ObservableCollection<string> FilteredModelSuggestions
+    {
+        get => _filteredModelSuggestions;
+        private set
+        {
+            if (!SetProperty(ref _filteredModelSuggestions, value))
+                return;
+
+            OnPropertyChanged(nameof(HasModelSuggestions));
+        }
+    }
+
+    public bool HasModelSuggestions => FilteredModelSuggestions.Count > 0;
+
     public ObservableCollection<string> AvailableSerialPorts
     {
         get => _availableSerialPorts;
@@ -66,7 +94,33 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         set
         {
             if (SetProperty(ref _selectedSearchModel, value))
+            {
+                _searchModelText = string.Equals(value, AllModelsOption, StringComparison.OrdinalIgnoreCase)
+                    ? string.Empty
+                    : value;
+                OnPropertyChanged(nameof(SearchModelText));
+                RefreshModelSuggestions();
                 RefreshFilteredEntries();
+            }
+        }
+    }
+
+    public string SearchModelText
+    {
+        get => _searchModelText;
+        set
+        {
+            if (SetProperty(ref _searchModelText, value ?? string.Empty))
+            {
+                var normalized = string.IsNullOrWhiteSpace(_searchModelText) ? AllModelsOption : _searchModelText.Trim();
+                if (!string.Equals(_selectedSearchModel, normalized, StringComparison.Ordinal))
+                {
+                    _selectedSearchModel = normalized;
+                    OnPropertyChanged(nameof(SelectedSearchModel));
+                }
+                RefreshModelSuggestions();
+                RefreshFilteredEntries();
+            }
         }
     }
 
@@ -101,6 +155,56 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
 
     public string FilePath => _store.FilePath;
     public string StatusMessage => _statusMessageOverride ?? _store.StatusMessage;
+
+    public string RigctldExecutable
+    {
+        get => _rigctldExecutable;
+        set
+        {
+            if (SetProperty(ref _rigctldExecutable, value ?? string.Empty))
+                UpdateCommandLine();
+        }
+    }
+
+    public string RigctldArgumentsTemplate
+    {
+        get => _rigctldArgumentsTemplate;
+        set
+        {
+            if (SetProperty(ref _rigctldArgumentsTemplate, value ?? string.Empty))
+                UpdateCommandLine();
+        }
+    }
+
+    public string RigctldAdditionalArguments
+    {
+        get => _rigctldAdditionalArguments;
+        set
+        {
+            if (SetProperty(ref _rigctldAdditionalArguments, value ?? string.Empty))
+                UpdateCommandLine();
+        }
+    }
+
+    public string RigctldHost
+    {
+        get => _rigctldHost;
+        set
+        {
+            if (SetProperty(ref _rigctldHost, value ?? string.Empty))
+                UpdateCommandLine();
+        }
+    }
+
+    public int RigctldPort
+    {
+        get => _rigctldPort;
+        set
+        {
+            if (SetProperty(ref _rigctldPort, value <= 0 ? 4532 : value))
+                UpdateCommandLine();
+        }
+    }
 
     public void SetStatusMessage(string message)
     {
@@ -166,9 +270,16 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
 
     private void RefreshFilteredEntries()
     {
-        var searchModel = SelectedSearchModel == AllModelsOption ? null : SelectedSearchModel;
-        var filtered = RigctldRadioCatalogService.FilterByModel(_store.Entries, searchModel);
+        var term = SearchModelText;
+        var filtered = RigctldRadioCatalogService.FilterByModel(_store.Entries, term);
         FilteredEntries = new ObservableCollection<RigCatalogEntry>(filtered);
+
+        // Incremental search behavior: while typing, drive selection to the first hit.
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            SelectedEntry = FilteredEntries.FirstOrDefault();
+            return;
+        }
 
         if (_store.ActiveRigNum is int activeRigNum)
         {
@@ -206,19 +317,80 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
 
         if (!AvailableModels.Contains(SelectedSearchModel))
             SelectedSearchModel = AllModelsOption;
+
+        RefreshModelSuggestions();
+    }
+
+    private void RefreshModelSuggestions()
+    {
+        var term = SearchModelText?.Trim() ?? string.Empty;
+        var sourceModels = AvailableModels
+            .Where(x => !string.IsNullOrWhiteSpace(x) && !string.Equals(x, AllModelsOption, StringComparison.OrdinalIgnoreCase));
+
+        var suggestions = string.IsNullOrWhiteSpace(term)
+            ? sourceModels
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .Take(30)
+                .ToList()
+            : sourceModels
+                .Where(x => x.Contains(term, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(x => x.StartsWith(term, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .ThenBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .Take(30)
+                .ToList();
+
+        FilteredModelSuggestions = new ObservableCollection<string>(suggestions);
     }
 
     private void UpdateCommandLine()
     {
-        var config = AppConfigurationStore.Load();
-        var profile = AppConfigurationStore.GetActiveProfile(config);
         RigctldCommandLine = RigctldRadioCatalogService.CreateRigctldCommandLine(
             SelectedEntry,
-            profile.Rigctld.Host,
-            profile.Rigctld.Port,
-            SelectedSerialPort);
+            RigctldHost,
+            RigctldPort,
+            SelectedSerialPort,
+            RigctldExecutable,
+            RigctldArgumentsTemplate,
+            RigctldAdditionalArguments);
         _statusMessageOverride = null;
         OnPropertyChanged(nameof(StatusMessage));
+    }
+
+    public void SetSelectedEntries(IEnumerable<RigCatalogEntry> entries)
+    {
+        var first = entries?.FirstOrDefault();
+        SelectedEntry = first;
+        _store.SetActiveRig(first?.RigNum);
+    }
+
+    public void ClearEntries()
+    {
+        _store.Clear();
+        FilteredEntries = [];
+        AvailableModels = new ObservableCollection<string> { "All Models" };
+        FilteredModelSuggestions = [];
+        SelectedEntry = null;
+        RigctldCommandLine = string.Empty;
+    }
+
+    public void ReloadFromConfiguration()
+    {
+        var config = AppConfigurationStore.Load();
+        var rigctld = AppConfigurationStore.GetRigctld(config);
+        var radio = AppConfigurationStore.GetRigctldRadio(rigctld, rigctld.ActiveRadioTag);
+
+        RigctldExecutable = radio.Executable ?? string.Empty;
+        RigctldArgumentsTemplate = radio.ArgumentsTemplate ?? string.Empty;
+        RigctldAdditionalArguments = radio.AdditionalArguments ?? string.Empty;
+        RigctldHost = string.IsNullOrWhiteSpace(radio.Host) ? rigctld.Host : radio.Host;
+        RigctldPort = radio.Port <= 0 ? rigctld.Port : radio.Port;
+        SelectedSerialPort = string.IsNullOrWhiteSpace(radio.SerialPortName) ? rigctld.SerialPortName : radio.SerialPortName;
+
+        var configuredPath = string.IsNullOrWhiteSpace(radio.RiglistFilePath) ? rigctld.RiglistFilePath : radio.RiglistFilePath;
+        if (!string.IsNullOrWhiteSpace(configuredPath) && !string.Equals(configuredPath, _store.FilePath, StringComparison.Ordinal))
+            _store.LoadFromFile(configuredPath);
+
+        UpdateCommandLine();
     }
 
     public void Dispose()
@@ -226,6 +398,8 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         _store.PropertyChanged -= OnStorePropertyChanged;
     }
 }
+
+
 
 
 

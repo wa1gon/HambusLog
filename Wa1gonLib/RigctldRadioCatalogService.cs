@@ -62,6 +62,9 @@ public sealed class RigctldRadioCatalogService
         var term = searchText.Trim();
         return entries
             .Where(entry => entry.Model.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(entry => entry.Model.StartsWith(term, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(entry => entry.Model, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(entry => entry.Mfg, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 
@@ -69,16 +72,39 @@ public sealed class RigctldRadioCatalogService
         RigCatalogEntry? entry,
         string host = "127.0.0.1",
         int port = 4532,
-        string? serialPortName = null)
+        string? serialPortName = null,
+        string executable = "rigctld",
+        string? argumentsTemplate = null,
+        string? additionalArguments = null)
     {
         if (entry is null)
             return string.Empty;
 
         var safeHost = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host.Trim();
         var safePort = port <= 0 ? 4532 : port;
-        var command = $"rigctld -m {entry.RigNum} -T {safeHost} -t {safePort}";
-        if (!string.IsNullOrWhiteSpace(serialPortName))
-            command += $" -r {QuoteArgument(serialPortName.Trim())}";
+        var safeExecutable = string.IsNullOrWhiteSpace(executable) ? "rigctld" : executable.Trim();
+        var safeTemplate = string.IsNullOrWhiteSpace(argumentsTemplate)
+            ? "-m {rigNum} -T {host} -t {port}{serialArg}"
+            : argumentsTemplate.Trim();
+        var safeAdditionalArguments = string.IsNullOrWhiteSpace(additionalArguments)
+            ? string.Empty
+            : additionalArguments.Trim();
+
+        var safeSerialPortName = serialPortName?.Trim() ?? string.Empty;
+        var serialArg = string.IsNullOrWhiteSpace(safeSerialPortName) ? string.Empty : $" -r {QuoteArgument(safeSerialPortName)}";
+        var arguments = safeTemplate
+            .Replace("{rigNum}", entry.RigNum.ToString(CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase)
+            .Replace("{host}", safeHost, StringComparison.OrdinalIgnoreCase)
+            .Replace("{port}", safePort.ToString(CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase)
+            .Replace("{serialPort}", QuoteArgument(safeSerialPortName), StringComparison.OrdinalIgnoreCase)
+            .Replace("{serialArg}", serialArg, StringComparison.OrdinalIgnoreCase)
+            .Replace("{additionalArgs}", safeAdditionalArguments, StringComparison.OrdinalIgnoreCase);
+
+        if (!string.IsNullOrWhiteSpace(safeAdditionalArguments)
+            && !safeTemplate.Contains("{additionalArgs}", StringComparison.OrdinalIgnoreCase))
+            arguments = $"{arguments} {safeAdditionalArguments}";
+
+        var command = $"{safeExecutable} {arguments}".Trim();
 
         return command;
     }

@@ -1,5 +1,3 @@
-using HamBusLog.Wa1gonLib.Models;
-
 namespace HamBusLog.ViewModels;
 
 public sealed class LogInputViewModel : ViewModelBase
@@ -39,6 +37,13 @@ public sealed class LogInputViewModel : ViewModelBase
     private AppConfiguration _appConfig = new();
     private string _selectedProfile = "default";
 
+    // ----- active rig snapshot for status display -----
+    private string _activeRigStatus = "No active rig";
+    private string _activeRigLabel = string.Empty;
+    private string _activeRigMode = string.Empty;
+    private string _activeRigFrequency = string.Empty;
+    private bool _isActiveRigConnected;
+
     public LogInputViewModel()
     {
         _appConfig = AppConfigurationStore.Load();
@@ -48,12 +53,51 @@ public sealed class LogInputViewModel : ViewModelBase
         LoadProfiles();
         InputDate       = DateTime.UtcNow.ToString("yyyyMMdd");
         InputTimeOn     = DateTime.UtcNow.ToString("HHmm");
+        ApplyActiveRigSnapshot();
     }
 
     // ── Properties ────────────────────────────────────────────────────
     public List<ContestType> ContestTypes { get; }
     public ObservableCollection<QsoDetailRow> Details { get; }
     public ObservableCollection<string> AvailableProfiles { get; }
+
+    public string ActiveRigStatus
+    {
+        get => _activeRigStatus;
+        private set => SetProperty(ref _activeRigStatus, value);
+    }
+
+    public string ActiveRigLabel
+    {
+        get => _activeRigLabel;
+        private set => SetProperty(ref _activeRigLabel, value);
+    }
+
+    public string ActiveRigMode
+    {
+        get => _activeRigMode;
+        private set => SetProperty(ref _activeRigMode, value);
+    }
+
+    public string ActiveRigFrequency
+    {
+        get => _activeRigFrequency;
+        private set => SetProperty(ref _activeRigFrequency, value);
+    }
+
+    public bool IsActiveRigConnected
+    {
+        get => _isActiveRigConnected;
+        private set
+        {
+            if (!SetProperty(ref _isActiveRigConnected, value))
+                return;
+
+            OnPropertyChanged(nameof(IsActiveRigDisconnected));
+        }
+    }
+
+    public bool IsActiveRigDisconnected => !IsActiveRigConnected;
 
     public string SelectedProfile
     {
@@ -189,6 +233,18 @@ public sealed class LogInputViewModel : ViewModelBase
             qso.Details.Add(new QsoDetail { FieldName = "Class",   FieldValue = InputFieldDayClass.Trim().ToUpperInvariant()   });
         }
 
+        // Attach live rig state metadata when available.
+        var activeRig = App.RigctldConnectionManager.GetPrimaryActiveState();
+        if (activeRig is not null)
+        {
+            qso.Details.Add(new QsoDetail { FieldName = "radio_tag", FieldValue = activeRig.TagName });
+            qso.Details.Add(new QsoDetail { FieldName = "radio_label", FieldValue = activeRig.Label });
+            if (!string.IsNullOrWhiteSpace(activeRig.Mode))
+                qso.Details.Add(new QsoDetail { FieldName = "radio_mode", FieldValue = activeRig.Mode });
+            if (activeRig.FrequencyHz is long hz)
+                qso.Details.Add(new QsoDetail { FieldName = "radio_freq_hz", FieldValue = hz.ToString(CultureInfo.InvariantCulture) });
+        }
+
         errorMessage = string.Empty;
         return qso;
     }
@@ -198,6 +254,28 @@ public sealed class LogInputViewModel : ViewModelBase
     {
         InputDate   = DateTime.UtcNow.ToString("yyyyMMdd");
         InputTimeOn = DateTime.UtcNow.ToString("HHmm");
+    }
+
+    public void RefreshActiveRigSnapshot()
+    {
+        var state = App.RigctldConnectionManager.GetPrimaryActiveState();
+        if (state is null || !state.IsConnected)
+        {
+            ActiveRigStatus = "No active rig";
+            ActiveRigLabel = "No active rig";
+            ActiveRigMode = string.Empty;
+            ActiveRigFrequency = string.Empty;
+            IsActiveRigConnected = false;
+            return;
+        }
+
+        ActiveRigStatus = "Connected";
+        ActiveRigLabel = string.IsNullOrWhiteSpace(state.Label) ? state.TagName : state.Label;
+        ActiveRigMode = state.Mode ?? string.Empty;
+        ActiveRigFrequency = state.FrequencyMhz is decimal mhz
+            ? mhz.ToString("0.######", CultureInfo.InvariantCulture) + " MHz"
+            : string.Empty;
+        IsActiveRigConnected = true;
     }
 
     private void ClearErrors()
@@ -259,6 +337,24 @@ public sealed class LogInputViewModel : ViewModelBase
 
         _appConfig.ActiveProfile = _selectedProfile;
         AppConfigurationStore.Save(_appConfig);
+    }
+
+    private void ApplyActiveRigSnapshot()
+    {
+        var state = App.RigctldConnectionManager.GetPrimaryActiveState();
+        if (state is null || !state.IsConnected)
+        {
+            RefreshActiveRigSnapshot();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(InputMode) && !string.IsNullOrWhiteSpace(state.Mode))
+            InputMode = state.Mode;
+
+        if (string.IsNullOrWhiteSpace(InputFreq) && state.FrequencyMhz is decimal mhz)
+            InputFreq = mhz.ToString("0.######", CultureInfo.InvariantCulture);
+
+        RefreshActiveRigSnapshot();
     }
 }
 

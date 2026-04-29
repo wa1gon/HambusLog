@@ -4,10 +4,10 @@ public record LogConfig
 {
     public Guid Id { get; set; } = Guid.NewGuid();
 
-    public string ProfileName { get; set; } //= ValidateString(ProfileName, nameof(ProfileName));
+    public string ProfileName { get; set; } = string.Empty; //= ValidateString(ProfileName, nameof(ProfileName));
 
     // public string Callsign { get; set; } = ValidateString(Callsign, nameof(Callsign)).ToUpper();
-    public string Callsign { get; set; }
+    public string Callsign { get; set; } = string.Empty;
     public string StationName { get; set; } = string.Empty;
     public string GridSquare { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;

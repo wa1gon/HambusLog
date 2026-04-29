@@ -20,13 +20,16 @@ public static class AppConfigurationStore
         {
             if (!File.Exists(ConfigFilePath))
             {
-                return new AppConfiguration();
+                var fresh = new AppConfiguration();
+                EnsureRigConfiguration(fresh);
+                return fresh;
             }
 
             var json = File.ReadAllText(ConfigFilePath);
             var config = JsonSerializer.Deserialize<AppConfiguration>(json, JsonOptions);
             config ??= new AppConfiguration();
             EnsureActiveProfile(config, json);
+            EnsureRigConfiguration(config);
 
             if (!ContainsActiveProfileProperty(json))
                 Save(config);
@@ -45,6 +48,7 @@ public static class AppConfigurationStore
         try
         {
             EnsureActiveProfile(configuration, null);
+            EnsureRigConfiguration(configuration);
 
             var directory = Path.GetDirectoryName(ConfigFilePath);
             if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
@@ -72,6 +76,45 @@ public static class AppConfigurationStore
             config.Profiles[config.ActiveProfile] = profile;
         }
         return profile;
+    }
+
+    public static RigctldConfiguration GetRigctld(AppConfiguration config)
+    {
+        var profile = GetActiveProfile(config);
+        profile.Rigctld ??= new RigctldConfiguration();
+        NormalizeRigctld(profile.Rigctld);
+        return profile.Rigctld;
+    }
+
+    public static RigRadioConfig GetRigctldRadio(RigctldConfiguration rigctld, string? requestedTag)
+    {
+        NormalizeRigctld(rigctld);
+        var tag = string.IsNullOrWhiteSpace(requestedTag) ? rigctld.ActiveRadioTag : requestedTag.Trim();
+
+        var radio = rigctld.Radios.FirstOrDefault(x => string.Equals(x.TagName, tag, StringComparison.OrdinalIgnoreCase));
+        if (radio is null)
+        {
+            var nextId = rigctld.Radios.Count == 0 ? 1 : rigctld.Radios.Max(x => x.RadioId) + 1;
+            radio = new RigRadioConfig
+            {
+                RadioId = nextId,
+                TagName = tag,
+                DisplayName = tag,
+                Host = string.IsNullOrWhiteSpace(rigctld.Host) ? "127.0.0.1" : rigctld.Host,
+                Port = rigctld.Port <= 0 ? 4532 : rigctld.Port,
+                SerialPortName = rigctld.SerialPortName,
+                RiglistFilePath = rigctld.RiglistFilePath,
+                IsActive = true
+            };
+            rigctld.Radios.Add(radio);
+        }
+
+        rigctld.ActiveRadioTag = radio.TagName;
+        if (!rigctld.ActiveRadioTags.Contains(radio.TagName, StringComparer.OrdinalIgnoreCase))
+            rigctld.ActiveRadioTags.Add(radio.TagName);
+
+        NormalizeRigctld(rigctld);
+        return radio;
     }
 
     private static void EnsureActiveProfile(AppConfiguration config, string? rawJson)
@@ -123,5 +166,96 @@ public static class AppConfigurationStore
         {
             return false;
         }
+    }
+
+    private static void EnsureRigConfiguration(AppConfiguration config)
+    {
+        foreach (var profile in config.Profiles.Values)
+        {
+            profile.Rigctld ??= new RigctldConfiguration();
+            NormalizeRigctld(profile.Rigctld);
+        }
+    }
+
+    private static void NormalizeRigctld(RigctldConfiguration rigctld)
+    {
+        rigctld.Host = string.IsNullOrWhiteSpace(rigctld.Host) ? "127.0.0.1" : rigctld.Host.Trim();
+        if (rigctld.Port <= 0)
+            rigctld.Port = 4532;
+
+        rigctld.ActiveRadioTags ??= [];
+        rigctld.Radios ??= [];
+
+        if (rigctld.Radios.Count == 0)
+        {
+            var seedTag = string.IsNullOrWhiteSpace(rigctld.ActiveRadioTag) ? "radio-1" : rigctld.ActiveRadioTag.Trim();
+            rigctld.Radios.Add(new RigRadioConfig
+            {
+                RadioId = 1,
+                TagName = seedTag,
+                DisplayName = seedTag,
+                Host = rigctld.Host,
+                Port = rigctld.Port,
+                SerialPortName = rigctld.SerialPortName,
+                RiglistFilePath = rigctld.RiglistFilePath,
+                IsActive = true
+            });
+        }
+
+        var normalizedRadios = new List<RigRadioConfig>();
+        var seenTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var id = 1;
+        foreach (var radio in rigctld.Radios)
+        {
+            var legacyName = radio.DisplayName?.Trim();
+            var tag = string.IsNullOrWhiteSpace(radio.TagName)
+                ? (string.IsNullOrWhiteSpace(legacyName) ? $"radio-{id}" : legacyName)
+                : radio.TagName.Trim();
+            if (!seenTags.Add(tag))
+                continue;
+
+            radio.RadioId = radio.RadioId <= 0 ? id : radio.RadioId;
+            radio.TagName = tag;
+            radio.DisplayName = string.IsNullOrWhiteSpace(legacyName) ? tag : legacyName;
+            radio.Executable = radio.Executable?.Trim() ?? string.Empty;
+            radio.ArgumentsTemplate = radio.ArgumentsTemplate?.Trim() ?? string.Empty;
+            radio.AdditionalArguments = string.IsNullOrWhiteSpace(radio.AdditionalArguments)
+                ? string.Empty
+                : radio.AdditionalArguments.Trim();
+            radio.Host = string.IsNullOrWhiteSpace(radio.Host) ? rigctld.Host : radio.Host.Trim();
+            radio.Port = radio.Port <= 0 ? rigctld.Port : radio.Port;
+
+            if (string.IsNullOrWhiteSpace(radio.SerialPortName))
+                radio.SerialPortName = rigctld.SerialPortName;
+            if (string.IsNullOrWhiteSpace(radio.RiglistFilePath))
+                radio.RiglistFilePath = rigctld.RiglistFilePath;
+
+            normalizedRadios.Add(radio);
+            id++;
+        }
+
+        rigctld.Radios = normalizedRadios;
+
+        if (string.IsNullOrWhiteSpace(rigctld.ActiveRadioTag))
+            rigctld.ActiveRadioTag = rigctld.Radios[0].TagName;
+
+        var tagSet = rigctld.ActiveRadioTags
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var activeRadio in rigctld.Radios.Where(x => x.IsActive))
+            tagSet.Add(activeRadio.TagName);
+
+        if (tagSet.Count == 0)
+            tagSet.Add(rigctld.ActiveRadioTag);
+
+        rigctld.ActiveRadioTags = tagSet.ToList();
+
+        foreach (var radio in rigctld.Radios)
+            radio.IsActive = rigctld.ActiveRadioTags.Contains(radio.TagName, StringComparer.OrdinalIgnoreCase);
+
+        if (!rigctld.ActiveRadioTags.Contains(rigctld.ActiveRadioTag, StringComparer.OrdinalIgnoreCase))
+            rigctld.ActiveRadioTag = rigctld.ActiveRadioTags[0];
     }
 }
