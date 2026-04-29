@@ -329,3 +329,4 @@ public sealed record RadioRuntimeState(
     public decimal? FrequencyMhz => FrequencyHz is null ? null : Math.Round(FrequencyHz.Value / 1_000_000m, 6);
 }
 
+

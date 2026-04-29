@@ -19,15 +19,11 @@
     <Compile Include="Wa1gonLib\Adif\AdifReader.cs" />
     <Compile Include="Wa1gonLib\Adif\AdifWriter.cs" />
     <Compile Include="Wa1gonLib\ApiClients\ApiOptions.cs" />
-    <Compile Include="Wa1gonLib\ApiClients\DxccInfoClientfService.cs" />
-    <Compile Include="Wa1gonLib\ApiClients\HbConfClientApiService.cs" />
-    <Compile Include="Wa1gonLib\ApiClients\IHbConfClientApiService.cs" />
     <Compile Include="Wa1gonLib\Configuration\CallBookConf.cs" />
     <Compile Include="Wa1gonLib\Configuration\DxClusterConf.cs" />
     <Compile Include="Wa1gonLib\Configuration\LogConfig.cs" />
     <Compile Include="Wa1gonLib\Configuration\RigCtlConf.cs" />
     <Compile Include="Wa1gonLib\IRegControlClient.cs" />
-    <Compile Include="Wa1gonLib\RigctldRadioCatalogService.cs" />
     <Compile Include="Wa1gonLib\Models\CallSign.cs" />
     <Compile Include="Wa1gonLib\Models\DxccEntry.cs" />
     <Compile Include="Wa1gonLib\Models\RigCatalogEntry.cs" />
