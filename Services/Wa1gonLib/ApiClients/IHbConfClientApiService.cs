@@ -7,3 +7,4 @@ public interface IHbConfClientApiService
     Task UpdateAsync(LogConfig config,CancellationToken ct = default);
     Task DeleteAsync(string profileId,CancellationToken ct = default);
 }
+

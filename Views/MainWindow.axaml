@@ -48,9 +48,53 @@
         </Border>
 
         <Border Grid.Column="1" Padding="20" Background="{DynamicResource AppWindowBackgroundBrush}">
-            <StackPanel Spacing="8">
+            <StackPanel Spacing="12">
                 <TextBlock Text="HamBusLog" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource AppForegroundBrush}"/>
                 <TextBlock Text="{Binding SelectedMenuTitle, StringFormat=Selected: {0}}" FontSize="16" Foreground="{DynamicResource AppForegroundBrush}"/>
+
+                <Border Background="{DynamicResource AppPanelBackgroundBrush}" CornerRadius="6" Padding="10" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Rigctld Radios" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding RadioStatusSummary}" IsVisible="{Binding HasNoRadioStatuses}"/>
+                        <DataGrid ItemsSource="{Binding RadioStatuses}"
+                                  SelectedItem="{Binding SelectedRadioStatus, Mode=TwoWay}"
+                                  AutoGenerateColumns="False"
+                                  CanUserSortColumns="False"
+                                  CanUserResizeColumns="True"
+                                  CanUserReorderColumns="False"
+                                  IsReadOnly="True"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  MinHeight="220">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Name" Binding="{Binding Label}" Width="2*"/>
+                                <DataGridTextColumn Header="Freq" Binding="{Binding Frequency}" Width="1.2*"/>
+                                <DataGridTextColumn Header="Mode" Binding="{Binding Mode}" Width="1*"/>
+                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="3*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <Grid ColumnDefinitions="Auto,160,Auto,140,*" IsEnabled="{Binding CanControlSelectedRadio}">
+                            <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Set Freq MHz" Margin="0,0,8,0"/>
+                            <TextBox Grid.Column="1" Text="{Binding ControlFrequencyMhz, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Watermark="14.074"/>
+                            <Button Grid.Column="2" Margin="8,0,12,0" Content="Apply" Click="OnApplyRadioFrequencyClick"/>
+                            <TextBox Grid.Column="3" Text="{Binding ControlMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Watermark="USB"/>
+                            <Button Grid.Column="4" HorizontalAlignment="Left" Margin="8,0,0,0" Content="Apply Mode" Click="OnApplyRadioModeClick"/>
+                        </Grid>
+
+                        <WrapPanel IsEnabled="{Binding CanControlSelectedRadio}" ItemHeight="30" ItemWidth="58">
+                            <Button Content="USB" Tag="USB" Click="OnApplyPresetModeClick"/>
+                            <Button Content="LSB" Tag="LSB" Click="OnApplyPresetModeClick"/>
+                            <Button Content="CW" Tag="CW" Click="OnApplyPresetModeClick"/>
+                            <Button Content="AM" Tag="AM" Click="OnApplyPresetModeClick"/>
+                            <Button Content="FM" Tag="FM" Click="OnApplyPresetModeClick"/>
+                            <Button Content="DIGU" Tag="DIGU" Click="OnApplyPresetModeClick"/>
+                            <Button Content="DIGL" Tag="DIGL" Click="OnApplyPresetModeClick"/>
+                        </WrapPanel>
+
+                        <TextBlock Text="{Binding RadioControlMessage}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </Border>
     </Grid>

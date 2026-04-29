@@ -128,3 +128,4 @@ public sealed class RigctldRadioCatalogService
         return needsQuotes ? $"\"{escaped}\"" : escaped;
     }
 }
+

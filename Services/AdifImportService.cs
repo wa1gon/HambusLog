@@ -182,3 +182,4 @@ public readonly record struct AdifImportProgress(
         new(AdifImportStage.Completed, filePath, $"Imported {recordsRead:N0} record(s) from {Path.GetFileName(filePath)}.", recordsRead, recordsRead, savedChanges, false, 1d);
 }
 
+
