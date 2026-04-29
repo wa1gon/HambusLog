@@ -7,6 +7,7 @@ public sealed class RigctldConnectionManager : IDisposable
     private readonly object _gate = new();
     private readonly Dictionary<string, Worker> _workers = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, RadioRuntimeState> _states = new(StringComparer.OrdinalIgnoreCase);
+    private int _reconnectIntervalSeconds = 3;
 
     public event EventHandler? StatesChanged;
 
@@ -40,6 +41,7 @@ public sealed class RigctldConnectionManager : IDisposable
     {
         var config = AppConfigurationStore.Load();
         var rigctld = AppConfigurationStore.GetRigctld(config);
+        _reconnectIntervalSeconds = rigctld.ReconnectIntervalSeconds <= 0 ? 3 : Math.Min(rigctld.ReconnectIntervalSeconds, 300);
 
         var activeTags = rigctld.Radios
             .Select(x => x.TagName)
@@ -176,7 +178,7 @@ public sealed class RigctldConnectionManager : IDisposable
             catch (Exception ex)
             {
                 UpdateState(radio, false, null, null, ex.Message);
-                await Task.Delay(TimeSpan.FromSeconds(3), ct);
+                await Task.Delay(TimeSpan.FromSeconds(_reconnectIntervalSeconds), ct);
             }
         }
     }
@@ -326,7 +328,7 @@ public sealed record RadioRuntimeState(
     string? Error,
     DateTime LastUpdatedUtc)
 {
-    public decimal? FrequencyMhz => FrequencyHz is null ? null : Math.Round(FrequencyHz.Value / 1_000_000m, 6);
+    public decimal? FrequencyMhz => FrequencyHz is null ? null : Math.Round(FrequencyHz.Value / 1_000_000m, 3);
 }
 
 

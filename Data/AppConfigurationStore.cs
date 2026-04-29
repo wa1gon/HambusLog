@@ -182,6 +182,10 @@ public static class AppConfigurationStore
         rigctld.Host = string.IsNullOrWhiteSpace(rigctld.Host) ? "127.0.0.1" : rigctld.Host.Trim();
         if (rigctld.Port <= 0)
             rigctld.Port = 4532;
+        if (rigctld.ReconnectIntervalSeconds <= 0)
+            rigctld.ReconnectIntervalSeconds = 3;
+        if (rigctld.ReconnectIntervalSeconds > 300)
+            rigctld.ReconnectIntervalSeconds = 300;
 
         rigctld.ActiveRadioTags ??= [];
         rigctld.Radios ??= [];

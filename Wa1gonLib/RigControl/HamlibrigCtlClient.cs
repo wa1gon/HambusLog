@@ -117,12 +117,15 @@ public class HamLibRigCtlClient(string _host, int _port) : IDisposable, IRigCont
         EnsureConnected();
         await SendCommandAsync("m\n");
 
-        var response = await ReadLineAsync();
-        if (string.IsNullOrWhiteSpace(response))
+        // rigctld returns two lines for the 'm' command: first is the mode, second is the passband width.
+        var modeLine = await ReadLineAsync();
+        // Drain the passband width line so it doesn't bleed into the next command's response.
+        await ReadLineAsync();
+
+        if (string.IsNullOrWhiteSpace(modeLine))
             throw new IOException("Failed to parse mode from rigctld response.");
 
-        // Typical responses are like: "USB 2400".
-        var mode = response.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        var mode = modeLine.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
         if (!string.IsNullOrWhiteSpace(mode) && !string.Equals(mode, "RPRT", StringComparison.OrdinalIgnoreCase))
             return mode;
 

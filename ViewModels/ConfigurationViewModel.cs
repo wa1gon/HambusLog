@@ -29,6 +29,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _rigctldAdditionalArguments = string.Empty;
     private string _rigctldHost = "127.0.0.1";
     private int _rigctldPort = 4532;
+    private int _rigctldReconnectIntervalSeconds = 3;
     private string _selectedSerialPort = string.Empty;
     private string _riglistFilePath = string.Empty;
     private string _statusMessage = string.Empty;
@@ -267,6 +268,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _rigctldPort, value);
     }
 
+    public int RigctldReconnectIntervalSeconds
+    {
+        get => _rigctldReconnectIntervalSeconds;
+        set => SetProperty(ref _rigctldReconnectIntervalSeconds, value <= 0 ? 3 : Math.Min(value, 300));
+    }
+
     public string SelectedSerialPort
     {
         get => _selectedSerialPort;
@@ -345,6 +352,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             _appConfig.Profiles[_selectedProfile] = profile;
             _appConfig.ActiveProfile = _selectedProfile;
             var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
+            rigctld.ReconnectIntervalSeconds = RigctldReconnectIntervalSeconds <= 0 ? 3 : Math.Min(RigctldReconnectIntervalSeconds, 300);
             rigctld.ActiveRadioTag = SelectedRigRadioTag;
             var radio = AppConfigurationStore.GetRigctldRadio(rigctld, SelectedRigRadioTag);
             radio.DisplayName = string.IsNullOrWhiteSpace(RigctldRadioName)
@@ -502,6 +510,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
         AdifDirectory = profile.AdifDirectory;
         var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
+        RigctldReconnectIntervalSeconds = rigctld.ReconnectIntervalSeconds <= 0 ? 3 : Math.Min(rigctld.ReconnectIntervalSeconds, 300);
         PopulateAvailableRigRadios(rigctld);
         _activeRigRadioTags = rigctld.ActiveRadioTags
             .Concat(rigctld.Radios.Where(x => x.IsActive).Select(x => x.TagName))

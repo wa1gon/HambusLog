@@ -44,6 +44,7 @@
                         </TreeDataTemplate>
                     </TreeView.ItemTemplate>
                 </TreeView>
+
             </StackPanel>
         </Border>
 
@@ -55,7 +56,7 @@
                 <Border Background="{DynamicResource AppPanelBackgroundBrush}" CornerRadius="6" Padding="10" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1">
                     <StackPanel Spacing="8">
                         <TextBlock Text="Rigctld Radios" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="{Binding RadioStatusSummary}" IsVisible="{Binding HasNoRadioStatuses}"/>
+                        <TextBlock Text="{Binding RadioStatusSummary}" TextWrapping="Wrap"/>
                         <DataGrid ItemsSource="{Binding RadioStatuses}"
                                   SelectedItem="{Binding SelectedRadioStatus, Mode=TwoWay}"
                                   AutoGenerateColumns="False"
@@ -65,8 +66,11 @@
                                   IsReadOnly="True"
                                   HeadersVisibility="Column"
                                   GridLinesVisibility="Horizontal"
-                                  MinHeight="220">
+                                  Height="320"
+                                  VerticalScrollBarVisibility="Auto">
                             <DataGrid.Columns>
+                                <DataGridTextColumn Header="#" Binding="{Binding RowNumber}" Width="0.6*"/>
+                                <DataGridTextColumn Header="Tag" Binding="{Binding TagName}" Width="1.1*"/>
                                 <DataGridTextColumn Header="Name" Binding="{Binding Label}" Width="2*"/>
                                 <DataGridTextColumn Header="Freq" Binding="{Binding Frequency}" Width="1.2*"/>
                                 <DataGridTextColumn Header="Mode" Binding="{Binding Mode}" Width="1*"/>
