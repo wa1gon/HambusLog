@@ -252,6 +252,33 @@ public partial class MainWindow
 
         return await StorageProvider.TryGetFolderFromPathAsync(new Uri(fullPath));
     }
+
+    private async void OnApplyRadioFrequencyClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        await vm.ApplyFrequencyToSelectedRadioAsync();
+    }
+
+    private async void OnApplyRadioModeClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        await vm.ApplyModeToSelectedRadioAsync();
+    }
+
+    private async void OnApplyPresetModeClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        if (sender is not Button { Tag: string mode } || string.IsNullOrWhiteSpace(mode))
+            return;
+
+        await vm.ApplyPresetModeToSelectedRadioAsync(mode);
+    }
 }
 
 
