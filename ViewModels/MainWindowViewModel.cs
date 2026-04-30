@@ -208,7 +208,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         foreach (var state in snapshot)
         {
-            if (rows.Any(x => string.Equals(x.TagName, state.TagName, StringComparison.OrdinalIgnoreCase)))
+            if (rows.Any(x => string.Equals(x.RadioName, state.TagName, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
             rows.Add(BuildStatusRow(rows.Count + 1, state.Label, state.TagName, state.FrequencyMhz, state.Mode, state.IsConnected, state.Error));
@@ -220,7 +220,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         // Remove rows no longer present
         for (var i = _radioStatuses.Count - 1; i >= 0; i--)
         {
-            if (!rows.Any(r => string.Equals(r.TagName, _radioStatuses[i].TagName, StringComparison.OrdinalIgnoreCase)))
+            if (!rows.Any(r => string.Equals(r.RadioName, _radioStatuses[i].RadioName, StringComparison.OrdinalIgnoreCase)))
                 _radioStatuses.RemoveAt(i);
         }
 
@@ -231,7 +231,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             var existingIndex = -1;
             for (var j = 0; j < _radioStatuses.Count; j++)
             {
-                if (string.Equals(_radioStatuses[j].TagName, newRow.TagName, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(_radioStatuses[j].RadioName, newRow.RadioName, StringComparison.OrdinalIgnoreCase))
                 {
                     existingIndex = j;
                     break;
@@ -261,7 +261,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         if (prevSelectedTag is not null)
         {
             var restoredRow = _radioStatuses.FirstOrDefault(x =>
-                string.Equals(x.TagName, prevSelectedTag, StringComparison.OrdinalIgnoreCase));
+                string.Equals(x.RadioName, prevSelectedTag, StringComparison.OrdinalIgnoreCase));
             if (restoredRow is not null && !ReferenceEquals(SelectedRadioStatus, restoredRow))
                 SelectedRadioStatus = restoredRow;
         }
@@ -314,7 +314,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
-            RadioControlMessage = await _rigctldConnectionManager.SetFrequencyByTagAsync(SelectedRadioStatus.TagName, mhz, cts.Token);
+            RadioControlMessage = await _rigctldConnectionManager.SetFrequencyByNameAsync(SelectedRadioStatus.TagName, mhz, cts.Token);
         }
         catch (TimeoutException)
         {
@@ -349,7 +349,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
-            RadioControlMessage = await _rigctldConnectionManager.SetModeByTagAsync(SelectedRadioStatus.TagName, ControlMode, cts.Token);
+            RadioControlMessage = await _rigctldConnectionManager.SetModeByNameAsync(SelectedRadioStatus.TagName, ControlMode, cts.Token);
         }
         catch (TimeoutException)
         {
@@ -409,11 +409,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
 public sealed class RadioConnectionStatusViewModel
 {
-    public RadioConnectionStatusViewModel(int rowNumber, string label, string tagName, decimal? frequencyMhz, string frequency, string mode, bool isConnected, string status)
+    public RadioConnectionStatusViewModel(int rowNumber, string label, string radioName, decimal? frequencyMhz, string frequency, string mode, bool isConnected, string status)
     {
         RowNumber = rowNumber;
         Label = label;
-        TagName = tagName;
+        RadioName = radioName;
         FrequencyMhz = frequencyMhz;
         Frequency = frequency;
         Mode = mode;
@@ -427,7 +427,8 @@ public sealed class RadioConnectionStatusViewModel
 
     public int RowNumber { get; }
     public string Label { get; }
-    public string TagName { get; }
+    public string RadioName { get; }
+    public string TagName => RadioName;
     public decimal? FrequencyMhz { get; }
     public string Frequency { get; }
     public string Mode { get; }

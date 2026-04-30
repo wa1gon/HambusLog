@@ -49,7 +49,7 @@
                         <TextBox Text="{Binding NewProfileName}"
                                  Watermark="New name (blank = auto)"
                                  Width="280" />
-                        <Button Content="Clone Profile" Click="OnCloneProfileClicked" Padding="12,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                        <Button Content="Clone Profile" Click="OnCloneProfileClicked" Padding="12,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
                     </StackPanel>
 
                     <Separator Margin="0,6,0,0" />
@@ -60,149 +60,174 @@
                         <TextBox Text="{Binding AdifDirectory}"
                                  Watermark="/home/you/logs/adif"
                                  Width="420" />
-                        <Button Content="Browse..." Click="OnBrowseAdifDirectoryClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                        <Button Content="Browse..." Click="OnBrowseAdifDirectoryClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
                     </StackPanel>
                 </StackPanel>
             </TabItem>
 
             <!-- ── Colors Tab ────────────────────────────────────── -->
             <TabItem Header="Colors">
-                <StackPanel Margin="12" Spacing="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Background Color" FontWeight="SemiBold" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
-                                <ColorPicker Name="BgColorPicker" />
-                            </Border>
-                            <TextBlock Name="BgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
-                        </StackPanel>
-                    </StackPanel>
+                <ScrollViewer Margin="12" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="16">
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="18">
+                            <StackPanel Grid.Column="0" Spacing="16">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Background Color" FontWeight="SemiBold" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="BgColorPicker" />
+                                        </Border>
+                                        <TextBlock Name="BgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                    </StackPanel>
+                                </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Foreground Color" FontWeight="SemiBold" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
-                                <ColorPicker Name="FgColorPicker" />
-                            </Border>
-                            <TextBlock Name="FgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
-                        </StackPanel>
-                    </StackPanel>
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Foreground Color" FontWeight="SemiBold" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="FgColorPicker" />
+                                        </Border>
+                                        <TextBlock Name="FgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                    </StackPanel>
+                                </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Menu Background" FontWeight="SemiBold" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
-                                <ColorPicker Name="MenuBgColorPicker" />
-                            </Border>
-                            <TextBlock Name="MenuBgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
-                        </StackPanel>
-                    </StackPanel>
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Menu Background" FontWeight="SemiBold" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="MenuBgColorPicker" />
+                                        </Border>
+                                        <TextBlock Name="MenuBgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                    </StackPanel>
+                                </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Menu Foreground" FontWeight="SemiBold" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
-                                <ColorPicker Name="MenuFgColorPicker" />
-                            </Border>
-                            <TextBlock Name="MenuFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
-                        </StackPanel>
-                    </StackPanel>
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Menu Foreground" FontWeight="SemiBold" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="MenuFgColorPicker" />
+                                        </Border>
+                                        <TextBlock Name="MenuFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                    </StackPanel>
+                                </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Button: Normal" FontWeight="SemiBold" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
-                                <ColorPicker Name="BtnNormalColorPicker" />
-                            </Border>
-                            <TextBlock Name="BtnNormalColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
-                        </StackPanel>
-                    </StackPanel>
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Button: Normal" FontWeight="SemiBold" />
+                                    <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowDefinitions="Auto,Auto">
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Background" VerticalAlignment="Center" />
+                                        <Border Grid.Row="0" Grid.Column="1" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="BtnNormalColorPicker" />
+                                        </Border>
+                                        <TextBlock Grid.Row="0" Grid.Column="2" Name="BtnNormalColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Foreground" VerticalAlignment="Center" />
+                                        <Border Grid.Row="1" Grid.Column="1" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="BtnNormalFgColorPicker" />
+                                        </Border>
+                                        <TextBlock Grid.Row="1" Grid.Column="2" Name="BtnNormalFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                    </Grid>
+                                </StackPanel>
+                            </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Button: Caution" FontWeight="SemiBold" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
-                                <ColorPicker Name="BtnCautionColorPicker" />
-                            </Border>
-                            <TextBlock Name="BtnCautionColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
-                        </StackPanel>
-                    </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="16">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Button: Caution" FontWeight="SemiBold" />
+                                    <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowDefinitions="Auto,Auto">
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Background" VerticalAlignment="Center" />
+                                        <Border Grid.Row="0" Grid.Column="1" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="BtnCautionColorPicker" />
+                                        </Border>
+                                        <TextBlock Grid.Row="0" Grid.Column="2" Name="BtnCautionColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Foreground" VerticalAlignment="Center" />
+                                        <Border Grid.Row="1" Grid.Column="1" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="BtnCautionFgColorPicker" />
+                                        </Border>
+                                        <TextBlock Grid.Row="1" Grid.Column="2" Name="BtnCautionFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                    </Grid>
+                                </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Button: Danger" FontWeight="SemiBold" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
-                                <ColorPicker Name="BtnDangerColorPicker" />
-                            </Border>
-                            <TextBlock Name="BtnDangerColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
-                        </StackPanel>
-                    </StackPanel>
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Button: Danger" FontWeight="SemiBold" />
+                                    <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowDefinitions="Auto,Auto">
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Background" VerticalAlignment="Center" />
+                                        <Border Grid.Row="0" Grid.Column="1" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="BtnDangerColorPicker" />
+                                        </Border>
+                                        <TextBlock Grid.Row="0" Grid.Column="2" Name="BtnDangerColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Foreground" VerticalAlignment="Center" />
+                                        <Border Grid.Row="1" Grid.Column="1" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="BtnDangerFgColorPicker" />
+                                        </Border>
+                                        <TextBlock Grid.Row="1" Grid.Column="2" Name="BtnDangerFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                    </Grid>
+                                </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Button Foreground" FontWeight="SemiBold" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
-                                <ColorPicker Name="BtnFgColorPicker" />
-                            </Border>
-                            <TextBlock Name="BtnFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
-                        </StackPanel>
-                    </StackPanel>
+                                <TextBlock Text="Input Controls" FontWeight="SemiBold" FontSize="14" />
 
-                    <Separator Margin="0,2,0,2" />
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Input Background" FontWeight="SemiBold" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="InputBgColorPicker" />
+                                        </Border>
+                                        <TextBlock Name="InputBgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                    </StackPanel>
+                                </StackPanel>
 
-                    <TextBlock Text="Input Controls" FontWeight="SemiBold" FontSize="14" />
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Input Foreground" FontWeight="SemiBold" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="InputFgColorPicker" />
+                                        </Border>
+                                        <TextBlock Name="InputFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                    </StackPanel>
+                                </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Input Background" FontWeight="SemiBold" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
-                                <ColorPicker Name="InputBgColorPicker" />
-                            </Border>
-                            <TextBlock Name="InputBgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
-                        </StackPanel>
-                    </StackPanel>
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Input Border" FontWeight="SemiBold" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="InputBorderColorPicker" />
+                                        </Border>
+                                        <TextBlock Name="InputBorderColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Input Foreground" FontWeight="SemiBold" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
-                                <ColorPicker Name="InputFgColorPicker" />
-                            </Border>
-                            <TextBlock Name="InputFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
-                        </StackPanel>
-                    </StackPanel>
+                            <StackPanel Grid.Column="2" Spacing="16">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Input Selection Background" FontWeight="SemiBold" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="InputSelectionBgColorPicker" />
+                                        </Border>
+                                        <TextBlock Name="InputSelectionBgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                    </StackPanel>
+                                </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Input Border" FontWeight="SemiBold" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
-                                <ColorPicker Name="InputBorderColorPicker" />
-                            </Border>
-                            <TextBlock Name="InputBorderColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
-                        </StackPanel>
-                    </StackPanel>
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Input Selection Foreground" FontWeight="SemiBold" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                            <ColorPicker Name="InputSelectionFgColorPicker" />
+                                        </Border>
+                                        <TextBlock Name="InputSelectionFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
+                                    </StackPanel>
+                                </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Input Selection Background" FontWeight="SemiBold" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
-                                <ColorPicker Name="InputSelectionBgColorPicker" />
-                            </Border>
-                            <TextBlock Name="InputSelectionBgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
-                        </StackPanel>
-                    </StackPanel>
+                                <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="10" Background="{DynamicResource AppPanelBackgroundBrush}">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="Tips" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource AppForegroundBrush}" />
+                                        <TextBlock Text="The preview below shows how these colors will look in the app." TextWrapping="Wrap" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                                        <TextBlock Text="Normal is used for primary actions and selected tabs." TextWrapping="Wrap" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                                        <TextBlock Text="Caution is used for browse/cancel style actions." TextWrapping="Wrap" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                                        <TextBlock Text="Danger is used for destructive actions like remove/delete." TextWrapping="Wrap" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Input Selection Foreground" FontWeight="SemiBold" />
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="6" Background="{DynamicResource AppPanelBackgroundBrush}">
-                                <ColorPicker Name="InputSelectionFgColorPicker" />
-                            </Border>
-                            <TextBlock Name="InputSelectionFgColorHex" VerticalAlignment="Center" FontFamily="Monospace" FontSize="13" />
-                        </StackPanel>
-                    </StackPanel>
-
-                    <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="10" Background="{DynamicResource AppPanelBackgroundBrush}" Margin="0,8,0,0">
+                        <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="10" Background="{DynamicResource AppPanelBackgroundBrush}" Margin="0,8,0,0">
                         <StackPanel Spacing="10">
                             <TextBlock Text="Live Preview" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource AppForegroundBrush}" />
 
@@ -213,7 +238,7 @@
 
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <Border Background="{DynamicResource AppButtonNormalBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10,5">
-                                    <TextBlock Text="Selected Tab" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                                    <TextBlock Text="Selected Tab" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
                                 </Border>
                                 <Border Background="{DynamicResource AppHeaderBackgroundBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10,5">
                                     <TextBlock Text="Tab" Foreground="{DynamicResource AppForegroundBrush}" />
@@ -224,9 +249,9 @@
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Content="Normal" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="12,6" />
-                                <Button Content="Caution" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="12,6" />
-                                <Button Content="Danger" Background="{DynamicResource AppButtonDangerBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="12,6" />
+                                <Button Content="Normal" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" Padding="12,6" />
+                                <Button Content="Caution" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" Padding="12,6" />
+                                <Button Content="Danger" Background="{DynamicResource AppButtonDangerBrush}" Foreground="{DynamicResource AppButtonDangerForegroundBrush}" Padding="12,6" />
                             </StackPanel>
                             <StackPanel Spacing="2">
                                 <TextBlock Name="ButtonNormalContrastLabel" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
@@ -234,8 +259,9 @@
                                 <TextBlock Name="ButtonDangerContrastLabel" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
                             </StackPanel>
                         </StackPanel>
-                    </Border>
-                </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
             </TabItem>
 
             <!-- ── Database Tab ──────────────────────────────────── -->
@@ -247,7 +273,7 @@
                         <TextBox Text="{Binding DatabaseFolderPath}"
                                  Watermark="/home/you/.local/share/hambuslog"
                                  Width="520" />
-                        <Button Content="Browse Folder..." Click="OnBrowseDatabaseDirectoryClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                        <Button Content="Browse Folder..." Click="OnBrowseDatabaseDirectoryClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBox Text="{Binding DatabaseFileName}"
@@ -283,9 +309,9 @@
                                       Width="220"
                                       IsEditable="False"
                                       HorizontalAlignment="Left" />
-                            <Button Content="Add Radio" Click="OnAddRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
-                            <Button Content="Remove" Click="OnRemoveRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonDangerBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
-                            <Button Content="Edit" Click="OnEditSelectedRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                            <Button Content="Add Radio" Click="OnAddRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+                            <Button Content="Remove" Click="OnRemoveRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonDangerBrush}" Foreground="{DynamicResource AppButtonDangerForegroundBrush}" />
+                            <Button Content="Edit" Click="OnEditSelectedRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
                         </StackPanel>
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Active Radios" VerticalAlignment="Top" />
                         <ListBox Grid.Row="1" Grid.Column="1"
@@ -326,8 +352,8 @@
         <!-- ── Footer ───────────────────────────────────────────── -->
         <StackPanel Grid.Row="2" Spacing="6" Margin="0,8,0,4">
             <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Save" Click="OnSaveClicked" Padding="14,8" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
-                <Button Content="Close" Click="OnCloseClicked" Padding="14,8" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                <Button Content="Save" Click="OnSaveClicked" Padding="14,8" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+                <Button Content="Close" Click="OnCloseClicked" Padding="14,8" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
             </StackPanel>
             <TextBlock Text="{Binding ConfigFilePath}" FontSize="11" Foreground="{DynamicResource AppMutedForegroundBrush}" />
             <TextBlock Text="{Binding StatusMessage}" FontStyle="Italic" Foreground="{DynamicResource AppAccentBrush}" />

@@ -12,11 +12,8 @@
     <Grid RowDefinitions="*,Auto" Margin="14">
         <ScrollViewer Grid.Row="0">
             <Grid ColumnDefinitions="180,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto,Auto" RowSpacing="10" ColumnSpacing="8">
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Radio Tag" VerticalAlignment="Center" />
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedRigRadioTag}" VerticalAlignment="Center" FontWeight="SemiBold" />
-
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Radio Name" VerticalAlignment="Center" />
-                <TextBox Grid.Row="1" Grid.Column="1"
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Radio Name" VerticalAlignment="Center" />
+                <TextBox Grid.Row="0" Grid.Column="1"
                          Text="{Binding RigctldRadioName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Watermark="My FT-710" />
 
@@ -31,18 +28,6 @@
                            Foreground="{DynamicResource AppMutedForegroundBrush}"
                            FontSize="11"
                            Text="Optional. Leave blank to use default executable name." />
-
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="Args Template" VerticalAlignment="Center" />
-                <TextBox Grid.Row="3" Grid.Column="1"
-                         Text="{Binding RigctldArgumentsTemplate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          Width="520"
-                          HorizontalAlignment="Left"
-                         Watermark="-m {rigNum} -T {host} -t {port}{serialArg} {additionalArgs}" />
-                <TextBlock Grid.Row="3" Grid.Column="1"
-                           Margin="0,34,0,0"
-                           Foreground="{DynamicResource AppMutedForegroundBrush}"
-                           FontSize="11"
-                           Text="Optional. Leave blank to use default command template." />
 
                 <TextBlock Grid.Row="4" Grid.Column="0" Text="Additional Args" VerticalAlignment="Center" />
                 <TextBox Grid.Row="4" Grid.Column="1"
@@ -79,7 +64,7 @@
                             Click="OnRefreshSerialPortsClicked"
                             Padding="10,6"
                             Background="{DynamicResource AppButtonCautionBrush}"
-                            Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                            Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
                 </StackPanel>
 
                 <TextBlock Grid.Row="8" Grid.Column="0" Text="Rig List" VerticalAlignment="Center" />
@@ -89,17 +74,17 @@
                             Click="OnBrowseRiglistClicked"
                             Padding="10,6"
                             Background="{DynamicResource AppButtonCautionBrush}"
-                            Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                            Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
                     <Button Content="Load"
                             Click="OnLoadRiglistClicked"
                             Padding="10,6"
                             Background="{DynamicResource AppButtonCautionBrush}"
-                            Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                            Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
                     <Button Content="Reload"
                             Click="OnCatalogReloadClicked"
                             Padding="10,6"
                             Background="{DynamicResource AppButtonCautionBrush}"
-                            Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                            Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
                 </StackPanel>
 
                 <TextBlock Grid.Row="9" Grid.Column="0" Text="Search Model" VerticalAlignment="Top" />
@@ -117,7 +102,7 @@
                 </StackPanel>
 
                 <TextBlock Grid.Row="10" Grid.Column="0" Text="Selected Rig" VerticalAlignment="Center" />
-                <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding RigCatalog.SelectedEntry.Model, FallbackValue=No rig selected}" VerticalAlignment="Center" />
+                <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding RigCatalog.SelectedRigLabel, FallbackValue=No rig selected}" VerticalAlignment="Center" />
 
                 <DataGrid Grid.Row="11" Grid.Column="0" Grid.ColumnSpan="2"
                           ItemsSource="{Binding RigCatalog.FilteredEntries}"
@@ -146,7 +131,7 @@
                              IsReadOnly="True"
                              Margin="8,0,8,0"
                              FontFamily="Monospace" />
-                    <Button Grid.Column="2" Content="Copy Command" Click="OnCatalogCopyCommandClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" />
+                    <Button Grid.Column="2" Content="Copy Command" Click="OnCatalogCopyCommandClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
                 </Grid>
 
                 <TextBlock Grid.Row="13" Grid.Column="0" Grid.ColumnSpan="2"
@@ -162,13 +147,13 @@
                 <Button Content="Save Radio"
                         Click="OnSaveClicked"
                         Background="{DynamicResource AppButtonNormalBrush}"
-                        Foreground="{DynamicResource AppButtonForegroundBrush}"
+                        Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
                         Padding="14,8"
                         FontWeight="Bold" />
                 <Button Content="Cancel"
                         Click="OnCancelClicked"
                         Background="{DynamicResource AppButtonCautionBrush}"
-                        Foreground="{DynamicResource AppButtonForegroundBrush}"
+                        Foreground="{DynamicResource AppButtonCautionForegroundBrush}"
                         Padding="14,8" />
             </StackPanel>
         </Border>

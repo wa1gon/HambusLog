@@ -10,8 +10,11 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private Color _menuBackgroundColor = Color.Parse("#111827");
     private Color _menuForegroundColor = Color.Parse("#FFFFFF");
     private Color _buttonNormalColor = Color.Parse("#2563EB");
+    private Color _buttonNormalForegroundColor = Color.Parse("#FFFFFF");
     private Color _buttonCautionColor = Color.Parse("#D97706");
+    private Color _buttonCautionForegroundColor = Color.Parse("#FFFFFF");
     private Color _buttonDangerColor = Color.Parse("#DC2626");
+    private Color _buttonDangerForegroundColor = Color.Parse("#FFFFFF");
     private Color _buttonForegroundColor = Color.Parse("#FFFFFF");
     private Color _inputBackgroundColor = Color.Parse("#2C3E50");
     private Color _inputForegroundColor = Color.Parse("#FFFFFF");
@@ -96,16 +99,34 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _buttonNormalColor, value);
     }
 
+    public Color ButtonNormalForegroundColor
+    {
+        get => _buttonNormalForegroundColor;
+        set => SetProperty(ref _buttonNormalForegroundColor, value);
+    }
+
     public Color ButtonCautionColor
     {
         get => _buttonCautionColor;
         set => SetProperty(ref _buttonCautionColor, value);
     }
 
+    public Color ButtonCautionForegroundColor
+    {
+        get => _buttonCautionForegroundColor;
+        set => SetProperty(ref _buttonCautionForegroundColor, value);
+    }
+
     public Color ButtonDangerColor
     {
         get => _buttonDangerColor;
         set => SetProperty(ref _buttonDangerColor, value);
+    }
+
+    public Color ButtonDangerForegroundColor
+    {
+        get => _buttonDangerForegroundColor;
+        set => SetProperty(ref _buttonDangerForegroundColor, value);
     }
 
     public Color ButtonForegroundColor
@@ -337,9 +358,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 MenuBackgroundColor = ToHexRgb(MenuBackgroundColor),
                 MenuForegroundColor = ToHexRgb(MenuForegroundColor),
                 ButtonNormalColor = ToHexRgb(ButtonNormalColor),
+                ButtonNormalForegroundColor = ToHexRgb(ButtonNormalForegroundColor),
                 ButtonCautionColor = ToHexRgb(ButtonCautionColor),
+                ButtonCautionForegroundColor = ToHexRgb(ButtonCautionForegroundColor),
                 ButtonDangerColor = ToHexRgb(ButtonDangerColor),
-                ButtonForegroundColor = ToHexRgb(ButtonForegroundColor),
+                ButtonDangerForegroundColor = ToHexRgb(ButtonDangerForegroundColor),
+                ButtonForegroundColor = ToHexRgb(ButtonNormalForegroundColor),
                 InputBackgroundColor = ToHexRgb(InputBackgroundColor),
                 InputForegroundColor = ToHexRgb(InputForegroundColor),
                 InputBorderColor = ToHexRgb(InputBorderColor),
@@ -365,7 +389,13 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             radio.Port = RigctldPort <= 0 ? DefaultRigctldPort : RigctldPort;
             radio.SerialPortName = SelectedSerialPort.Trim();
             radio.RiglistFilePath = RiglistFilePath.Trim();
-            var portCorrections = EnsureUniqueRigPorts(rigctld, radio.TagName);
+            var portConflictMessage = BuildPortConflictMessage(rigctld);
+            if (!string.IsNullOrWhiteSpace(portConflictMessage))
+            {
+                StatusMessage = $"✗ Save failed: {portConflictMessage}";
+                return;
+            }
+
             RigctldPort = radio.Port;
             if (_activeRigRadioTags.Count == 0)
                 _activeRigRadioTags.Add(radio.TagName);
@@ -393,10 +423,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             RigCatalog.ReloadFromConfiguration();
             App.ApplyThemeFromProfile(profile);
             _ = App.RigctldConnectionManager.RefreshActiveConnectionsAsync();
-            var correctionMessage = BuildPortCorrectionMessage(portCorrections);
-            StatusMessage = string.IsNullOrWhiteSpace(correctionMessage)
-                ? $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss}"
-                : $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss} ({correctionMessage})";
+            StatusMessage = $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss}";
         }
         catch (Exception ex)
         {
@@ -431,9 +458,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             MenuBackgroundColor = ToHexRgb(MenuBackgroundColor),
             MenuForegroundColor = ToHexRgb(MenuForegroundColor),
             ButtonNormalColor = ToHexRgb(ButtonNormalColor),
+            ButtonNormalForegroundColor = ToHexRgb(ButtonNormalForegroundColor),
             ButtonCautionColor = ToHexRgb(ButtonCautionColor),
+            ButtonCautionForegroundColor = ToHexRgb(ButtonCautionForegroundColor),
             ButtonDangerColor = ToHexRgb(ButtonDangerColor),
-            ButtonForegroundColor = ToHexRgb(ButtonForegroundColor),
+            ButtonDangerForegroundColor = ToHexRgb(ButtonDangerForegroundColor),
+            ButtonForegroundColor = ToHexRgb(ButtonNormalForegroundColor),
             InputBackgroundColor = ToHexRgb(InputBackgroundColor),
             InputForegroundColor = ToHexRgb(InputForegroundColor),
             InputBorderColor = ToHexRgb(InputBorderColor),
@@ -468,14 +498,23 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         try { ButtonNormalColor = Color.Parse(profile.ButtonNormalColor); }
         catch { ButtonNormalColor = Color.Parse("#2563EB"); }
 
+        try { ButtonNormalForegroundColor = Color.Parse(string.IsNullOrWhiteSpace(profile.ButtonNormalForegroundColor) ? profile.ButtonForegroundColor : profile.ButtonNormalForegroundColor); }
+        catch { ButtonNormalForegroundColor = Color.Parse("#FFFFFF"); }
+
         try { ButtonCautionColor = Color.Parse(profile.ButtonCautionColor); }
         catch { ButtonCautionColor = Color.Parse("#D97706"); }
+
+        try { ButtonCautionForegroundColor = Color.Parse(string.IsNullOrWhiteSpace(profile.ButtonCautionForegroundColor) ? profile.ButtonForegroundColor : profile.ButtonCautionForegroundColor); }
+        catch { ButtonCautionForegroundColor = Color.Parse("#FFFFFF"); }
 
         try { ButtonDangerColor = Color.Parse(profile.ButtonDangerColor); }
         catch { ButtonDangerColor = Color.Parse("#DC2626"); }
 
-        try { ButtonForegroundColor = Color.Parse(profile.ButtonForegroundColor); }
-        catch { ButtonForegroundColor = Color.Parse("#FFFFFF"); }
+        try { ButtonDangerForegroundColor = Color.Parse(string.IsNullOrWhiteSpace(profile.ButtonDangerForegroundColor) ? profile.ButtonForegroundColor : profile.ButtonDangerForegroundColor); }
+        catch { ButtonDangerForegroundColor = Color.Parse("#FFFFFF"); }
+
+        try { ButtonForegroundColor = Color.Parse(string.IsNullOrWhiteSpace(profile.ButtonForegroundColor) ? profile.ButtonNormalForegroundColor : profile.ButtonForegroundColor); }
+        catch { ButtonForegroundColor = ButtonNormalForegroundColor; }
 
         try { InputBackgroundColor = Color.Parse(profile.InputBackgroundColor); }
         catch { InputBackgroundColor = Color.Parse("#2C3E50"); }
@@ -576,7 +615,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         AvailableRigRadioOptions.Clear();
         foreach (var radio in rigctld.Radios
                      .OrderBy(x => x.RadioId <= 0 ? 1 : x.RadioId)
-                     .ThenBy(x => x.TagName, StringComparer.OrdinalIgnoreCase))
+                     .ThenBy(x => string.IsNullOrWhiteSpace(x.DisplayName) ? x.TagName : x.DisplayName, StringComparer.OrdinalIgnoreCase))
             AvailableRigRadioOptions.Add(new RigRadioOption(radio.TagName, radio.DisplayName, activeTags.Contains(radio.TagName)));
         OnPropertyChanged(nameof(AvailableRigRadioOptions));
         OnPropertyChanged(nameof(SelectedRigRadio));
@@ -663,7 +702,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         PopulateAvailableRigRadios(rigctld);
         SelectedRigRadioTag = newRadio.TagName;
         OnPropertyChanged(nameof(SelectedRigRadio));
-        StatusMessage = $"Added {newRadio.TagName}.";
+        StatusMessage = $"Added {newRadio.DisplayName}.";
     }
 
     public void RemoveSelectedRigRadio()
@@ -695,7 +734,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         rigctld.ActiveRadioTag = _activeRigRadioTags[0];
         PopulateAvailableRigRadios(rigctld);
         SelectedRigRadioTag = rigctld.ActiveRadioTag;
-        StatusMessage = $"Removed radio '{selected.TagName}'.";
+        StatusMessage = $"Removed radio '{selected.DisplayName}'.";
     }
 
     private static string ToHexRgb(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
@@ -804,14 +843,47 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     {
         PersistRigRadioSettings(SelectedRigRadioTag);
         var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
-        var portCorrections = EnsureUniqueRigPorts(rigctld, SelectedRigRadioTag);
+        var portConflictMessage = BuildPortConflictMessage(rigctld);
+        if (!string.IsNullOrWhiteSpace(portConflictMessage))
+        {
+            StatusMessage = $"✗ Save failed: {portConflictMessage}";
+            return;
+        }
+
         var selectedRadio = AppConfigurationStore.GetRigctldRadio(rigctld, SelectedRigRadioTag);
         RigctldPort = selectedRadio.Port;
         ApplyEditorSettingsToRigCatalog();
+        PopulateAvailableRigRadios(rigctld);
+        OnPropertyChanged(nameof(SelectedRigRadio));
 
-        var correctionMessage = BuildPortCorrectionMessage(portCorrections);
-        if (!string.IsNullOrWhiteSpace(correctionMessage))
-            StatusMessage = correctionMessage;
+        // Persist radio edits directly from the editor dialog so display name changes are not lost.
+        AppConfigurationStore.Save(_appConfig);
+
+        StatusMessage = $"Saved radio '{selectedRadio.DisplayName}'.";
+    }
+
+    private static string BuildPortConflictMessage(RigctldConfiguration rigctld)
+    {
+        var conflicts = rigctld.Radios
+            .Where(x => x.Port > 0)
+            .GroupBy(x => x.Port)
+            .Where(group => group.Count() > 1)
+            .OrderBy(group => group.Key)
+            .ToList();
+
+        if (conflicts.Count == 0)
+            return string.Empty;
+
+        var messages = conflicts.Select(group =>
+        {
+            var radios = group
+                .Select(radio => string.IsNullOrWhiteSpace(radio.DisplayName) ? radio.TagName : radio.DisplayName)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            return $"Port {group.Key} is used by {string.Join(", ", radios)}";
+        });
+
+        return string.Join("; ", messages);
     }
 
     public void RevertSelectedRigRadioEdits()

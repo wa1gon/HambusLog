@@ -143,6 +143,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
             {
                 _store.SetActiveRig(value?.RigNum);
                 UpdateCommandLine();
+                OnPropertyChanged(nameof(SelectedRigLabel));
             }
         }
     }
@@ -152,6 +153,10 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         get => _rigctldCommandLine;
         private set => SetProperty(ref _rigctldCommandLine, value);
     }
+
+    public string SelectedRigLabel => SelectedEntry is null
+        ? "No rig selected"
+        : $"{SelectedEntry.Model} (rigctld #{SelectedEntry.RigNum})";
 
     public string FilePath => _store.FilePath;
     public string StatusMessage => _statusMessageOverride ?? _store.StatusMessage;
@@ -259,6 +264,8 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
                 if (match is not null && !ReferenceEquals(SelectedEntry, match))
                     SelectedEntry = match;
             }
+
+            OnPropertyChanged(nameof(SelectedRigLabel));
         }
 
         if (e.PropertyName is nameof(RigCatalogStore.FilePath))
@@ -278,6 +285,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         if (!string.IsNullOrWhiteSpace(term))
         {
             SelectedEntry = FilteredEntries.FirstOrDefault();
+            OnPropertyChanged(nameof(SelectedRigLabel));
             return;
         }
 
@@ -287,6 +295,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
             if (active is not null)
             {
                 SelectedEntry = active;
+                OnPropertyChanged(nameof(SelectedRigLabel));
                 return;
             }
         }
@@ -294,10 +303,12 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         if (SelectedEntry is not null && FilteredEntries.Any(x => x.RigNum == SelectedEntry.RigNum))
         {
             UpdateCommandLine();
+            OnPropertyChanged(nameof(SelectedRigLabel));
             return;
         }
 
         SelectedEntry = FilteredEntries.FirstOrDefault();
+        OnPropertyChanged(nameof(SelectedRigLabel));
     }
 
     private void RefreshAvailableModels()
@@ -361,6 +372,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         var first = entries?.FirstOrDefault();
         SelectedEntry = first;
         _store.SetActiveRig(first?.RigNum);
+        OnPropertyChanged(nameof(SelectedRigLabel));
     }
 
     public void ClearEntries()
@@ -371,6 +383,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         FilteredModelSuggestions = [];
         SelectedEntry = null;
         RigctldCommandLine = string.Empty;
+        OnPropertyChanged(nameof(SelectedRigLabel));
     }
 
     public void ReloadFromConfiguration()

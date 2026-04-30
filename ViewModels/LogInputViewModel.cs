@@ -237,7 +237,7 @@ public sealed class LogInputViewModel : ViewModelBase
         var activeRig = App.RigctldConnectionManager.GetPrimaryActiveState();
         if (activeRig is not null)
         {
-            qso.Details.Add(new QsoDetail { FieldName = "radio_tag", FieldValue = activeRig.TagName });
+            qso.Details.Add(new QsoDetail { FieldName = "radio_name", FieldValue = activeRig.TagName });
             qso.Details.Add(new QsoDetail { FieldName = "radio_label", FieldValue = activeRig.Label });
             if (!string.IsNullOrWhiteSpace(activeRig.Mode))
                 qso.Details.Add(new QsoDetail { FieldName = "radio_mode", FieldValue = activeRig.Mode });

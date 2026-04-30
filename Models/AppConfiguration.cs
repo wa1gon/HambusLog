@@ -3,10 +3,17 @@ namespace HamBusLog.Models;
 public sealed class AppConfiguration
 {
     public string ActiveProfile { get; set; } = "default";
+    public Dictionary<string, WindowPlacement> WindowPlacements { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, ConfigProfile> Profiles { get; set; } = new()
     {
         { "default", new ConfigProfile { Name = "default" } }
     };
+}
+
+public sealed class WindowPlacement
+{
+    public int X { get; set; }
+    public int Y { get; set; }
 }
 
 public sealed class ConfigProfile
@@ -21,8 +28,11 @@ public sealed class ConfigProfile
     public string MenuBackgroundColor { get; set; } = "#111827";
     public string MenuForegroundColor { get; set; } = "#FFFFFF";
     public string ButtonNormalColor { get; set; } = "#2563EB";
+    public string ButtonNormalForegroundColor { get; set; } = "#FFFFFF";
     public string ButtonCautionColor { get; set; } = "#D97706";
+    public string ButtonCautionForegroundColor { get; set; } = "#FFFFFF";
     public string ButtonDangerColor { get; set; } = "#DC2626";
+    public string ButtonDangerForegroundColor { get; set; } = "#FFFFFF";
     public string ButtonForegroundColor { get; set; } = "#FFFFFF";
     public string InputBackgroundColor { get; set; } = "#2C3E50";
     public string InputForegroundColor { get; set; } = "#FFFFFF";

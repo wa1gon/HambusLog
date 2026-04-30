@@ -14,6 +14,7 @@ public partial class LogInputWindow
     public LogInputWindow()
     {
         InitializeComponent();
+        App.TrackWindowPlacement(this, nameof(LogInputWindow));
         _viewModel = new LogInputViewModel();
         DataContext = _viewModel;
 

@@ -11,7 +11,7 @@ public class Qso
     [MaxLength(50)] public string Country { get; set; } = string.Empty;
     [MaxLength(15)] public string State { get; set; } = string.Empty;
     public decimal Freq { get; set; } = decimal.Zero;
-    [MaxLength(30)] public string Band { get; set; } = string.Empty;
+    [Required][MaxLength(30)] public string Band { get; set; } = string.Empty;
     [MaxLength(10)] public string RstSent { get; set; } = string.Empty;
     [MaxLength(10)] public string RstRcvd { get; set; } = string.Empty;
     public int Dxcc { get; set; } = 0; // DXCC entity number

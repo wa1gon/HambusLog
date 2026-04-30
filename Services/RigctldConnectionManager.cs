@@ -11,29 +11,35 @@ public sealed class RigctldConnectionManager : IDisposable
 
     public event EventHandler? StatesChanged;
 
-    public async Task<string> SetFrequencyByTagAsync(string tagName, decimal frequencyMhz, CancellationToken ct = default)
+    public Task<string> SetFrequencyByTagAsync(string tagName, decimal frequencyMhz, CancellationToken ct = default)
+        => SetFrequencyByNameAsync(tagName, frequencyMhz, ct);
+
+    public async Task<string> SetFrequencyByNameAsync(string radioName, decimal frequencyMhz, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(tagName))
-            throw new ArgumentException("Radio tag is required.", nameof(tagName));
+        if (string.IsNullOrWhiteSpace(radioName))
+            throw new ArgumentException("Radio name is required.", nameof(radioName));
         if (frequencyMhz <= 0)
             throw new ArgumentOutOfRangeException(nameof(frequencyMhz), "Frequency must be greater than zero.");
 
         var hz = (long)Math.Round(frequencyMhz * 1_000_000m);
         var command = new ControlCommand(ControlCommandType.SetFrequency, hz, null);
-        await EnqueueControlCommandAsync(tagName.Trim(), command, ct);
+        await EnqueueControlCommandAsync(radioName.Trim(), command, ct);
         return $"Frequency set to {frequencyMhz:0.######} MHz";
     }
 
-    public async Task<string> SetModeByTagAsync(string tagName, string mode, CancellationToken ct = default)
+    public Task<string> SetModeByTagAsync(string tagName, string mode, CancellationToken ct = default)
+        => SetModeByNameAsync(tagName, mode, ct);
+
+    public async Task<string> SetModeByNameAsync(string radioName, string mode, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(tagName))
-            throw new ArgumentException("Radio tag is required.", nameof(tagName));
+        if (string.IsNullOrWhiteSpace(radioName))
+            throw new ArgumentException("Radio name is required.", nameof(radioName));
         if (string.IsNullOrWhiteSpace(mode))
             throw new ArgumentException("Mode is required.", nameof(mode));
 
         var normalizedMode = mode.Trim().ToUpperInvariant();
         var command = new ControlCommand(ControlCommandType.SetMode, null, normalizedMode);
-        await EnqueueControlCommandAsync(tagName.Trim(), command, ct);
+        await EnqueueControlCommandAsync(radioName.Trim(), command, ct);
         return $"Mode set to {normalizedMode}";
     }
 

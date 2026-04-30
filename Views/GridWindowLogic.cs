@@ -10,6 +10,7 @@ public partial class GridWindow
     public GridWindow()
     {
         InitializeComponent();
+        App.TrackWindowPlacement(this, nameof(GridWindow));
         _repository = new SqliteQsoRepository(App.DbContext);
         _viewModel = new GridViewModel(_repository);
         DataContext = _viewModel;

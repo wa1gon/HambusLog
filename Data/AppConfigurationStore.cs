@@ -29,6 +29,7 @@ public static class AppConfigurationStore
             var config = JsonSerializer.Deserialize<AppConfiguration>(json, JsonOptions);
             config ??= new AppConfiguration();
             EnsureActiveProfile(config, json);
+            EnsureWindowPlacements(config);
             EnsureRigConfiguration(config);
 
             if (!ContainsActiveProfileProperty(json))
@@ -48,6 +49,7 @@ public static class AppConfigurationStore
         try
         {
             EnsureActiveProfile(configuration, null);
+            EnsureWindowPlacements(configuration);
             EnsureRigConfiguration(configuration);
 
             var directory = Path.GetDirectoryName(ConfigFilePath);
@@ -70,6 +72,7 @@ public static class AppConfigurationStore
     public static ConfigProfile GetActiveProfile(AppConfiguration config)
     {
         EnsureActiveProfile(config, null);
+        EnsureWindowPlacements(config);
         if (!config.Profiles.TryGetValue(config.ActiveProfile, out var profile))
         {
             profile = new ConfigProfile { Name = config.ActiveProfile };
@@ -91,14 +94,16 @@ public static class AppConfigurationStore
         NormalizeRigctld(rigctld);
         var tag = string.IsNullOrWhiteSpace(requestedTag) ? rigctld.ActiveRadioTag : requestedTag.Trim();
 
-        var radio = rigctld.Radios.FirstOrDefault(x => string.Equals(x.TagName, tag, StringComparison.OrdinalIgnoreCase));
+        var radio = rigctld.Radios.FirstOrDefault(x =>
+            string.Equals(x.TagName, tag, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(x.DisplayName, tag, StringComparison.OrdinalIgnoreCase));
         if (radio is null)
         {
             var nextId = rigctld.Radios.Count == 0 ? 1 : rigctld.Radios.Max(x => x.RadioId) + 1;
             radio = new RigRadioConfig
             {
                 RadioId = nextId,
-                TagName = tag,
+                TagName = string.IsNullOrWhiteSpace(tag) ? $"radio-{nextId}" : tag,
                 DisplayName = tag,
                 Host = string.IsNullOrWhiteSpace(rigctld.Host) ? "127.0.0.1" : rigctld.Host,
                 Port = rigctld.Port <= 0 ? 4532 : rigctld.Port,
@@ -177,6 +182,22 @@ public static class AppConfigurationStore
         }
     }
 
+    private static void EnsureWindowPlacements(AppConfiguration config)
+    {
+        config.WindowPlacements ??= new Dictionary<string, WindowPlacement>(StringComparer.OrdinalIgnoreCase);
+
+        var normalized = new Dictionary<string, WindowPlacement>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in config.WindowPlacements)
+        {
+            if (string.IsNullOrWhiteSpace(pair.Key) || pair.Value is null)
+                continue;
+
+            normalized[pair.Key.Trim()] = pair.Value;
+        }
+
+        config.WindowPlacements = normalized;
+    }
+
     private static void NormalizeRigctld(RigctldConfiguration rigctld)
     {
         rigctld.Host = string.IsNullOrWhiteSpace(rigctld.Host) ? "127.0.0.1" : rigctld.Host.Trim();
@@ -206,21 +227,41 @@ public static class AppConfigurationStore
             });
         }
 
+        var requestedActiveTags = rigctld.ActiveRadioTags
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .ToList();
+        if (!string.IsNullOrWhiteSpace(rigctld.ActiveRadioTag))
+            requestedActiveTags.Add(rigctld.ActiveRadioTag.Trim());
+
         var normalizedRadios = new List<RigRadioConfig>();
         var seenTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var legacyToIdentity = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var id = 1;
         foreach (var radio in rigctld.Radios)
         {
-            var legacyName = radio.DisplayName?.Trim();
-            var tag = string.IsNullOrWhiteSpace(radio.TagName)
-                ? (string.IsNullOrWhiteSpace(legacyName) ? $"radio-{id}" : legacyName)
-                : radio.TagName.Trim();
-            if (!seenTags.Add(tag))
-                continue;
+            var legacyTag = radio.TagName?.Trim() ?? string.Empty;
+            var legacyName = radio.DisplayName?.Trim() ?? string.Empty;
+            var identityBase = string.IsNullOrWhiteSpace(legacyName)
+                ? (string.IsNullOrWhiteSpace(legacyTag) ? $"radio-{id}" : legacyTag)
+                : legacyName;
+
+            var identity = identityBase;
+            var duplicateIndex = 2;
+            while (!seenTags.Add(identity))
+            {
+                identity = $"{identityBase}-{duplicateIndex}";
+                duplicateIndex++;
+            }
+
+            if (!string.IsNullOrWhiteSpace(legacyTag))
+                legacyToIdentity[legacyTag] = identity;
+            if (!string.IsNullOrWhiteSpace(legacyName))
+                legacyToIdentity[legacyName] = identity;
 
             radio.RadioId = radio.RadioId <= 0 ? id : radio.RadioId;
-            radio.TagName = tag;
-            radio.DisplayName = string.IsNullOrWhiteSpace(legacyName) ? tag : legacyName;
+            radio.TagName = identity;
+            radio.DisplayName = identity;
             radio.Executable = radio.Executable?.Trim() ?? string.Empty;
             radio.ArgumentsTemplate = radio.ArgumentsTemplate?.Trim() ?? string.Empty;
             radio.AdditionalArguments = string.IsNullOrWhiteSpace(radio.AdditionalArguments)
@@ -240,12 +281,14 @@ public static class AppConfigurationStore
 
         rigctld.Radios = normalizedRadios;
 
-        if (string.IsNullOrWhiteSpace(rigctld.ActiveRadioTag))
-            rigctld.ActiveRadioTag = rigctld.Radios[0].TagName;
+        if (string.IsNullOrWhiteSpace(rigctld.ActiveRadioTag) || !legacyToIdentity.TryGetValue(rigctld.ActiveRadioTag.Trim(), out var normalizedActiveTag))
+            normalizedActiveTag = rigctld.Radios[0].TagName;
 
-        var tagSet = rigctld.ActiveRadioTags
+        rigctld.ActiveRadioTag = normalizedActiveTag;
+
+        var tagSet = requestedActiveTags
+            .Select(x => legacyToIdentity.TryGetValue(x, out var mapped) ? mapped : x)
             .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => x.Trim())
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         foreach (var activeRadio in rigctld.Radios.Where(x => x.IsActive))

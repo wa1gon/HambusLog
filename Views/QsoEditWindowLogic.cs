@@ -12,6 +12,7 @@ public partial class QsoEditWindow
     public QsoEditWindow()
     {
         InitializeComponent();
+        App.TrackWindowPlacement(this, nameof(QsoEditWindow));
         _viewModel = new QsoEditViewModel();
         DataContext = _viewModel;
     }

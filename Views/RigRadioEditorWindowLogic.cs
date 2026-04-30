@@ -12,6 +12,7 @@ public partial class RigRadioEditorWindow
     public RigRadioEditorWindow(ConfigurationViewModel viewModel)
     {
         InitializeComponent();
+        App.TrackWindowPlacement(this, nameof(RigRadioEditorWindow));
         _viewModel = viewModel;
         DataContext = _viewModel;
 
