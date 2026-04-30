@@ -186,14 +186,27 @@ public sealed class RigctldConnectionManager : IDisposable
     private async Task EnqueueControlCommandAsync(string tagName, ControlCommand command, CancellationToken ct)
     {
         Worker worker;
+        RadioRuntimeState? state;
         lock (_gate)
         {
             if (!_workers.TryGetValue(tagName, out worker!))
                 throw new InvalidOperationException($"No background service is running for radio '{tagName}'.");
+
+            _states.TryGetValue(tagName, out state);
         }
 
+        if (state is null || !state.IsConnected)
+            throw new InvalidOperationException($"Radio '{tagName}' is not connected.");
+
         worker.Commands.Enqueue(command);
-        await command.Completion.Task.WaitAsync(ct);
+        try
+        {
+            await command.Completion.Task.WaitAsync(ct);
+        }
+        catch (OperationCanceledException ex) when (ct.IsCancellationRequested)
+        {
+            throw new TimeoutException($"Timed out waiting for radio '{tagName}' to accept the command.", ex);
+        }
     }
 
     private static async Task ProcessControlCommandsAsync(Worker worker, Wa1gonLib.RigControl.HamLibRigCtlClient client, CancellationToken ct)

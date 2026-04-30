@@ -1,5 +1,6 @@
 ﻿namespace HamBusLog.ViewModels;
 
+using Avalonia.Media;
 using Avalonia.Threading;
 
 public partial class MainWindowViewModel : ViewModelBase, IDisposable
@@ -131,7 +132,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public bool CanControlSelectedRadio => SelectedRadioStatus is not null;
+    public bool CanControlSelectedRadio => SelectedRadioStatus?.IsConnected == true;
 
     public string ControlFrequencyMhz
     {
@@ -256,11 +257,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             }
         }
 
-        // Restore selection
-        if (prevSelectedTag is not null && SelectedRadioStatus?.TagName != prevSelectedTag)
+        // Restore selection, or auto-select first connected radio (or first radio if none connected)
+        if (prevSelectedTag is not null)
         {
-            SelectedRadioStatus = _radioStatuses.FirstOrDefault(x =>
+            var restoredRow = _radioStatuses.FirstOrDefault(x =>
                 string.Equals(x.TagName, prevSelectedTag, StringComparison.OrdinalIgnoreCase));
+            if (restoredRow is not null && !ReferenceEquals(SelectedRadioStatus, restoredRow))
+                SelectedRadioStatus = restoredRow;
+        }
+        else if (SelectedRadioStatus is null && _radioStatuses.Count > 0)
+        {
+            SelectedRadioStatus = _radioStatuses.FirstOrDefault(x => x.IsConnected)
+                                  ?? _radioStatuses[0];
         }
 
         OnPropertyChanged(nameof(HasRadioStatuses));
@@ -291,6 +299,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        if (!SelectedRadioStatus.IsConnected)
+        {
+            RadioControlMessage = $"{SelectedRadioStatus.Label} is not connected.";
+            return;
+        }
+
         if (!decimal.TryParse(ControlFrequencyMhz, NumberStyles.Number, CultureInfo.InvariantCulture, out var mhz) || mhz <= 0)
         {
             RadioControlMessage = "Enter a valid frequency in MHz.";
@@ -301,6 +315,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
             RadioControlMessage = await _rigctldConnectionManager.SetFrequencyByTagAsync(SelectedRadioStatus.TagName, mhz, cts.Token);
+        }
+        catch (TimeoutException)
+        {
+            RadioControlMessage = "Frequency update timed out. Verify the radio is connected and try again.";
         }
         catch (Exception ex)
         {
@@ -316,6 +334,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        if (!SelectedRadioStatus.IsConnected)
+        {
+            RadioControlMessage = $"{SelectedRadioStatus.Label} is not connected.";
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(ControlMode))
         {
             RadioControlMessage = "Enter a mode (USB, LSB, CW, FM, AM...).";
@@ -326,6 +350,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
             RadioControlMessage = await _rigctldConnectionManager.SetModeByTagAsync(SelectedRadioStatus.TagName, ControlMode, cts.Token);
+        }
+        catch (TimeoutException)
+        {
+            RadioControlMessage = "Mode update timed out. Verify the radio is connected and try again.";
         }
         catch (Exception ex)
         {
@@ -391,6 +419,10 @@ public sealed class RadioConnectionStatusViewModel
         Mode = mode;
         IsConnected = isConnected;
         Status = status;
+        RowBackground = isConnected
+            ? new SolidColorBrush(Color.Parse("#1E3A2F"))   // dark green tint
+            : new SolidColorBrush(Color.Parse("#3A1E1E"));  // dark red tint
+        RowForeground = new SolidColorBrush(Colors.White);
     }
 
     public int RowNumber { get; }
@@ -401,6 +433,8 @@ public sealed class RadioConnectionStatusViewModel
     public string Mode { get; }
     public bool IsConnected { get; }
     public string Status { get; }
+    public SolidColorBrush RowBackground { get; }
+    public SolidColorBrush RowForeground { get; }
 }
 
 public sealed class ActiveRadioOption

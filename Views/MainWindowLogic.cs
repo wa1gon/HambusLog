@@ -279,6 +279,15 @@ public partial class MainWindow
 
         await vm.ApplyPresetModeToSelectedRadioAsync(mode);
     }
+
+    private void OnRadioRowPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        if (sender is Border { DataContext: RadioConnectionStatusViewModel row })
+            vm.SelectedRadioStatus = row;
+    }
 }
 
 

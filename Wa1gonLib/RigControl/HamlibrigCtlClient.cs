@@ -41,13 +41,31 @@ public class HamLibRigCtlClient(string _host, int _port) : IDisposable, IRigCont
     {
         EnsureConnected();
         await SendCommandAsync($"F {freq}\n");
+        await EnsureCommandSucceededAsync("set frequency");
         Freq = freq;
     }
 
     public async Task SetModeAsync(string mode)
     {
         EnsureConnected();
-        await SendCommandAsync($"M {mode}\n");
+        // Hamlib expects mode + passband; 0 asks backend to choose a default passband.
+        await SendCommandAsync($"M {mode} 0\n");
+        await EnsureCommandSucceededAsync("set mode");
+    }
+
+    private async Task EnsureCommandSucceededAsync(string operation)
+    {
+        var response = await ReadLineAsync();
+        if (string.IsNullOrWhiteSpace(response))
+            throw new IOException($"rigctld returned an empty reply while trying to {operation}.");
+
+        // Most rigctld commands acknowledge with: RPRT <code> (0 = success)
+        if (!response.StartsWith("RPRT", StringComparison.OrdinalIgnoreCase))
+            throw new IOException($"Unexpected rigctld reply while trying to {operation}: '{response}'.");
+
+        var codeToken = response.Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1).FirstOrDefault();
+        if (!int.TryParse(codeToken, out var code) || code != 0)
+            throw new IOException($"rigctld rejected {operation} (RPRT {codeToken ?? "?"}).");
     }
 
     public async Task SendCommandAsync(string command)
