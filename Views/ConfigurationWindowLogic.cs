@@ -412,12 +412,12 @@ public partial class ConfigurationWindow
         if (_syncingActiveRadiosSelection || sender is not ListBox listBox)
             return;
 
-        var selectedTags = listBox.SelectedItems?
+        var selectedNames = listBox.SelectedItems?
             .OfType<RigRadioOption>()
-            .Select(x => x.TagName)
+            .Select(x => x.RadioName)
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToList() ?? [];
-        _viewModel.SetActiveRigRadioTags(selectedTags);
+        _viewModel.SetActiveRigRadioNames(selectedNames);
     }
 
     public async void OnCatalogCopyCommandClicked(object? sender, RoutedEventArgs e)
@@ -463,6 +463,17 @@ public partial class ConfigurationWindow
         {
             _viewModel.RiglistFilePath = files[0].Path.LocalPath;
         }
+    }
+
+    public void OnLoadRiglistClicked(object? sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_viewModel.RiglistFilePath))
+        {
+            _viewModel.RigCatalog.SetStatusMessage("Rig list path is empty.");
+            return;
+        }
+
+        _viewModel.RigCatalog.LoadFromFile(_viewModel.RiglistFilePath);
     }
 
     public async void OnBrowseAdifDirectoryClicked(object? sender, RoutedEventArgs e)
@@ -539,12 +550,12 @@ public partial class ConfigurationWindow
         _syncingActiveRadiosSelection = true;
         try
         {
-            var selectedTagSet = _viewModel.GetActiveRigRadioTags()
+            var selectedNameSet = _viewModel.GetActiveRigRadioNames()
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             selectedItems.Clear();
-            foreach (var option in options.Where(x => selectedTagSet.Contains(x.TagName)))
+            foreach (var option in options.Where(x => selectedNameSet.Contains(x.RadioName)))
                 selectedItems.Add(option);
         }
         finally

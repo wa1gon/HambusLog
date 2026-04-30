@@ -38,9 +38,8 @@ public sealed class RigCatalogStore : ObservableObject
     public void InitializeFromConfiguration()
     {
         var config = AppConfigurationStore.Load();
-        var profile = AppConfigurationStore.GetActiveProfile(config);
-        var path = profile.Rigctld.RiglistFilePath;
-        ActiveRigNum = profile.Rigctld.ActiveRigNum;
+        var rigctld = AppConfigurationStore.GetRigctld(conf var path = rigctld.RiglistFilePath;
+        ActiveRigNum = rigctld.ActiveRigNum;
 
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -84,9 +83,9 @@ public sealed class RigCatalogStore : ObservableObject
             OnPropertyChanged(nameof(ActiveRig));
 
             var config = AppConfigurationStore.Load();
-            var profile = AppConfigurationStore.GetActiveProfile(config);
-            profile.Rigctld.RiglistFilePath = path;
-            profile.Rigctld.ActiveRigNum = ActiveRigNum;
+            var rigctld = AppConfigurationStore.GetRigctld(config);
+            rigctld.RiglistFilePath = path;
+            rigctld.ActiveRigNum = ActiveRigNum;
             AppConfigurationStore.Save(config);
         }
         catch (Exception ex)
@@ -108,8 +107,8 @@ public sealed class RigCatalogStore : ObservableObject
         OnPropertyChanged(nameof(ActiveRig));
 
         var config = AppConfigurationStore.Load();
-        var profile = AppConfigurationStore.GetActiveProfile(config);
-        profile.Rigctld.ActiveRigNum = ActiveRigNum;
+        var rigctld = AppConfigurationStore.GetRigctld(config);
+        rigctld.ActiveRigNum = ActiveRigNum;
         AppConfigurationStore.Save(config);
     }
 

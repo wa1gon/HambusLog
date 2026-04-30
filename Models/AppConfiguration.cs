@@ -8,6 +8,9 @@ public sealed class AppConfiguration
     {
         { "default", new ConfigProfile { Name = "default" } }
     };
+
+    /// <summary>System-wide radio configuration, shared across all profiles.</summary>
+    public RigctldConfiguration Rigctld { get; set; } = new();
 }
 
 public sealed class WindowPlacement
@@ -40,35 +43,29 @@ public sealed class ConfigProfile
     public string InputSelectionBackgroundColor { get; set; } = "#2C3E50";
     public string InputSelectionForegroundColor { get; set; } = "#FFFFFF";
     public string ConnectionString { get; set; } = "Data Source=hambuslog.db";
-    public RigctldConfiguration Rigctld { get; set; } = new();
 }
 
 public sealed class RigctldConfiguration
 {
-    public string Host { get; set; } = "127.0.0.1";
-    public int Port { get; set; } = 4532;
     public int ReconnectIntervalSeconds { get; set; } = 3;
-    public string SerialPortName { get; set; } = string.Empty;
-    public string RiglistFilePath { get; set; } = string.Empty;
     public int? ActiveRigNum { get; set; }
+    public string RiglistFilePath { get; set; } = string.Empty;
 
     // Multi-radio support
-    public string ActiveRadioTag { get; set; } = "radio-1";
-    public List<string> ActiveRadioTags { get; set; } = [];
+    public string ActiveRadioName { get; set; } = string.Empty;
+    public List<string> ActiveRadioNames { get; set; } = [];
     public List<RigRadioConfig> Radios { get; set; } = [];
 }
 
 public sealed class RigRadioConfig
 {
     public int RadioId { get; set; }
-    public string TagName { get; set; } = "radio-1";
-    public string DisplayName { get; set; } = "radio-1";
+    public string RadioName { get; set; } = string.Empty;
     public string Executable { get; set; } = "rigctld";
     public string ArgumentsTemplate { get; set; } = "-m {rigNum} -T {host} -t {port}{serialArg}";
     public string AdditionalArguments { get; set; } = string.Empty;
     public string Host { get; set; } = "127.0.0.1";
     public int Port { get; set; } = 4532;
     public string SerialPortName { get; set; } = string.Empty;
-    public string RiglistFilePath { get; set; } = string.Empty;
     public bool IsActive { get; set; }
 }

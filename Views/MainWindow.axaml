@@ -61,12 +61,14 @@
                         <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4">
                             <StackPanel>
                                 <!-- Header row -->
-                                <Grid ColumnDefinitions="40,160,100,70,*" Background="#1A1A2E">
+                                <Grid ColumnDefinitions="40,150,70,70,100,70,*" Background="#1A1A2E">
                                     <TextBlock Grid.Column="0" Text="#"      Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
                                     <TextBlock Grid.Column="1" Text="Name"   Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
-                                    <TextBlock Grid.Column="2" Text="Freq"   Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
-                                    <TextBlock Grid.Column="3" Text="Mode"   Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
-                                    <TextBlock Grid.Column="4" Text="Status" Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
+                                    <TextBlock Grid.Column="2" Text="Model #" Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
+                                    <TextBlock Grid.Column="3" Text="Port"   Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
+                                    <TextBlock Grid.Column="4" Text="Freq"   Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
+                                    <TextBlock Grid.Column="5" Text="Mode"   Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
+                                    <TextBlock Grid.Column="6" Text="Status" Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
                                 </Grid>
                                 <Rectangle Height="1" Fill="{DynamicResource AppBorderBrush}"/>
                                 <!-- Data rows -->
@@ -78,12 +80,14 @@
                                                             BorderBrush="{DynamicResource AppBorderBrush}"
                                                             Background="{Binding RowBackground}"
                                                             PointerPressed="OnRadioRowPointerPressed">
-                                                        <Grid ColumnDefinitions="40,160,100,70,*">
+                                                        <Grid ColumnDefinitions="40,150,70,70,100,70,*">
                                                             <TextBlock Grid.Column="0" Text="{Binding RowNumber}" Foreground="{Binding RowForeground}" Margin="6,5"/>
                                                             <TextBlock Grid.Column="1" Text="{Binding Label}"     Foreground="{Binding RowForeground}" Margin="6,5"/>
-                                                            <TextBlock Grid.Column="2" Text="{Binding Frequency}" Foreground="{Binding RowForeground}" Margin="6,5"/>
-                                                            <TextBlock Grid.Column="3" Text="{Binding Mode}"      Foreground="{Binding RowForeground}" Margin="6,5"/>
-                                                            <TextBlock Grid.Column="4" Text="{Binding Status}"    Foreground="{Binding RowForeground}" Margin="6,5" TextWrapping="NoWrap"/>
+                                                            <TextBlock Grid.Column="2" Text="{Binding RigModel}"  Foreground="{Binding RowForeground}" Margin="6,5"/>
+                                                            <TextBlock Grid.Column="3" Text="{Binding ListenPort}" Foreground="{Binding RowForeground}" Margin="6,5"/>
+                                                            <TextBlock Grid.Column="4" Text="{Binding Frequency}" Foreground="{Binding RowForeground}" Margin="6,5"/>
+                                                            <TextBlock Grid.Column="5" Text="{Binding Mode}"      Foreground="{Binding RowForeground}" Margin="6,5"/>
+                                                            <TextBlock Grid.Column="6" Text="{Binding Status}"    Foreground="{Binding RowForeground}" Margin="6,5" TextWrapping="NoWrap"/>
                                                         </Grid>
                                                     </Border>
                                                 </DataTemplate>

@@ -35,9 +35,9 @@
         </StackPanel>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
-            <TextBlock Text="Serial Port:" VerticalAlignment="Center" />
+            <TextBlock Text="Resource Path:" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding AvailableSerialPorts}"
-                      SelectedItem="{Binding SelectedSerialPort}"
+                      SelectedItem="{Binding ResourcePath}"
                       Width="380"
                       IsEditable="True" />
             <Button Content="Refresh Ports" Click="OnRefreshSerialPortsClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />

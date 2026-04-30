@@ -75,7 +75,8 @@ public sealed class RigctldRadioCatalogService
         string? serialPortName = null,
         string executable = "rigctld",
         string? argumentsTemplate = null,
-        string? additionalArguments = null)
+        string? additionalArguments = null,
+        int retryCount = 0)
     {
         if (entry is null)
             return string.Empty;
@@ -103,6 +104,9 @@ public sealed class RigctldRadioCatalogService
         if (!string.IsNullOrWhiteSpace(safeAdditionalArguments)
             && !safeTemplate.Contains("{additionalArgs}", StringComparison.OrdinalIgnoreCase))
             arguments = $"{arguments} {safeAdditionalArguments}";
+
+        if (retryCount > 0)
+            arguments = $"{arguments} -C retry={retryCount.ToString(CultureInfo.InvariantCulture)}";
 
         var command = $"{safeExecutable} {arguments}".Trim();
 

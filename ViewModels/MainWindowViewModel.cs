@@ -191,31 +191,30 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         var rigctld = AppConfigurationStore.GetRigctld(config);
         var snapshot = _rigctldConnectionManager.GetSnapshot();
 
-        var snapshotByTag = snapshot
-            .GroupBy(x => x.TagName, StringComparer.OrdinalIgnoreCase)
+        var snapshotByName = snapshot
+            .GroupBy(x => x.RadioName, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(x => x.Key, x => x.Last(), StringComparer.OrdinalIgnoreCase);
 
         var rows = rigctld.Radios
             .Select((radio, index) =>
             {
-                if (snapshotByTag.TryGetValue(radio.TagName, out var state))
-                    return BuildStatusRow(index + 1, state.Label, state.TagName, state.FrequencyMhz, state.Mode, state.IsConnected, state.Error);
+                if (snapshotByName.TryGetValue(radio.RadioName, out var state))
+                    return BuildStatusRow(index + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, radio.Port, state.FrequencyMhz, state.Mode, state.IsConnected, state.Error);
 
-                var label = string.IsNullOrWhiteSpace(radio.DisplayName) ? radio.TagName : radio.DisplayName;
-                return BuildStatusRow(index + 1, label, radio.TagName, null, null, false, $"Not connected ({radio.Host}:{radio.Port})");
+                return BuildStatusRow(index + 1, radio.RadioName, radio.RadioName, rigctld.ActiveRigNum, radio.Port, null, null, false, $"Not connected ({radio.Host}:{radio.Port})");
             })
             .ToList();
 
         foreach (var state in snapshot)
         {
-            if (rows.Any(x => string.Equals(x.RadioName, state.TagName, StringComparison.OrdinalIgnoreCase)))
+            if (rows.Any(x => string.Equals(x.RadioName, state.RadioName, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
-            rows.Add(BuildStatusRow(rows.Count + 1, state.Label, state.TagName, state.FrequencyMhz, state.Mode, state.IsConnected, state.Error));
+            rows.Add(BuildStatusRow(rows.Count + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, null, state.FrequencyMhz, state.Mode, state.IsConnected, state.Error));
         }
 
         // Update items in-place to avoid resetting DataGrid selection and scroll position
-        var prevSelectedTag = SelectedRadioStatus?.TagName;
+        var prevSelectedName = SelectedRadioStatus?.RadioName;
 
         // Remove rows no longer present
         for (var i = _radioStatuses.Count - 1; i >= 0; i--)
@@ -258,10 +257,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         // Restore selection, or auto-select first connected radio (or first radio if none connected)
-        if (prevSelectedTag is not null)
+        if (prevSelectedName is not null)
         {
             var restoredRow = _radioStatuses.FirstOrDefault(x =>
-                string.Equals(x.RadioName, prevSelectedTag, StringComparison.OrdinalIgnoreCase));
+                string.Equals(x.RadioName, prevSelectedName, StringComparison.OrdinalIgnoreCase));
             if (restoredRow is not null && !ReferenceEquals(SelectedRadioStatus, restoredRow))
                 SelectedRadioStatus = restoredRow;
         }
@@ -287,7 +286,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         var mode = primary.Mode == "-" ? string.Empty : $" {primary.Mode}";
         var freq = primary.Frequency == "-" ? string.Empty : $" {primary.Frequency}";
-        var summary = $"Rig: {primary.Label}{freq}{mode} - {primary.Status}";
+        var model = primary.RigModel == "-" ? string.Empty : $" model {primary.RigModel}";
+        var endpoint = primary.ListenPort == "-" ? string.Empty : $" port {primary.ListenPort}";
+        var summary = $"Rig: {primary.Label}{model}{endpoint}{freq}{mode} - {primary.Status}";
         RadioStatusSummary = summary;
     }
 
@@ -314,7 +315,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
-            RadioControlMessage = await _rigctldConnectionManager.SetFrequencyByNameAsync(SelectedRadioStatus.TagName, mhz, cts.Token);
+            RadioControlMessage = await _rigctldConnectionManager.SetFrequencyByNameAsync(SelectedRadioStatus.RadioName, mhz, cts.Token);
         }
         catch (TimeoutException)
         {
@@ -349,7 +350,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
-            RadioControlMessage = await _rigctldConnectionManager.SetModeByNameAsync(SelectedRadioStatus.TagName, ControlMode, cts.Token);
+            RadioControlMessage = await _rigctldConnectionManager.SetModeByNameAsync(SelectedRadioStatus.RadioName, ControlMode, cts.Token);
         }
         catch (TimeoutException)
         {
@@ -370,7 +371,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
      private static RadioConnectionStatusViewModel BuildStatusRow(
          int rowNumber,
          string label,
-         string tagName,
+          string radioName,
+          int? rigModelNumber,
+          int? listenPort,
          decimal? frequencyMhz,
          string? mode,
          bool isConnected,
@@ -379,7 +382,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
          return new RadioConnectionStatusViewModel(
              rowNumber,
              label,
-             tagName,
+             radioName,
+             rigModelNumber,
+             listenPort,
              frequencyMhz,
              frequencyMhz is decimal mhz
                  ? (mhz < 0.001m ? "-" : mhz.ToString("0.000", CultureInfo.InvariantCulture) + " MHz")
@@ -409,11 +414,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
 public sealed class RadioConnectionStatusViewModel
 {
-    public RadioConnectionStatusViewModel(int rowNumber, string label, string radioName, decimal? frequencyMhz, string frequency, string mode, bool isConnected, string status)
+    public RadioConnectionStatusViewModel(int rowNumber, string label, string radioName, int? rigModelNumber, int? listenPort, decimal? frequencyMhz, string frequency, string mode, bool isConnected, string status)
     {
         RowNumber = rowNumber;
         Label = label;
         RadioName = radioName;
+        RigModel = rigModelNumber?.ToString(CultureInfo.InvariantCulture) ?? "-";
+        ListenPort = listenPort?.ToString(CultureInfo.InvariantCulture) ?? "-";
         FrequencyMhz = frequencyMhz;
         Frequency = frequency;
         Mode = mode;
@@ -428,7 +435,8 @@ public sealed class RadioConnectionStatusViewModel
     public int RowNumber { get; }
     public string Label { get; }
     public string RadioName { get; }
-    public string TagName => RadioName;
+    public string RigModel { get; }
+    public string ListenPort { get; }
     public decimal? FrequencyMhz { get; }
     public string Frequency { get; }
     public string Mode { get; }

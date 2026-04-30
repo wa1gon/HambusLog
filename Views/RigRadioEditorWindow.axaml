@@ -17,29 +17,30 @@
                          Text="{Binding RigctldRadioName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Watermark="My FT-710" />
 
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Executable" VerticalAlignment="Center" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Command Line" VerticalAlignment="Center" />
                 <TextBox Grid.Row="2" Grid.Column="1"
-                         Text="{Binding RigctldExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          Width="420"
-                          HorizontalAlignment="Left"
-                         Watermark="rigctld" />
+                         Text="{Binding RigCatalog.RigctldCommandLine}"
+                         IsReadOnly="True"
+                         Width="720"
+                         HorizontalAlignment="Left"
+                         FontFamily="Monospace"
+                         Watermark="rigctld -m ... -t ... -T ... -C retry=..." />
                 <TextBlock Grid.Row="2" Grid.Column="1"
                            Margin="0,34,0,0"
                            Foreground="{DynamicResource AppMutedForegroundBrush}"
                            FontSize="11"
-                           Text="Optional. Leave blank to use default executable name." />
+                           Text="Composed from selected rig, host, port, serial port, and retry count." />
 
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="Additional Args" VerticalAlignment="Center" />
-                <TextBox Grid.Row="4" Grid.Column="1"
-                         Text="{Binding RigctldAdditionalArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          Width="520"
-                          HorizontalAlignment="Left"
-                         Watermark="-P RTS -s 38400" />
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Retry Count" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Row="4" Grid.Column="1"
+                               Minimum="0" Maximum="300"
+                               Value="{Binding RigctldReconnectIntervalSeconds}"
+                               HorizontalAlignment="Left" Width="160" />
                 <TextBlock Grid.Row="4" Grid.Column="1"
                            Margin="0,34,0,0"
                            Foreground="{DynamicResource AppMutedForegroundBrush}"
                            FontSize="11"
-                           Text="Use this for any extra rigctld flags not covered by other fields." />
+                           Text="Adds '-C retry=&lt;value&gt;' to the composed command." />
 
                 <TextBlock Grid.Row="5" Grid.Column="0" Text="Host" VerticalAlignment="Center" />
                 <TextBox Grid.Row="5" Grid.Column="1"
@@ -54,38 +55,18 @@
                                Value="{Binding RigctldPort}"
                                HorizontalAlignment="Left" Width="160" />
 
-                <TextBlock Grid.Row="7" Grid.Column="0" Text="Serial Port" VerticalAlignment="Center" />
-                <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                    <ComboBox ItemsSource="{Binding AvailableSerialPorts}"
-                              SelectedItem="{Binding SelectedSerialPort, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                              Width="360"
-                              IsEditable="True" />
-                    <Button Content="Refresh"
-                            Click="OnRefreshSerialPortsClicked"
-                            Padding="10,6"
-                            Background="{DynamicResource AppButtonCautionBrush}"
-                            Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
-                </StackPanel>
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="Resource File" VerticalAlignment="Center" />
+                <TextBox Grid.Row="7" Grid.Column="1"
+                         Text="{Binding ResourcePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Width="420"
+                         HorizontalAlignment="Left"
+                         Watermark="/path/to/resource" />
 
                 <TextBlock Grid.Row="8" Grid.Column="0" Text="Rig List" VerticalAlignment="Center" />
-                <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                    <TextBox Text="{Binding RiglistFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="420" />
-                    <Button Content="Browse..."
-                            Click="OnBrowseRiglistClicked"
-                            Padding="10,6"
-                            Background="{DynamicResource AppButtonCautionBrush}"
-                            Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
-                    <Button Content="Load"
-                            Click="OnLoadRiglistClicked"
-                            Padding="10,6"
-                            Background="{DynamicResource AppButtonCautionBrush}"
-                            Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
-                    <Button Content="Reload"
-                            Click="OnCatalogReloadClicked"
-                            Padding="10,6"
-                            Background="{DynamicResource AppButtonCautionBrush}"
-                            Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
-                </StackPanel>
+                <TextBlock Grid.Row="8" Grid.Column="1"
+                           Text="Configured in Configuration > Rig Control tab"
+                           Foreground="{DynamicResource AppMutedForegroundBrush}"
+                           VerticalAlignment="Center" />
 
                 <TextBlock Grid.Row="9" Grid.Column="0" Text="Search Model" VerticalAlignment="Top" />
                 <StackPanel Grid.Row="9" Grid.Column="1" Spacing="4" Width="420" HorizontalAlignment="Left">
@@ -124,14 +105,13 @@
                     </DataGrid.Columns>
                 </DataGrid>
 
-                <Grid Grid.Row="12" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
-                    <TextBlock Grid.Column="0" Text="rigctld Command:" VerticalAlignment="Center" />
-                    <TextBox Grid.Column="1"
-                             Text="{Binding RigCatalog.RigctldCommandLine}"
-                             IsReadOnly="True"
-                             Margin="8,0,8,0"
-                             FontFamily="Monospace" />
-                    <Button Grid.Column="2" Content="Copy Command" Click="OnCatalogCopyCommandClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+                <Grid Grid.Row="12" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,8,0,0">
+                    <Button Grid.Column="0" Content="Copy Command" Click="OnCatalogCopyCommandClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+                    <TextBlock Grid.Column="1"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                               FontSize="11"
+                               Text="Use Copy Command to paste the generated rigctld invocation elsewhere." />
                 </Grid>
 
                 <TextBlock Grid.Row="13" Grid.Column="0" Grid.ColumnSpan="2"

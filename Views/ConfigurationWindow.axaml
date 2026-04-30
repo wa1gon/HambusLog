@@ -295,7 +295,7 @@
             </TabItem>
 
             <TabItem Header="Rig Control">
-                <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                     <TextBlock Grid.Row="0" Text="rigctld Configuration" FontWeight="SemiBold" FontSize="14" />
                     <TextBlock Grid.Row="1" Text="Manage radios here, then open the editor dialog for detailed rigctld fields." Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" Margin="0,0,0,6" />
                     <Grid Grid.Row="2" ColumnDefinitions="160,*" RowDefinitions="Auto,Auto" RowSpacing="10" ColumnSpacing="8" Margin="0,0,0,12">
@@ -335,14 +335,33 @@
                     </Grid>
 
                     <Grid Grid.Row="3" ColumnDefinitions="160,*" ColumnSpacing="8" Margin="0,0,0,10">
+                        <TextBlock Grid.Column="0" Text="Radio Name" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1"
+                                 Width="260"
+                                 HorizontalAlignment="Left"
+                                 Text="{Binding RigctldRadioName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Watermark="(required)" />
+                    </Grid>
+
+                    <Grid Grid.Row="4" ColumnDefinitions="160,*" ColumnSpacing="8" Margin="0,0,0,10">
+                        <TextBlock Grid.Column="0" Text="Rig List" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                            <TextBox Text="{Binding RiglistFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="420" />
+                            <Button Content="Browse..." Click="OnBrowseRiglistClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+                            <Button Content="Load" Click="OnLoadRiglistClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+                            <Button Content="Reload" Click="OnCatalogReloadClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid Grid.Row="5" ColumnDefinitions="160,*" ColumnSpacing="8" Margin="0,0,0,10">
                         <TextBlock Grid.Column="0" Text="Reconnect (sec)" VerticalAlignment="Center" />
                         <TextBox Grid.Column="1"
                                  Width="120"
                                  Text="{Binding RigctldReconnectIntervalSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
 
-                    <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
-                        <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource AppMutedForegroundBrush}" Text="Use Edit to configure the radio identifier (used as tag/name), args, host/port, serial port, rig list, and model search." />
+                    <StackPanel Grid.Row="6" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
+                        <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource AppMutedForegroundBrush}" Text="Use Edit to configure radio name, args, host/port, serial port, and model search." />
                     </StackPanel>
                 </Grid>
             </TabItem>

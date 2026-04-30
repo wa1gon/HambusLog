@@ -49,21 +49,21 @@ public sealed class RigctldConnectionManager : IDisposable
         var rigctld = AppConfigurationStore.GetRigctld(config);
         _reconnectIntervalSeconds = rigctld.ReconnectIntervalSeconds <= 0 ? 3 : Math.Min(rigctld.ReconnectIntervalSeconds, 300);
 
-        var activeTags = rigctld.Radios
-            .Select(x => x.TagName)
+        var activeNames = rigctld.ActiveRadioNames
+            .Concat(rigctld.Radios.Where(x => x.IsActive).Select(x => x.RadioName))
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         var activeRadios = rigctld.Radios
-            .Where(x => activeTags.Contains(x.TagName, StringComparer.OrdinalIgnoreCase))
+            .Where(x => activeNames.Contains(x.RadioName, StringComparer.OrdinalIgnoreCase))
             .ToList();
 
         List<string> toStop;
         lock (_gate)
         {
             toStop = _workers.Keys
-                .Where(existingTag => !activeTags.Contains(existingTag, StringComparer.OrdinalIgnoreCase))
+                .Where(existingName => !activeNames.Contains(existingName, StringComparer.OrdinalIgnoreCase))
                 .ToList();
         }
 
@@ -79,7 +79,7 @@ public sealed class RigctldConnectionManager : IDisposable
         lock (_gate)
         {
             return _states.Values
-                .OrderBy(x => x.TagName, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x.RadioName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
     }
@@ -101,12 +101,12 @@ public sealed class RigctldConnectionManager : IDisposable
         var shouldNotify = false;
         lock (_gate)
         {
-            if (_workers.ContainsKey(radio.TagName))
+            if (_workers.ContainsKey(radio.RadioName))
                 return;
 
-            _states[radio.TagName] = new RadioRuntimeState(
-                radio.TagName,
-                string.IsNullOrWhiteSpace(radio.DisplayName) ? radio.TagName : radio.DisplayName,
+            _states[radio.RadioName] = new RadioRuntimeState(
+                radio.RadioName,
+                radio.RadioName,
                 false,
                 null,
                 null,
@@ -116,7 +116,7 @@ public sealed class RigctldConnectionManager : IDisposable
             var cts = new CancellationTokenSource();
             var worker = new Worker(radio, cts);
             worker.LoopTask = Task.Run(() => PollLoopAsync(worker, cts.Token), cts.Token);
-            _workers[radio.TagName] = worker;
+            _workers[radio.RadioName] = worker;
             shouldNotify = true;
         }
 
@@ -124,15 +124,15 @@ public sealed class RigctldConnectionManager : IDisposable
             OnStatesChanged();
     }
 
-    private async Task StopWorkerAsync(string tagName)
+    private async Task StopWorkerAsync(string radioName)
     {
         Worker? worker;
         var shouldNotify = false;
         lock (_gate)
         {
-            if (!_workers.TryGetValue(tagName, out worker))
+            if (!_workers.TryGetValue(radioName, out worker))
                 return;
-            _workers.Remove(tagName);
+            _workers.Remove(radioName);
         }
 
         try
@@ -151,7 +151,7 @@ public sealed class RigctldConnectionManager : IDisposable
             worker.Cts.Dispose();
             lock (_gate)
             {
-                shouldNotify = _states.Remove(tagName) || shouldNotify;
+                shouldNotify = _states.Remove(radioName) || shouldNotify;
             }
         }
 
@@ -189,20 +189,20 @@ public sealed class RigctldConnectionManager : IDisposable
         }
     }
 
-    private async Task EnqueueControlCommandAsync(string tagName, ControlCommand command, CancellationToken ct)
+    private async Task EnqueueControlCommandAsync(string radioName, ControlCommand command, CancellationToken ct)
     {
         Worker worker;
         RadioRuntimeState? state;
         lock (_gate)
         {
-            if (!_workers.TryGetValue(tagName, out worker!))
-                throw new InvalidOperationException($"No background service is running for radio '{tagName}'.");
+            if (!_workers.TryGetValue(radioName, out worker!))
+                throw new InvalidOperationException($"No background service is running for radio '{radioName}'.");
 
-            _states.TryGetValue(tagName, out state);
+            _states.TryGetValue(radioName, out state);
         }
 
         if (state is null || !state.IsConnected)
-            throw new InvalidOperationException($"Radio '{tagName}' is not connected.");
+            throw new InvalidOperationException($"Radio '{radioName}' is not connected.");
 
         worker.Commands.Enqueue(command);
         try
@@ -211,7 +211,7 @@ public sealed class RigctldConnectionManager : IDisposable
         }
         catch (OperationCanceledException ex) when (ct.IsCancellationRequested)
         {
-            throw new TimeoutException($"Timed out waiting for radio '{tagName}' to accept the command.", ex);
+            throw new TimeoutException($"Timed out waiting for radio '{radioName}' to accept the command.", ex);
         }
     }
 
@@ -251,9 +251,9 @@ public sealed class RigctldConnectionManager : IDisposable
         var shouldNotify = false;
         lock (_gate)
         {
-            _states[radio.TagName] = new RadioRuntimeState(
-                radio.TagName,
-                string.IsNullOrWhiteSpace(radio.DisplayName) ? radio.TagName : radio.DisplayName,
+            _states[radio.RadioName] = new RadioRuntimeState(
+                radio.RadioName,
+                radio.RadioName,
                 connected,
                 mode,
                 freqHz,
@@ -339,7 +339,7 @@ public sealed class RigctldConnectionManager : IDisposable
 }
 
 public sealed record RadioRuntimeState(
-    string TagName,
+    string RadioName,
     string Label,
     bool IsConnected,
     string? Mode,
