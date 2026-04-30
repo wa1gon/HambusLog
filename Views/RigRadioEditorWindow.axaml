@@ -63,10 +63,28 @@
                          Watermark="/path/to/resource" />
 
                 <TextBlock Grid.Row="8" Grid.Column="0" Text="Rig List" VerticalAlignment="Center" />
-                <TextBlock Grid.Row="8" Grid.Column="1"
-                           Text="Configured in Configuration > Rig Control tab"
-                           Foreground="{DynamicResource AppMutedForegroundBrush}"
-                           VerticalAlignment="Center" />
+                <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                    <TextBox Text="{Binding RiglistFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Width="420"
+                             HorizontalAlignment="Left"
+                             Watermark="/path/to/riglist" />
+                    <Button Content="Browse..."
+                            Click="OnBrowseRiglistClicked"
+                            Padding="10,6"
+                            Background="{DynamicResource AppButtonCautionBrush}"
+                            Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+                    <Button Content="Load"
+                            Click="OnLoadRiglistClicked"
+                            Padding="10,6"
+                            Background="{DynamicResource AppButtonCautionBrush}"
+                            Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+                    <Button Content="Reload"
+                            Click="OnCatalogReloadClicked"
+                            Padding="10,6"
+                            Background="{DynamicResource AppButtonCautionBrush}"
+                            Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+                </StackPanel>
+
 
                 <TextBlock Grid.Row="9" Grid.Column="0" Text="Search Model" VerticalAlignment="Top" />
                 <StackPanel Grid.Row="9" Grid.Column="1" Spacing="4" Width="420" HorizontalAlignment="Left">

@@ -23,7 +23,7 @@ public partial class RigRadioEditorWindow
     private void OnWindowOpened(object? sender, EventArgs e)
     {
         // Load the rig list for this radio when the editor opens.
-        var path = _viewModel.RiglistFilePath?.Trim();
+        var path = _viewModel.RiglistFilePath.Trim();
         if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
             _viewModel.RigCatalog.LoadFromFile(path);
         else if (!string.IsNullOrWhiteSpace(path))
@@ -32,8 +32,6 @@ public partial class RigRadioEditorWindow
 
     private void OnWindowClosed(object? sender, EventArgs e)
     {
-        // Release the catalog entries so they don't linger in memory.
-        _viewModel.RigCatalog.ClearEntries();
         Opened -= OnWindowOpened;
         Closed -= OnWindowClosed;
     }
@@ -130,8 +128,8 @@ public partial class RigRadioEditorWindow
 
     public void OnSaveClicked(object? sender, RoutedEventArgs e)
     {
-        _viewModel.CommitSelectedRigRadioEdits();
-        Close();
+        if (_viewModel.CommitSelectedRigRadioEdits())
+            Close();
     }
 
     public void OnCancelClicked(object? sender, RoutedEventArgs e)

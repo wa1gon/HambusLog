@@ -357,7 +357,12 @@ public partial class ConfigurationWindow
 
     public void OnSaveClicked(object? sender, RoutedEventArgs e) => _viewModel.Save();
     public void OnCloneProfileClicked(object? sender, RoutedEventArgs e) => _viewModel.CloneProfile();
-    public void OnAddRadioClicked(object? sender, RoutedEventArgs e) => _viewModel.AddRigRadio();
+    public async void OnAddRadioClicked(object? sender, RoutedEventArgs e)
+    {
+        _viewModel.AddRigRadio();
+        var editor = new RigRadioEditorWindow(_viewModel);
+        await editor.ShowDialog(this);
+    }
     public void OnRemoveRadioClicked(object? sender, RoutedEventArgs e) => _viewModel.RemoveSelectedRigRadio();
     public async void OnEditSelectedRadioClicked(object? sender, RoutedEventArgs e)
     {

@@ -91,7 +91,7 @@ public static class AppConfigurationStore
     public static RigRadioConfig GetRigctldRadio(RigctldConfiguration rigctld, string? requestedRadioName)
     {
         NormalizeRigctld(rigctld);
-        var radioName = string.IsNullOrWhiteSpace(requestedRadioName) ? rigctld.ActiveRadioName : requestedRadioName.Trim();
+        var radioName = requestedRadioName is null ? rigctld.ActiveRadioName : requestedRadioName.Trim();
 
         var radio = rigctld.Radios.FirstOrDefault(x =>
             string.Equals(x.RadioName, radioName, StringComparison.OrdinalIgnoreCase));

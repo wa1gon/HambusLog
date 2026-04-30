@@ -38,7 +38,8 @@ public sealed class RigCatalogStore : ObservableObject
     public void InitializeFromConfiguration()
     {
         var config = AppConfigurationStore.Load();
-        var rigctld = AppConfigurationStore.GetRigctld(conf var path = rigctld.RiglistFilePath;
+        var rigctld = AppConfigurationStore.GetRigctld(config);
+        var path = rigctld.RiglistFilePath;
         ActiveRigNum = rigctld.ActiveRigNum;
 
         if (string.IsNullOrWhiteSpace(path))
