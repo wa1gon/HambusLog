@@ -8,34 +8,53 @@
         Foreground="{DynamicResource AppForegroundBrush}"
         Width="860"
         Height="720"
-        MinWidth="640"
-        MinHeight="540"
+        MinWidth="680"
+        MinHeight="560"
         WindowStartupLocation="CenterOwner">
     <Window.Resources>
         <views:ContestTypeConverter x:Key="ContestTypeConverter" />
     </Window.Resources>
-    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="14">
+    <Window.Styles>
+        <Style Selector="TextBlock.FieldLabel">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource AppMutedForegroundBrush}" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        <Style Selector="TextBlock.SectionHeading">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+        </Style>
+    </Window.Styles>
 
-        <!-- ── Active Radio row (above everything) ─────────────────────── -->
-        <Border Grid.Row="0" Padding="10" Margin="0,0,0,8"
-                CornerRadius="6"
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16,12,16,12">
+
+        <!-- ── Top Bar: Active Radio + Log Type ───────────────────────── -->
+        <Border Grid.Row="0"
+                Padding="12,10" Margin="0,0,0,10"
+                CornerRadius="8"
                 Background="{DynamicResource AppPanelBackgroundBrush}"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="1">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="16">
+
+                <!-- Active Radio label + radio buttons -->
                 <TextBlock Grid.Column="0"
-                           Text="Active Radio"
-                           FontWeight="SemiBold"
+                           Text="ACTIVE RADIO"
+                           Classes="SectionHeading"
                            VerticalAlignment="Center"
-                           Foreground="{DynamicResource AppForegroundBrush}" />
+                           Margin="0" />
                 <ListBox Grid.Column="1"
                          ItemsSource="{Binding AvailableConnectedRadios}"
                          SelectedItem="{Binding SelectedConnectedRadio, Mode=TwoWay}"
                          Background="Transparent"
                          Foreground="{DynamicResource AppForegroundBrush}"
-                         MinHeight="34"
-                         MaxHeight="70"
-                         BorderThickness="0">
+                         MinHeight="28"
+                         MaxHeight="60"
+                         BorderThickness="0"
+                         Padding="0">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
                             <WrapPanel Orientation="Horizontal" />
@@ -45,31 +64,31 @@
                         <DataTemplate>
                             <RadioButton Content="{Binding Display}"
                                          GroupName="ConnectedRadios"
-                                         Margin="0,0,12,0"
+                                         Margin="0,0,16,0"
+                                         FontSize="13"
                                          IsChecked="{Binding $parent[ListBoxItem].IsSelected, Mode=TwoWay}" />
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-            </Grid>
-        </Border>
 
-        <!-- ── Log Type (outside tabs for visibility) ──────────────────── -->
-        <Border Grid.Row="1" Padding="10" Margin="0,0,0,8"
-                CornerRadius="6"
-                Background="{DynamicResource AppPanelBackgroundBrush}"
-                BorderBrush="{DynamicResource AppBorderBrush}"
-                BorderThickness="1">
-            <Grid ColumnDefinitions="160,*" ColumnSpacing="8">
-                <TextBlock Grid.Column="0"
-                           Text="Log Type"
-                           FontWeight="SemiBold"
+                <!-- Divider -->
+                <Border Grid.Column="2" Width="1"
+                        Background="{DynamicResource AppBorderBrush}"
+                        VerticalAlignment="Stretch" Margin="0,2" />
+
+                <!-- Log Type label -->
+                <TextBlock Grid.Column="3"
+                           Text="LOG TYPE"
+                           Classes="SectionHeading"
                            VerticalAlignment="Center"
-                           Foreground="{DynamicResource AppForegroundBrush}" />
-                <ComboBox Grid.Column="1"
+                           Margin="0" />
+
+                <!-- Log Type combo -->
+                <ComboBox Grid.Column="4"
                           ItemsSource="{Binding ContestTypes}"
                           SelectedItem="{Binding SelectedContestType}"
-                          Background="{DynamicResource AppPanelBackgroundBrush}"
-                          Foreground="{DynamicResource AppForegroundBrush}">
+                          MinWidth="140"
+                          VerticalAlignment="Center">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Converter={StaticResource ContestTypeConverter}}" />
@@ -80,209 +99,269 @@
         </Border>
 
         <!-- ── Tab Panel ───────────────────────────────────────────────── -->
-        <TabControl Grid.Row="2">
+        <TabControl Grid.Row="1">
 
             <!-- Tab 1: Logging -->
             <TabItem Header="Logging">
-                <ScrollViewer>
-                    <StackPanel Spacing="12" Margin="0,8,0,0">
-                        <TextBlock Text="New QSO" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource AppForegroundBrush}" />
+                <ScrollViewer Padding="0,4,0,0">
+                    <StackPanel Spacing="10" Margin="0,8,0,0">
 
-                        <Grid ColumnDefinitions="1*,1*,1*,1*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
-                            <StackPanel Grid.Column="0" Grid.Row="0" Spacing="3">
-                                <TextBlock Text="Callsign *" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" FontWeight="Bold" />
-                                <TextBox Text="{Binding InputCall, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         TextChanged="OnUppercaseInputChanged"
-                                         Background="{DynamicResource AppPanelBackgroundBrush}"
-                                         Foreground="{DynamicResource AppForegroundBrush}"
-                                         Padding="6" />
-                                <TextBlock Text="{Binding CallError}" Foreground="{DynamicResource AppErrorBrush}" FontSize="11" IsVisible="{Binding HasCallError}" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Grid.Row="0" Spacing="3">
-                                <TextBlock Text="Band *" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" FontWeight="Bold" />
-                                <TextBox Text="{Binding InputBand}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
-                                <TextBlock Text="{Binding BandError}" Foreground="{DynamicResource AppErrorBrush}" FontSize="11" IsVisible="{Binding HasBandError}" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="2" Grid.Row="0" Spacing="3">
-                                <TextBlock Text="Mode *" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" FontWeight="Bold" />
-                                <TextBox Text="{Binding InputMode}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
-                                <TextBlock Text="{Binding ModeError}" Foreground="{DynamicResource AppErrorBrush}" FontSize="11" IsVisible="{Binding HasModeError}" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="3" Grid.Row="0" Spacing="3">
-                                <TextBlock Text="Frequency (MHz)" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                <TextBox Text="{Binding InputFreq}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="0" Grid.Row="1" Spacing="3">
-                                <TextBlock Text="Date (YYYYMMDD)" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                <TextBox Text="{Binding InputDate}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Grid.Row="1" Spacing="3">
-                                <TextBlock Text="Time On (HHMM UTC)" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <TextBox Text="{Binding InputTimeOn}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" Width="80" />
-                                    <Button Content="Now" Click="OnStampNowClicked" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" Background="{DynamicResource AppButtonCautionBrush}" Padding="6,4" />
-                                </StackPanel>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2" Grid.Row="1" Spacing="3">
-                                <TextBlock Text="RST Sent" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                <TextBox Text="{Binding InputSent}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="3" Grid.Row="1" Spacing="3">
-                                <TextBlock Text="RST Rcvd" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                <TextBox Text="{Binding InputRec}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
-                            </StackPanel>
-                        </Grid>
+                        <!-- QSO Fields Card -->
+                        <Border Padding="16"
+                                CornerRadius="8"
+                                Background="{DynamicResource AppPanelBackgroundBrush}"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                BorderThickness="1">
+                            <StackPanel Spacing="0">
+                                <TextBlock Text="QSO ENTRY" Classes="SectionHeading" />
+                                <Grid ColumnDefinitions="1.2*,0.8*,0.8*,1.1*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
 
-                        <!-- Field Day exchange -->
-                        <StackPanel IsVisible="{Binding IsFieldDay}" Spacing="8">
-                            <TextBlock Text="Field Day Exchange" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AppWarningBrush}" />
-                            <Grid ColumnDefinitions="1*,1*" ColumnSpacing="8">
-                                <StackPanel Grid.Column="0" Spacing="3">
-                                    <TextBlock Text="Section *" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                    <TextBox Text="{Binding InputFieldDaySection, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             TextChanged="OnUppercaseInputChanged"
-                                             Background="{DynamicResource AppPanelBackgroundBrush}"
-                                             Foreground="{DynamicResource AppForegroundBrush}"
-                                             Padding="6" />
-                                    <TextBlock Text="{Binding SectionError}" Foreground="{DynamicResource AppErrorBrush}" FontSize="11" IsVisible="{Binding HasSectionError}" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="3">
-                                    <TextBlock Text="Class *" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                    <TextBox Text="{Binding InputFieldDayClass, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             TextChanged="OnUppercaseInputChanged"
-                                             Background="{DynamicResource AppPanelBackgroundBrush}"
-                                             Foreground="{DynamicResource AppForegroundBrush}"
-                                             Padding="6" />
-                                    <TextBlock Text="{Binding ClassError}" Foreground="{DynamicResource AppErrorBrush}" FontSize="11" IsVisible="{Binding HasClassError}" />
-                                </StackPanel>
-                            </Grid>
-                        </StackPanel>
+                                    <!-- Row 1 -->
+                                    <StackPanel Grid.Column="0" Grid.Row="0" Spacing="0">
+                                        <TextBlock Text="CALLSIGN *" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding InputCall, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 TextChanged="OnUppercaseInputChanged"
+                                                 Padding="8,7"
+                                                 CornerRadius="5"
+                                                 FontSize="14"
+                                                 FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding CallError}" Foreground="{DynamicResource AppErrorBrush}" FontSize="11" IsVisible="{Binding HasCallError}" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Grid.Row="0" Spacing="0">
+                                        <TextBlock Text="BAND *" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding InputBand}" Padding="8,7" CornerRadius="5" />
+                                        <TextBlock Text="{Binding BandError}" Foreground="{DynamicResource AppErrorBrush}" FontSize="11" IsVisible="{Binding HasBandError}" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Grid.Row="0" Spacing="0">
+                                        <TextBlock Text="MODE *" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding InputMode}" Padding="8,7" CornerRadius="5" />
+                                        <TextBlock Text="{Binding ModeError}" Foreground="{DynamicResource AppErrorBrush}" FontSize="11" IsVisible="{Binding HasModeError}" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="3" Grid.Row="0" Spacing="0">
+                                        <TextBlock Text="FREQUENCY (MHz)" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding InputFreq}" Padding="8,7" CornerRadius="5" />
+                                    </StackPanel>
 
-                        <TextBlock Text="QSO Details (custom fields)" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AppForegroundBrush}" Margin="0,8,0,0" />
-                        <Grid ColumnDefinitions="*,*,Auto,Auto" ColumnSpacing="6">
-                            <TextBox Grid.Column="0" Text="{Binding NewDetailField}" Watermark="Field name" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
-                            <TextBox Grid.Column="1" Text="{Binding NewDetailValue}" Watermark="Value"      Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
-                            <Button  Grid.Column="2" Content="Add"    Click="OnAddDetailClicked"    Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" Padding="10,6" />
-                            <Button  Grid.Column="3" Content="Remove" Click="OnRemoveDetailClicked" Background="{DynamicResource AppButtonDangerBrush}" Foreground="{DynamicResource AppButtonDangerForegroundBrush}" Padding="10,6" />
-                        </Grid>
-                        <DataGrid ItemsSource="{Binding Details}"
-                                  SelectedItem="{Binding SelectedDetail, Mode=TwoWay}"
-                                  IsReadOnly="False"
-                                  AutoGenerateColumns="False"
-                                  CanUserSortColumns="False"
-                                  GridLinesVisibility="Horizontal"
-                                  MinHeight="120"
-                                  Background="{DynamicResource AppPanelBackgroundBrush}"
-                                  Foreground="{DynamicResource AppForegroundBrush}">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Field" Binding="{Binding FieldName}"  Width="200" IsReadOnly="False" />
-                                <DataGridTextColumn Header="Value" Binding="{Binding FieldValue}" Width="*"   IsReadOnly="False" />
-                            </DataGrid.Columns>
-                        </DataGrid>
+                                    <!-- Row 2 -->
+                                    <StackPanel Grid.Column="0" Grid.Row="1" Spacing="0">
+                                        <TextBlock Text="DATE (YYYYMMDD)" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding InputDate}" Padding="8,7" CornerRadius="5" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Grid.Row="1" Spacing="0">
+                                        <TextBlock Text="TIME ON (UTC)" Classes="FieldLabel" />
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBox Text="{Binding InputTimeOn}" Padding="8,7" CornerRadius="5" Width="80" />
+                                            <Button Content="Now" Click="OnStampNowClicked"
+                                                    Foreground="{DynamicResource AppButtonCautionForegroundBrush}"
+                                                    Background="{DynamicResource AppButtonCautionBrush}"
+                                                    Padding="10,7" CornerRadius="5" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Grid.Row="1" Spacing="0">
+                                        <TextBlock Text="RST SENT" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding InputSent}" Padding="8,7" CornerRadius="5" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="3" Grid.Row="1" Spacing="0">
+                                        <TextBlock Text="RST RCVD" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding InputRec}" Padding="8,7" CornerRadius="5" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Field Day Exchange Card (conditional) -->
+                        <Border IsVisible="{Binding IsFieldDay}"
+                                Padding="16" CornerRadius="8"
+                                BorderBrush="{DynamicResource AppWarningBrush}"
+                                BorderThickness="1"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Spacing="0">
+                                <TextBlock Text="FIELD DAY EXCHANGE"
+                                           FontSize="11" FontWeight="Bold"
+                                           Foreground="{DynamicResource AppWarningBrush}"
+                                           Margin="0,0,0,10" />
+                                <Grid ColumnDefinitions="1*,1*" ColumnSpacing="10">
+                                    <StackPanel Grid.Column="0" Spacing="0">
+                                        <TextBlock Text="SECTION *" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding InputFieldDaySection, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 TextChanged="OnUppercaseInputChanged"
+                                                 Padding="8,7" CornerRadius="5" />
+                                        <TextBlock Text="{Binding SectionError}" Foreground="{DynamicResource AppErrorBrush}" FontSize="11" IsVisible="{Binding HasSectionError}" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="0">
+                                        <TextBlock Text="CLASS *" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding InputFieldDayClass, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 TextChanged="OnUppercaseInputChanged"
+                                                 Padding="8,7" CornerRadius="5" />
+                                        <TextBlock Text="{Binding ClassError}" Foreground="{DynamicResource AppErrorBrush}" FontSize="11" IsVisible="{Binding HasClassError}" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- QSO Details Card -->
+                        <Border Padding="16" CornerRadius="8"
+                                Background="{DynamicResource AppPanelBackgroundBrush}"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                BorderThickness="1">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="CUSTOM FIELDS" Classes="SectionHeading" />
+                                <Grid ColumnDefinitions="*,*,Auto,Auto" ColumnSpacing="6">
+                                    <TextBox Grid.Column="0" Text="{Binding NewDetailField}" Watermark="Field name" Padding="8,7" CornerRadius="5" />
+                                    <TextBox Grid.Column="1" Text="{Binding NewDetailValue}" Watermark="Value" Padding="8,7" CornerRadius="5" />
+                                    <Button  Grid.Column="2" Content="Add"    Click="OnAddDetailClicked"
+                                             Background="{DynamicResource AppButtonNormalBrush}"
+                                             Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
+                                             Padding="12,7" CornerRadius="5" />
+                                    <Button  Grid.Column="3" Content="Remove" Click="OnRemoveDetailClicked"
+                                             Background="{DynamicResource AppButtonDangerBrush}"
+                                             Foreground="{DynamicResource AppButtonDangerForegroundBrush}"
+                                             Padding="12,7" CornerRadius="5" />
+                                </Grid>
+                                <DataGrid ItemsSource="{Binding Details}"
+                                          SelectedItem="{Binding SelectedDetail, Mode=TwoWay}"
+                                          IsReadOnly="False"
+                                          AutoGenerateColumns="False"
+                                          CanUserSortColumns="False"
+                                          GridLinesVisibility="Horizontal"
+                                          MinHeight="100"
+                                          Background="{DynamicResource AppPanelBackgroundBrush}"
+                                          Foreground="{DynamicResource AppForegroundBrush}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Field" Binding="{Binding FieldName}"  Width="200" IsReadOnly="False" />
+                                        <DataGridTextColumn Header="Value" Binding="{Binding FieldValue}" Width="*"   IsReadOnly="False" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </StackPanel>
+                        </Border>
+
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
             <!-- Tab 2: Station Configuration -->
             <TabItem Header="Station Config">
-                <ScrollViewer>
-                    <StackPanel Spacing="12" Margin="0,8,0,0">
-                        <TextBlock Text="Station Configuration" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource AppForegroundBrush}" />
+                <ScrollViewer Padding="0,4,0,0">
+                    <StackPanel Spacing="10" Margin="0,8,0,0">
 
-                        <!-- My Callsign (always shown) -->
-                        <StackPanel Spacing="3">
-                            <TextBlock Text="My Callsign" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" FontWeight="Bold" />
-                            <TextBox Text="{Binding MyCall, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     TextChanged="OnUppercaseInputChanged"
-                                     Background="{DynamicResource AppPanelBackgroundBrush}"
-                                     Foreground="{DynamicResource AppForegroundBrush}"
-                                     Padding="6" />
-                        </StackPanel>
-
-                        <!-- Field Day fields (shown only when Field Day log type selected) -->
-                        <StackPanel IsVisible="{Binding IsFieldDay}" Spacing="8">
-                            <TextBlock Text="Field Day Station Info" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AppWarningBrush}" />
-                            <StackPanel Spacing="3">
-                                <TextBlock Text="My Section" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                <TextBox Text="{Binding MyFieldDaySection, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         TextChanged="OnUppercaseInputChanged"
-                                         Background="{DynamicResource AppPanelBackgroundBrush}"
-                                         Foreground="{DynamicResource AppForegroundBrush}"
-                                         Padding="6" Width="200" HorizontalAlignment="Left" />
+                        <!-- My Station Card -->
+                        <Border Padding="16" CornerRadius="8"
+                                Background="{DynamicResource AppPanelBackgroundBrush}"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                BorderThickness="1">
+                            <StackPanel Spacing="0">
+                                <TextBlock Text="MY STATION" Classes="SectionHeading" />
+                                <StackPanel Spacing="0" MaxWidth="300" HorizontalAlignment="Left">
+                                    <TextBlock Text="MY CALLSIGN" Classes="FieldLabel" />
+                                    <TextBox Text="{Binding MyCall, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             TextChanged="OnUppercaseInputChanged"
+                                             Padding="8,7" CornerRadius="5"
+                                             FontSize="14" FontWeight="SemiBold" />
+                                </StackPanel>
                             </StackPanel>
-                            <StackPanel Spacing="3">
-                                <TextBlock Text="My Class" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                <TextBox Text="{Binding MyFieldDayClass, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         TextChanged="OnUppercaseInputChanged"
-                                         Background="{DynamicResource AppPanelBackgroundBrush}"
-                                         Foreground="{DynamicResource AppForegroundBrush}"
-                                         Padding="6" Width="160" HorizontalAlignment="Left" />
-                            </StackPanel>
-                        </StackPanel>
+                        </Border>
 
-                        <!-- Normal/General station fields (shown when not Field Day) -->
-                        <StackPanel IsVisible="{Binding !IsFieldDay}" Spacing="8">
-                            <TextBlock Text="Station Location" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AppForegroundBrush}" />
-                            <Grid ColumnDefinitions="1*,1*" ColumnSpacing="8">
-                                <StackPanel Grid.Column="0" Spacing="3">
-                                    <TextBlock Text="Latitude" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                    <TextBox Text="{Binding MyLatitude, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             Watermark="e.g. 42.3601"
-                                             Background="{DynamicResource AppPanelBackgroundBrush}"
-                                             Foreground="{DynamicResource AppForegroundBrush}"
-                                             Padding="6" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="3">
-                                    <TextBlock Text="Longitude" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                    <TextBox Text="{Binding MyLongitude, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             Watermark="e.g. -71.0589"
-                                             Background="{DynamicResource AppPanelBackgroundBrush}"
-                                             Foreground="{DynamicResource AppForegroundBrush}"
-                                             Padding="6" />
-                                </StackPanel>
-                            </Grid>
-                            <Grid ColumnDefinitions="1*,1*,1*" ColumnSpacing="8">
-                                <StackPanel Grid.Column="0" Spacing="3">
-                                    <TextBlock Text="Grid Square" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                    <TextBox Text="{Binding MyGridSquare, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             Watermark="e.g. FN42"
-                                             Background="{DynamicResource AppPanelBackgroundBrush}"
-                                             Foreground="{DynamicResource AppForegroundBrush}"
-                                             Padding="6" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="3">
-                                    <TextBlock Text="ITU Zone" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                    <TextBox Text="{Binding MyItuZone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             Watermark="e.g. 8"
-                                             Background="{DynamicResource AppPanelBackgroundBrush}"
-                                             Foreground="{DynamicResource AppForegroundBrush}"
-                                             Padding="6" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="2" Spacing="3">
-                                    <TextBlock Text="CQ Zone" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                    <TextBox Text="{Binding MyCqZone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             Watermark="e.g. 5"
-                                             Background="{DynamicResource AppPanelBackgroundBrush}"
-                                             Foreground="{DynamicResource AppForegroundBrush}"
-                                             Padding="6" />
-                                </StackPanel>
-                            </Grid>
-                        </StackPanel>
+                        <!-- Field Day Station Info (conditional) -->
+                        <Border IsVisible="{Binding IsFieldDay}"
+                                Padding="16" CornerRadius="8"
+                                BorderBrush="{DynamicResource AppWarningBrush}"
+                                BorderThickness="1"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Spacing="0">
+                                <TextBlock Text="FIELD DAY STATION INFO"
+                                           FontSize="11" FontWeight="Bold"
+                                           Foreground="{DynamicResource AppWarningBrush}"
+                                           Margin="0,0,0,10" />
+                                <Grid ColumnDefinitions="1*,1*" ColumnSpacing="10">
+                                    <StackPanel Grid.Column="0" Spacing="0">
+                                        <TextBlock Text="MY SECTION" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding MyFieldDaySection, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 TextChanged="OnUppercaseInputChanged"
+                                                 Padding="8,7" CornerRadius="5" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="0">
+                                        <TextBlock Text="MY CLASS" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding MyFieldDayClass, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 TextChanged="OnUppercaseInputChanged"
+                                                 Padding="8,7" CornerRadius="5" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Normal Station Location (conditional) -->
+                        <Border IsVisible="{Binding !IsFieldDay}"
+                                Padding="16" CornerRadius="8"
+                                Background="{DynamicResource AppPanelBackgroundBrush}"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                BorderThickness="1">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="LOCATION" Classes="SectionHeading" />
+                                <Grid ColumnDefinitions="1*,1*" ColumnSpacing="10">
+                                    <StackPanel Grid.Column="0" Spacing="0">
+                                        <TextBlock Text="LATITUDE" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding MyLatitude, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Watermark="e.g. 42.3601" Padding="8,7" CornerRadius="5" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="0">
+                                        <TextBlock Text="LONGITUDE" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding MyLongitude, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Watermark="e.g. -71.0589" Padding="8,7" CornerRadius="5" />
+                                    </StackPanel>
+                                </Grid>
+                                <Grid ColumnDefinitions="1*,1*,1*" ColumnSpacing="10">
+                                    <StackPanel Grid.Column="0" Spacing="0">
+                                        <TextBlock Text="GRID SQUARE" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding MyGridSquare, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Watermark="e.g. FN42" Padding="8,7" CornerRadius="5" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="0">
+                                        <TextBlock Text="ITU ZONE" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding MyItuZone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Watermark="e.g. 8" Padding="8,7" CornerRadius="5" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Spacing="0">
+                                        <TextBlock Text="CQ ZONE" Classes="FieldLabel" />
+                                        <TextBox Text="{Binding MyCqZone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Watermark="e.g. 5" Padding="8,7" CornerRadius="5" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
         </TabControl>
 
-        <!-- ── Action buttons ───────────────────────────────────────────── -->
-        <Border Grid.Row="3" Padding="0,10,0,2" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
-            <StackPanel Spacing="6">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Content="Log QSO"  Click="OnLogQsoClicked"  Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" Padding="16,8" FontWeight="Bold" />
-                    <Button Content="Cancel"   Click="OnCancelClicked"  Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" Padding="16,8" />
-                </StackPanel>
-                <TextBlock Name="StatusLabel" Foreground="{DynamicResource AppErrorBrush}" FontSize="12" />
-            </StackPanel>
+        <!-- ── Action bar ────────────────────────────────────────────────── -->
+        <Border Grid.Row="2" Padding="0,10,0,0"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <Button Grid.Column="0"
+                        Content="Log QSO"
+                        Click="OnLogQsoClicked"
+                        Background="{DynamicResource AppButtonNormalBrush}"
+                        Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
+                        Padding="20,9" CornerRadius="6"
+                        FontWeight="Bold" FontSize="13" />
+                <TextBlock Grid.Column="1"
+                           Name="StatusLabel"
+                           Foreground="{DynamicResource AppErrorBrush}"
+                           FontSize="12"
+                           VerticalAlignment="Center" />
+                <Button Grid.Column="2"
+                        Content="Cancel"
+                        Click="OnCancelClicked"
+                        Background="Transparent"
+                        Foreground="{DynamicResource AppMutedForegroundBrush}"
+                        BorderBrush="{DynamicResource AppBorderBrush}"
+                        BorderThickness="1"
+                        Padding="16,9" CornerRadius="6" />
+            </Grid>
         </Border>
+
     </Grid>
 </Window>
