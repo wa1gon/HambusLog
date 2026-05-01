@@ -22,7 +22,7 @@
                 Background="{DynamicResource AppPanelBackgroundBrush}"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="1">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <TextBlock Grid.Column="0"
                            Text="Active Radio"
                            FontWeight="SemiBold"
@@ -50,43 +50,6 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-                <Border Grid.Column="2"
-                        Background="{DynamicResource AppAccentBrush}"
-                        CornerRadius="10"
-                        Padding="10,3"
-                        VerticalAlignment="Center"
-                        IsVisible="{Binding IsActiveRigConnected}">
-                    <TextBlock Text="{Binding ActiveRigStatus}"
-                               FontSize="11"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource AppButtonForegroundBrush}" />
-                </Border>
-                <Border Grid.Column="2"
-                        Background="{DynamicResource AppErrorBrush}"
-                        CornerRadius="10"
-                        Padding="10,3"
-                        VerticalAlignment="Center"
-                        IsVisible="{Binding IsActiveRigDisconnected}">
-                    <TextBlock Text="{Binding ActiveRigStatus}"
-                               FontSize="11"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource AppButtonForegroundBrush}" />
-                </Border>
-                <TextBlock Grid.Column="3"
-                           Text="{Binding ActiveRigMode}"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource AppForegroundBrush}" />
-                <TextBlock Grid.Column="4"
-                           Text="{Binding ActiveRigFrequency}"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource AppForegroundBrush}" />
-                <Button Grid.Column="5"
-                        Content="Use Radio Values"
-                        Click="OnApplySelectedRadioClicked"
-                        Background="{DynamicResource AppButtonNormalBrush}"
-                        Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
-                        Padding="10,6"
-                        VerticalAlignment="Center" />
             </Grid>
         </Border>
 
@@ -230,6 +193,7 @@
                         <StackPanel Spacing="3">
                             <TextBlock Text="My Callsign" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" FontWeight="Bold" />
                             <TextBox Text="{Binding MyCall, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     TextChanged="OnUppercaseInputChanged"
                                      Background="{DynamicResource AppPanelBackgroundBrush}"
                                      Foreground="{DynamicResource AppForegroundBrush}"
                                      Padding="6" />
@@ -238,25 +202,18 @@
                         <!-- Field Day fields (shown only when Field Day log type selected) -->
                         <StackPanel IsVisible="{Binding IsFieldDay}" Spacing="8">
                             <TextBlock Text="Field Day Station Info" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AppWarningBrush}" />
-                            <Grid ColumnDefinitions="1*,1*" ColumnSpacing="8">
-                                <StackPanel Grid.Column="0" Spacing="3">
-                                    <TextBlock Text="Location / Section" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                    <TextBox Text="{Binding MyLocation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             Background="{DynamicResource AppPanelBackgroundBrush}"
-                                             Foreground="{DynamicResource AppForegroundBrush}"
-                                             Padding="6" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="3">
-                                    <TextBlock Text="My Section" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                                    <TextBox Text="{Binding MyFieldDaySection, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             Background="{DynamicResource AppPanelBackgroundBrush}"
-                                             Foreground="{DynamicResource AppForegroundBrush}"
-                                             Padding="6" />
-                                </StackPanel>
-                            </Grid>
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="My Section" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
+                                <TextBox Text="{Binding MyFieldDaySection, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         TextChanged="OnUppercaseInputChanged"
+                                         Background="{DynamicResource AppPanelBackgroundBrush}"
+                                         Foreground="{DynamicResource AppForegroundBrush}"
+                                         Padding="6" Width="200" HorizontalAlignment="Left" />
+                            </StackPanel>
                             <StackPanel Spacing="3">
                                 <TextBlock Text="My Class" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
                                 <TextBox Text="{Binding MyFieldDayClass, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         TextChanged="OnUppercaseInputChanged"
                                          Background="{DynamicResource AppPanelBackgroundBrush}"
                                          Foreground="{DynamicResource AppForegroundBrush}"
                                          Padding="6" Width="160" HorizontalAlignment="Left" />
