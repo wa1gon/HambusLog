@@ -147,7 +147,11 @@ public sealed class LogInputViewModel : ViewModelBase
     }
     public bool IsFieldDay => SelectedContestType == ContestType.ArrlFieldDay;
 
-    public string InputCall    { get => _inputCall;    set => SetProperty(ref _inputCall,    value); }
+    public string InputCall
+    {
+        get => _inputCall;
+        set => SetProperty(ref _inputCall, (value ?? string.Empty).ToUpperInvariant());
+    }
     public string InputDate    { get => _inputDate;    set => SetProperty(ref _inputDate,    value); }
     public string InputTimeOn  { get => _inputTimeOn;  set => SetProperty(ref _inputTimeOn,  value); }
     public string InputBand    { get => _inputBand;    set { if (SetProperty(ref _inputBand, value)) ValidateBand(); } }
@@ -155,8 +159,25 @@ public sealed class LogInputViewModel : ViewModelBase
     public string InputFreq    { get => _inputFreq;    set => SetProperty(ref _inputFreq,    value); }
     public string InputSent    { get => _inputSent;    set => SetProperty(ref _inputSent,    value); }
     public string InputRec     { get => _inputRec;     set => SetProperty(ref _inputRec,     value); }
-    public string InputFieldDaySection { get => _inputFieldDaySection; set { if (SetProperty(ref _inputFieldDaySection, value)) ValidateSection(); } }
-    public string InputFieldDayClass   { get => _inputFieldDayClass;   set { if (SetProperty(ref _inputFieldDayClass,   value)) ValidateClass(); } }
+    public string InputFieldDaySection
+    {
+        get => _inputFieldDaySection;
+        set
+        {
+            if (SetProperty(ref _inputFieldDaySection, (value ?? string.Empty).ToUpperInvariant()))
+                ValidateSection();
+        }
+    }
+
+    public string InputFieldDayClass
+    {
+        get => _inputFieldDayClass;
+        set
+        {
+            if (SetProperty(ref _inputFieldDayClass, (value ?? string.Empty).ToUpperInvariant()))
+                ValidateClass();
+        }
+    }
 
     public string NewDetailField { get => _newDetailField; set => SetProperty(ref _newDetailField, value); }
     public string NewDetailValue { get => _newDetailValue; set => SetProperty(ref _newDetailValue, value); }
@@ -283,6 +304,13 @@ public sealed class LogInputViewModel : ViewModelBase
     {
         InputDate   = DateTime.UtcNow.ToString("yyyyMMdd");
         InputTimeOn = DateTime.UtcNow.ToString("HHmm");
+    }
+
+    public void PrepareForNextLogEntry()
+    {
+        InputCall = string.Empty;
+        InputFieldDaySection = string.Empty;
+        InputFieldDayClass = string.Empty;
     }
 
     public void RefreshActiveRigSnapshot()

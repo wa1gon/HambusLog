@@ -38,6 +38,21 @@ public partial class LogInputWindow
         _viewModel.RemoveSelectedDetail();
     }
 
+    public void OnUppercaseInputChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox textBox)
+            return;
+
+        var current = textBox.Text ?? string.Empty;
+        var upper = current.ToUpperInvariant();
+        if (string.Equals(current, upper, StringComparison.Ordinal))
+            return;
+
+        var caret = textBox.CaretIndex;
+        textBox.Text = upper;
+        textBox.CaretIndex = Math.Min(caret, upper.Length);
+    }
+
     public void OnApplySelectedRadioClicked(object? sender, RoutedEventArgs e)
     {
         _viewModel.ApplySelectedRadioToInputs();
@@ -53,7 +68,8 @@ public partial class LogInputWindow
         }
 
         QsoLogged?.Invoke(this, qso);
-        Close();
+        _viewModel.PrepareForNextLogEntry();
+        SetStatus("QSO logged.");
     }
 
     public void OnCancelClicked(object? sender, RoutedEventArgs e) => Close();

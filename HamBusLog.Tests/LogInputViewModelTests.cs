@@ -51,6 +51,43 @@ public sealed class LogInputViewModelTests
         Assert.Equal("14.280100", viewModel.InputFreq);
     }
 
+    [Fact]
+    public void CallSectionAndClass_AreForcedToUppercase()
+    {
+        var viewModel = new LogInputViewModel();
+
+        viewModel.InputCall = "wa1gon";
+        viewModel.InputFieldDaySection = "ema";
+        viewModel.InputFieldDayClass = "1d";
+
+        Assert.Equal("WA1GON", viewModel.InputCall);
+        Assert.Equal("EMA", viewModel.InputFieldDaySection);
+        Assert.Equal("1D", viewModel.InputFieldDayClass);
+    }
+
+    [Fact]
+    public void PrepareForNextLogEntry_ClearsCallSectionAndClassOnly()
+    {
+        var viewModel = new LogInputViewModel
+        {
+            InputCall = "WA1GON",
+            InputFieldDaySection = "EMA",
+            InputFieldDayClass = "1D",
+            InputMode = "USB",
+            InputBand = "20M",
+            InputFreq = "14.280100"
+        };
+
+        viewModel.PrepareForNextLogEntry();
+
+        Assert.Equal(string.Empty, viewModel.InputCall);
+        Assert.Equal(string.Empty, viewModel.InputFieldDaySection);
+        Assert.Equal(string.Empty, viewModel.InputFieldDayClass);
+        Assert.Equal("USB", viewModel.InputMode);
+        Assert.Equal("20M", viewModel.InputBand);
+        Assert.Equal("14.280100", viewModel.InputFreq);
+    }
+
     private static ConnectedRadioOption CreateOption(string radioName, string label, string mode, long frequencyHz)
     {
         return new ConnectedRadioOption(new RadioRuntimeState(
