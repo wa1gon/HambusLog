@@ -43,6 +43,17 @@ public sealed class ConfigProfile
     public string InputSelectionBackgroundColor { get; set; } = "#2C3E50";
     public string InputSelectionForegroundColor { get; set; } = "#FFFFFF";
     public string ConnectionString { get; set; } = "Data Source=hambuslog.db";
+
+    // ── Station / operator info ──────────────────────────────────────
+    public string MyCall { get; set; } = string.Empty;
+    public string MyLocation { get; set; } = string.Empty;
+    public string MyGridSquare { get; set; } = string.Empty;
+    public string MyLatitude { get; set; } = string.Empty;
+    public string MyLongitude { get; set; } = string.Empty;
+    public string MyItuZone { get; set; } = string.Empty;
+    public string MyCqZone { get; set; } = string.Empty;
+    public string MyFieldDaySection { get; set; } = string.Empty;
+    public string MyFieldDayClass { get; set; } = string.Empty;
 }
 
 public sealed class RigctldConfiguration
