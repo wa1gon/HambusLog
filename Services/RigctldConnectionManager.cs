@@ -206,7 +206,7 @@ public sealed class RigctldConnectionManager : IDisposable
                     }
 
                     UpdateState(radio, true, mode, passband, freqHz, queryError);
-                    await Task.Delay(TimeSpan.FromSeconds(2), ct);
+                    await Task.Delay(TimeSpan.FromSeconds(0.5), ct);
                 }
             }
             catch (OperationCanceledException)
@@ -404,7 +404,7 @@ public sealed record RadioRuntimeState(
     string? Error,
     DateTime LastUpdatedUtc)
 {
-    public decimal? FrequencyMhz => FrequencyHz is null ? null : Math.Round(FrequencyHz.Value / 1_000_000m, 3);
+    public decimal? FrequencyMhz => FrequencyHz is null ? null : FrequencyHz.Value / 1_000_000m;
 
     /// <summary>Display string combining mode and passband, e.g. "USB 2400" or "-" when unknown.</summary>
     public string ModeDisplay

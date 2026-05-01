@@ -1,5 +1,7 @@
 namespace HamBusLog.ViewModels;
 
+using HamBusLog.Hardware;
+
 public sealed class LogInputViewModel : ViewModelBase
 {
     private readonly CallValidator   _callValidator   = new();
@@ -43,6 +45,8 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _activeRigMode = string.Empty;
     private string _activeRigFrequency = string.Empty;
     private bool _isActiveRigConnected;
+    private ObservableCollection<ConnectedRadioOption> _availableConnectedRadios = [];
+    private ConnectedRadioOption? _selectedConnectedRadio;
 
     public LogInputViewModel()
     {
@@ -50,6 +54,7 @@ public sealed class LogInputViewModel : ViewModelBase
         ContestTypes    = [ContestType.Normal, ContestType.ArrlFieldDay];
         Details         = [];
         AvailableProfiles = new ObservableCollection<string>();
+        AvailableConnectedRadios = new ObservableCollection<ConnectedRadioOption>();
         LoadProfiles();
         InputDate       = DateTime.UtcNow.ToString("yyyyMMdd");
         InputTimeOn     = DateTime.UtcNow.ToString("HHmm");
@@ -60,6 +65,30 @@ public sealed class LogInputViewModel : ViewModelBase
     public List<ContestType> ContestTypes { get; }
     public ObservableCollection<QsoDetailRow> Details { get; }
     public ObservableCollection<string> AvailableProfiles { get; }
+
+    public ObservableCollection<ConnectedRadioOption> AvailableConnectedRadios
+    {
+        get => _availableConnectedRadios;
+        private set => SetProperty(ref _availableConnectedRadios, value);
+    }
+
+    public ConnectedRadioOption? SelectedConnectedRadio
+    {
+        get => _selectedConnectedRadio;
+        set
+        {
+            var previousName = _selectedConnectedRadio?.RadioName;
+            var nextName = value?.RadioName;
+
+            if (!SetProperty(ref _selectedConnectedRadio, value))
+                return;
+
+            if (!string.Equals(previousName, nextName, StringComparison.OrdinalIgnoreCase))
+                ApplySelectedRadioToInputs();
+
+            UpdateActiveRigDisplay(SelectedConnectedRadio?.State ?? App.RigctldConnectionManager.GetPrimaryActiveState());
+        }
+    }
 
     public string ActiveRigStatus
     {
@@ -233,8 +262,8 @@ public sealed class LogInputViewModel : ViewModelBase
             qso.Details.Add(new QsoDetail { FieldName = "Class",   FieldValue = InputFieldDayClass.Trim().ToUpperInvariant()   });
         }
 
-        // Attach live rig state metadata when available.
-        var activeRig = App.RigctldConnectionManager.GetPrimaryActiveState();
+        // Attach selected connected rig metadata when available.
+        var activeRig = GetSelectedOrPrimaryRigState();
         if (activeRig is not null)
         {
             qso.Details.Add(new QsoDetail { FieldName = "radio_name", FieldValue = activeRig.RadioName });
@@ -258,24 +287,34 @@ public sealed class LogInputViewModel : ViewModelBase
 
     public void RefreshActiveRigSnapshot()
     {
-        var state = App.RigctldConnectionManager.GetPrimaryActiveState();
-        if (state is null || !state.IsConnected)
-        {
-            ActiveRigStatus = "No active rig";
-            ActiveRigLabel = "No active rig";
-            ActiveRigMode = string.Empty;
-            ActiveRigFrequency = string.Empty;
-            IsActiveRigConnected = false;
-            return;
-        }
+        RefreshConnectedRadios();
+        var state = SelectedConnectedRadio?.State ?? App.RigctldConnectionManager.GetPrimaryActiveState();
+        UpdateActiveRigDisplay(state);
+    }
 
-        ActiveRigStatus = "Connected";
-        ActiveRigLabel = string.IsNullOrWhiteSpace(state.Label) ? state.RadioName : state.Label;
-        ActiveRigMode = state.Mode ?? string.Empty;
-        ActiveRigFrequency = state.FrequencyMhz is decimal mhz
-            ? mhz.ToString("0.######", CultureInfo.InvariantCulture) + " MHz"
-            : string.Empty;
-        IsActiveRigConnected = true;
+    public void RefreshSelectedRadioInputs()
+    {
+        RefreshActiveRigSnapshot();
+        ApplySelectedRadioToInputs();
+    }
+
+    public void ApplySelectedRadioToInputs()
+    {
+        var state = SelectedConnectedRadio?.State;
+        if (state is null || !state.IsConnected)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(state.Mode) && state.Mode != "0")
+            InputMode = state.Mode;
+
+        if (state.FrequencyMhz is decimal mhz && mhz > 0)
+        {
+            InputFreq = mhz.ToString("0.000000", CultureInfo.InvariantCulture);
+
+            var derivedBand = TryDeriveBandFromMhz(mhz);
+            if (!string.IsNullOrWhiteSpace(derivedBand) && _bandValidator.Validate(derivedBand).IsValid)
+                InputBand = derivedBand;
+        }
     }
 
     private void ClearErrors()
@@ -341,7 +380,7 @@ public sealed class LogInputViewModel : ViewModelBase
 
     private void ApplyActiveRigSnapshot()
     {
-        var state = App.RigctldConnectionManager.GetPrimaryActiveState();
+        var state = GetSelectedOrPrimaryRigState();
         if (state is null || !state.IsConnected)
         {
             RefreshActiveRigSnapshot();
@@ -352,9 +391,80 @@ public sealed class LogInputViewModel : ViewModelBase
             InputMode = state.Mode;
 
         if (string.IsNullOrWhiteSpace(InputFreq) && state.FrequencyMhz is decimal mhz)
-            InputFreq = mhz.ToString("0.######", CultureInfo.InvariantCulture);
+            InputFreq = mhz.ToString("0.000000", CultureInfo.InvariantCulture);
 
         RefreshActiveRigSnapshot();
+    }
+
+    private RadioRuntimeState? GetSelectedOrPrimaryRigState()
+    {
+        return SelectedConnectedRadio?.State ?? App.RigctldConnectionManager.GetPrimaryActiveState();
+    }
+
+    private void RefreshConnectedRadios()
+    {
+        var snapshot = App.RigctldConnectionManager.GetSnapshot();
+        var selectedName = SelectedConnectedRadio?.RadioName;
+
+        var connected = snapshot
+            .Where(x => x.IsConnected)
+            .OrderBy(x => x.RadioName, StringComparer.OrdinalIgnoreCase)
+            .Select(x => new ConnectedRadioOption(x))
+            .ToList();
+
+        AvailableConnectedRadios = new ObservableCollection<ConnectedRadioOption>(connected);
+
+        if (connected.Count == 0)
+        {
+            SelectedConnectedRadio = null;
+            return;
+        }
+
+        SelectedConnectedRadio = connected.FirstOrDefault(x =>
+            string.Equals(x.RadioName, selectedName, StringComparison.OrdinalIgnoreCase))
+            ?? connected.First();
+    }
+
+    private void UpdateActiveRigDisplay(RadioRuntimeState? state)
+    {
+        if (state is null || !state.IsConnected)
+        {
+            ActiveRigStatus = "No active rig";
+            ActiveRigLabel = "No active rig";
+            ActiveRigMode = string.Empty;
+            ActiveRigFrequency = string.Empty;
+            IsActiveRigConnected = false;
+            return;
+        }
+
+        ActiveRigStatus = "Connected";
+        ActiveRigLabel = string.IsNullOrWhiteSpace(state.Label) ? state.RadioName : state.Label;
+        ActiveRigMode = state.Mode ?? string.Empty;
+        ActiveRigFrequency = state.FrequencyMhz is decimal mhz
+            ? mhz.ToString("0.000000", CultureInfo.InvariantCulture) + " MHz"
+            : string.Empty;
+        IsActiveRigConnected = true;
+    }
+
+    private static string TryDeriveBandFromMhz(decimal mhz)
+    {
+        return mhz switch
+        {
+            >= 1.8m and <= 2.0m => "160M",
+            >= 3.5m and <= 4.0m => "80M",
+            >= 5.3305m and <= 5.4065m => "60M",
+            >= 7.0m and <= 7.3m => "40M",
+            >= 10.1m and <= 10.15m => "30M",
+            >= 14.0m and <= 14.35m => "20M",
+            >= 18.068m and <= 18.168m => "17M",
+            >= 21.0m and <= 21.45m => "15M",
+            >= 24.89m and <= 24.99m => "12M",
+            >= 28.0m and <= 29.7m => "10M",
+            >= 50.0m and <= 54.0m => "6M",
+            >= 144.0m and <= 148.0m => "2M",
+            >= 420.0m and <= 450.0m => "70CM",
+            _ => string.Empty
+        };
     }
 }
 
@@ -366,5 +476,37 @@ public sealed class QsoDetailRow : ViewModelBase
 
     public string FieldName  { get => _fieldName;  set => SetProperty(ref _fieldName,  value); }
     public string FieldValue { get => _fieldValue; set => SetProperty(ref _fieldValue, value); }
+}
+
+public sealed class ConnectedRadioOption
+{
+    public ConnectedRadioOption(RadioRuntimeState state)
+    {
+        State = state;
+    }
+
+    public RadioRuntimeState State { get; }
+    public string RadioName => State.RadioName;
+    public string Display
+    {
+        get
+        {
+            var name = State.RadioName?.Trim() ?? string.Empty;
+            var label = State.Label?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(label))
+                return name;
+            if (string.Equals(label, name, StringComparison.OrdinalIgnoreCase))
+                return name;
+            if (label.Contains(name, StringComparison.OrdinalIgnoreCase))
+                return label;
+            if (name.Contains(label, StringComparison.OrdinalIgnoreCase))
+                return name;
+
+            return $"{label} ({name})";
+        }
+    }
+
+    public override string ToString() => Display;
 }
 

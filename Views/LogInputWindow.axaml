@@ -62,6 +62,40 @@
                                    Foreground="{DynamicResource AppForegroundBrush}" />
                     </Grid>
                 </Border>
+                <Grid ColumnDefinitions="160,*,Auto" ColumnSpacing="8">
+                    <TextBlock Grid.Column="0"
+                               Text="Connected Radio"
+                               Foreground="{DynamicResource AppForegroundBrush}"
+                               VerticalAlignment="Center" />
+                    <ListBox Grid.Column="1"
+                             ItemsSource="{Binding AvailableConnectedRadios}"
+                             SelectedItem="{Binding SelectedConnectedRadio, Mode=TwoWay}"
+                             Background="{DynamicResource AppPanelBackgroundBrush}"
+                             Foreground="{DynamicResource AppForegroundBrush}"
+                             MinHeight="44"
+                             MaxHeight="84"
+                             BorderBrush="{DynamicResource AppBorderBrush}">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <RadioButton Content="{Binding Display}"
+                                             GroupName="ConnectedRadios"
+                                             Margin="0,0,12,8"
+                                             IsChecked="{Binding $parent[ListBoxItem].IsSelected, Mode=TwoWay}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <Button Grid.Column="2"
+                            Content="Use Radio Values"
+                            Click="OnApplySelectedRadioClicked"
+                            Background="{DynamicResource AppButtonNormalBrush}"
+                            Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
+                            Padding="10,6" />
+                </Grid>
                 <Grid ColumnDefinitions="160,*" RowDefinitions="Auto" ColumnSpacing="8">
                     <TextBlock Grid.Column="0" Text="Contest Type" Foreground="{DynamicResource AppForegroundBrush}" VerticalAlignment="Center" />
                     <ComboBox  Grid.Column="1" ItemsSource="{Binding ContestTypes}" SelectedItem="{Binding SelectedContestType}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" />
