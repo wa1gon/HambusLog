@@ -119,7 +119,7 @@ public class HamLibRigCtlClient(string _host, int _port) : IDisposable, IRigCont
         {
             var bytesRead = await _stream.ReadAsync(buffer, 0, 1);
             if (bytesRead == 0)
-                break; // End of stream
+                throw new IOException("Lost connection to rigctld (connection closed by remote).");
             if (buffer[0] == '\n')
                 break;
             if (buffer[0] == '\r')
@@ -184,7 +184,9 @@ public class HamLibRigCtlClient(string _host, int _port) : IDisposable, IRigCont
 
     private void EnsureConnected()
     {
-        if (_client == null || !_client.Connected || _stream == null)
+        // TcpClient.Connected is not a reliable liveness signal between I/O calls.
+        // We only require a created client/stream; real transport loss is detected on read/write.
+        if (_client == null || _stream == null)
             throw new InvalidOperationException("Not connected to rigctld.");
     }
 }

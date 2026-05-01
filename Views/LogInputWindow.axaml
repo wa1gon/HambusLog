@@ -62,6 +62,40 @@
                                    Foreground="{DynamicResource AppForegroundBrush}" />
                     </Grid>
                 </Border>
+                <Grid ColumnDefinitions="160,*,Auto" ColumnSpacing="8">
+                    <TextBlock Grid.Column="0"
+                               Text="Connected Radio"
+                               Foreground="{DynamicResource AppForegroundBrush}"
+                               VerticalAlignment="Center" />
+                    <ListBox Grid.Column="1"
+                             ItemsSource="{Binding AvailableConnectedRadios}"
+                             SelectedItem="{Binding SelectedConnectedRadio, Mode=TwoWay}"
+                             Background="{DynamicResource AppPanelBackgroundBrush}"
+                             Foreground="{DynamicResource AppForegroundBrush}"
+                             MinHeight="44"
+                             MaxHeight="84"
+                             BorderBrush="{DynamicResource AppBorderBrush}">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <RadioButton Content="{Binding Display}"
+                                             GroupName="ConnectedRadios"
+                                             Margin="0,0,12,8"
+                                             IsChecked="{Binding $parent[ListBoxItem].IsSelected, Mode=TwoWay}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <Button Grid.Column="2"
+                            Content="Use Radio Values"
+                            Click="OnApplySelectedRadioClicked"
+                            Background="{DynamicResource AppButtonNormalBrush}"
+                            Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
+                            Padding="10,6" />
+                </Grid>
                 <Grid ColumnDefinitions="160,*" RowDefinitions="Auto" ColumnSpacing="8">
                     <TextBlock Grid.Column="0" Text="Contest Type" Foreground="{DynamicResource AppForegroundBrush}" VerticalAlignment="Center" />
                     <ComboBox  Grid.Column="1" ItemsSource="{Binding ContestTypes}" SelectedItem="{Binding SelectedContestType}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" />
@@ -69,7 +103,11 @@
                 <Grid ColumnDefinitions="1*,1*,1*,1*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
                     <StackPanel Grid.Column="0" Grid.Row="0" Spacing="3">
                         <TextBlock Text="Callsign *" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" FontWeight="Bold" />
-                        <TextBox Text="{Binding InputCall}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                        <TextBox Text="{Binding InputCall, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 TextChanged="OnUppercaseInputChanged"
+                                 Background="{DynamicResource AppPanelBackgroundBrush}"
+                                 Foreground="{DynamicResource AppForegroundBrush}"
+                                 Padding="6" />
                         <TextBlock Text="{Binding CallError}" Foreground="{DynamicResource AppErrorBrush}" FontSize="11" IsVisible="{Binding HasCallError}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" Grid.Row="0" Spacing="3">
@@ -111,12 +149,20 @@
                     <Grid ColumnDefinitions="1*,1*" ColumnSpacing="8">
                         <StackPanel Grid.Column="0" Spacing="3">
                             <TextBlock Text="Section *" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                            <TextBox Text="{Binding InputFieldDaySection}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                            <TextBox Text="{Binding InputFieldDaySection, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     TextChanged="OnUppercaseInputChanged"
+                                     Background="{DynamicResource AppPanelBackgroundBrush}"
+                                     Foreground="{DynamicResource AppForegroundBrush}"
+                                     Padding="6" />
                             <TextBlock Text="{Binding SectionError}" Foreground="{DynamicResource AppErrorBrush}" FontSize="11" IsVisible="{Binding HasSectionError}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Spacing="3">
                             <TextBlock Text="Class *" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                            <TextBox Text="{Binding InputFieldDayClass}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                            <TextBox Text="{Binding InputFieldDayClass, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     TextChanged="OnUppercaseInputChanged"
+                                     Background="{DynamicResource AppPanelBackgroundBrush}"
+                                     Foreground="{DynamicResource AppForegroundBrush}"
+                                     Padding="6" />
                             <TextBlock Text="{Binding ClassError}" Foreground="{DynamicResource AppErrorBrush}" FontSize="11" IsVisible="{Binding HasClassError}" />
                         </StackPanel>
                     </Grid>

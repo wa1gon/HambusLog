@@ -191,7 +191,7 @@ public sealed class RigctldConnectionManager : IDisposable
                     {
                         (mode, passband) = await client.GetModeAndPassbandAsync();
                     }
-                    catch (Exception ex) when (!IsConnectionLost(ex))
+                    catch (IOException ex) when (!IsConnectionLost(ex))
                     {
                         queryError = ex.Message;
                     }
@@ -200,13 +200,13 @@ public sealed class RigctldConnectionManager : IDisposable
                     {
                         freqHz = await client.GetFreqAsync();
                     }
-                    catch (Exception ex) when (!IsConnectionLost(ex))
+                    catch (IOException ex) when (!IsConnectionLost(ex))
                     {
                         queryError ??= ex.Message;
                     }
 
                     UpdateState(radio, true, mode, passband, freqHz, queryError);
-                    await Task.Delay(TimeSpan.FromSeconds(2), ct);
+                    await Task.Delay(TimeSpan.FromSeconds(0.5), ct);
                 }
             }
             catch (OperationCanceledException)
@@ -274,7 +274,11 @@ public sealed class RigctldConnectionManager : IDisposable
             catch (Exception ex)
             {
                 command.Completion.TrySetException(ex);
-                throw;
+
+                // Keep polling for rig-level errors (RPRT failures, unsupported ops, etc.).
+                // Only bubble up when transport is actually lost so the worker reconnects.
+                if (IsConnectionLost(ex))
+                    throw;
             }
         }
     }
@@ -400,7 +404,7 @@ public sealed record RadioRuntimeState(
     string? Error,
     DateTime LastUpdatedUtc)
 {
-    public decimal? FrequencyMhz => FrequencyHz is null ? null : Math.Round(FrequencyHz.Value / 1_000_000m, 3);
+    public decimal? FrequencyMhz => FrequencyHz is null ? null : FrequencyHz.Value / 1_000_000m;
 
     /// <summary>Display string combining mode and passband, e.g. "USB 2400" or "-" when unknown.</summary>
     public string ModeDisplay
