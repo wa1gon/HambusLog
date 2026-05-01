@@ -7,6 +7,7 @@ public partial class AdifImportProgressWindow : Window
     public AdifImportProgressWindow()
     {
         InitializeComponent();
+        App.TrackWindowPlacement(this, nameof(AdifImportProgressWindow));
         _viewModel = new AdifImportProgressViewModel();
         DataContext = _viewModel;
     }

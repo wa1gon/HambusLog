@@ -14,7 +14,7 @@
                 <TextBlock Grid.Column="0" Text="Search Call:" Foreground="{DynamicResource AppForegroundBrush}" VerticalAlignment="Center" />
                 <TextBox Grid.Column="1" Text="{Binding SearchCall}" Watermark="e.g. W5XYZ" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6,4" />
                 <TextBlock Grid.Column="2" />
-                <Button Grid.Column="3" Content="+ New Entry" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="12,6" Click="OnNewEntryClicked" />
+                <Button Grid.Column="3" Content="+ New Entry" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" Padding="12,6" Click="OnNewEntryClicked" />
             </Grid>
         </Border>
         <Grid Grid.Row="1" RowDefinitions="Auto,*" ColumnDefinitions="*" Background="{DynamicResource AppPanelBackgroundBrush}">

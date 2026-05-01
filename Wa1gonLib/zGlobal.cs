@@ -10,6 +10,7 @@ global using System.Threading;
 global using System.Threading.Tasks;
 global using HamBusLog.Wa1gonLib;
 global using HamBusLog.Wa1gonLib.Models;
+global using Wa1gonLib.Models;
 global using System.ComponentModel.DataAnnotations;
 global using System.ComponentModel.DataAnnotations.Schema;
 global using System.Text.Json.Serialization;

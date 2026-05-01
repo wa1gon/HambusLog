@@ -7,32 +7,39 @@ public sealed class RigctldConnectionManager : IDisposable
     private readonly object _gate = new();
     private readonly Dictionary<string, Worker> _workers = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, RadioRuntimeState> _states = new(StringComparer.OrdinalIgnoreCase);
+    private int _reconnectIntervalSeconds = 3;
 
     public event EventHandler? StatesChanged;
 
-    public async Task<string> SetFrequencyByTagAsync(string tagName, decimal frequencyMhz, CancellationToken ct = default)
+    public Task<string> SetFrequencyByTagAsync(string tagName, decimal frequencyMhz, CancellationToken ct = default)
+        => SetFrequencyByNameAsync(tagName, frequencyMhz, ct);
+
+    public async Task<string> SetFrequencyByNameAsync(string radioName, decimal frequencyMhz, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(tagName))
-            throw new ArgumentException("Radio tag is required.", nameof(tagName));
+        if (string.IsNullOrWhiteSpace(radioName))
+            throw new ArgumentException("Radio name is required.", nameof(radioName));
         if (frequencyMhz <= 0)
             throw new ArgumentOutOfRangeException(nameof(frequencyMhz), "Frequency must be greater than zero.");
 
         var hz = (long)Math.Round(frequencyMhz * 1_000_000m);
         var command = new ControlCommand(ControlCommandType.SetFrequency, hz, null);
-        await EnqueueControlCommandAsync(tagName.Trim(), command, ct);
+        await EnqueueControlCommandAsync(radioName.Trim(), command, ct);
         return $"Frequency set to {frequencyMhz:0.######} MHz";
     }
 
-    public async Task<string> SetModeByTagAsync(string tagName, string mode, CancellationToken ct = default)
+    public Task<string> SetModeByTagAsync(string tagName, string mode, CancellationToken ct = default)
+        => SetModeByNameAsync(tagName, mode, ct);
+
+    public async Task<string> SetModeByNameAsync(string radioName, string mode, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(tagName))
-            throw new ArgumentException("Radio tag is required.", nameof(tagName));
+        if (string.IsNullOrWhiteSpace(radioName))
+            throw new ArgumentException("Radio name is required.", nameof(radioName));
         if (string.IsNullOrWhiteSpace(mode))
             throw new ArgumentException("Mode is required.", nameof(mode));
 
         var normalizedMode = mode.Trim().ToUpperInvariant();
         var command = new ControlCommand(ControlCommandType.SetMode, null, normalizedMode);
-        await EnqueueControlCommandAsync(tagName.Trim(), command, ct);
+        await EnqueueControlCommandAsync(radioName.Trim(), command, ct);
         return $"Mode set to {normalizedMode}";
     }
 
@@ -40,22 +47,25 @@ public sealed class RigctldConnectionManager : IDisposable
     {
         var config = AppConfigurationStore.Load();
         var rigctld = AppConfigurationStore.GetRigctld(config);
+        _reconnectIntervalSeconds = rigctld.ReconnectIntervalSeconds <= 0 ? 3 : Math.Min(rigctld.ReconnectIntervalSeconds, 300);
 
-        var activeTags = rigctld.Radios
-            .Select(x => x.TagName)
+        // Poll every configured radio so status reflects all endpoints, even when a radio
+        // is not currently selected as the active control target.
+        var monitoredNames = rigctld.Radios
+            .Select(x => x.RadioName)
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         var activeRadios = rigctld.Radios
-            .Where(x => activeTags.Contains(x.TagName, StringComparer.OrdinalIgnoreCase))
+            .Where(x => monitoredNames.Contains(x.RadioName, StringComparer.OrdinalIgnoreCase))
             .ToList();
 
         List<string> toStop;
         lock (_gate)
         {
             toStop = _workers.Keys
-                .Where(existingTag => !activeTags.Contains(existingTag, StringComparer.OrdinalIgnoreCase))
+                .Where(existingName => !monitoredNames.Contains(existingName, StringComparer.OrdinalIgnoreCase))
                 .ToList();
         }
 
@@ -71,7 +81,7 @@ public sealed class RigctldConnectionManager : IDisposable
         lock (_gate)
         {
             return _states.Values
-                .OrderBy(x => x.TagName, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x.RadioName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
     }
@@ -93,14 +103,15 @@ public sealed class RigctldConnectionManager : IDisposable
         var shouldNotify = false;
         lock (_gate)
         {
-            if (_workers.ContainsKey(radio.TagName))
+            if (_workers.ContainsKey(radio.RadioName))
                 return;
 
-            _states[radio.TagName] = new RadioRuntimeState(
-                radio.TagName,
-                string.IsNullOrWhiteSpace(radio.DisplayName) ? radio.TagName : radio.DisplayName,
+            _states[radio.RadioName] = new RadioRuntimeState(
+                radio.RadioName,
+                radio.RadioName,
                 false,
                 null,
+                0,
                 null,
                 $"Not connected ({radio.Host}:{radio.Port})",
                 DateTime.UtcNow);
@@ -108,7 +119,7 @@ public sealed class RigctldConnectionManager : IDisposable
             var cts = new CancellationTokenSource();
             var worker = new Worker(radio, cts);
             worker.LoopTask = Task.Run(() => PollLoopAsync(worker, cts.Token), cts.Token);
-            _workers[radio.TagName] = worker;
+            _workers[radio.RadioName] = worker;
             shouldNotify = true;
         }
 
@@ -116,15 +127,15 @@ public sealed class RigctldConnectionManager : IDisposable
             OnStatesChanged();
     }
 
-    private async Task StopWorkerAsync(string tagName)
+    private async Task StopWorkerAsync(string radioName)
     {
         Worker? worker;
         var shouldNotify = false;
         lock (_gate)
         {
-            if (!_workers.TryGetValue(tagName, out worker))
+            if (!_workers.TryGetValue(radioName, out worker))
                 return;
-            _workers.Remove(tagName);
+            _workers.Remove(radioName);
         }
 
         try
@@ -143,7 +154,7 @@ public sealed class RigctldConnectionManager : IDisposable
             worker.Cts.Dispose();
             lock (_gate)
             {
-                shouldNotify = _states.Remove(tagName) || shouldNotify;
+                shouldNotify = _states.Remove(radioName) || shouldNotify;
             }
         }
 
@@ -160,12 +171,41 @@ public sealed class RigctldConnectionManager : IDisposable
             try
             {
                 await client.OpenAsync();
+
+                // Connected — mark online immediately even before first successful query.
+                UpdateState(radio, true, null, 0, null, null);
+
                 while (!ct.IsCancellationRequested)
                 {
                     await ProcessControlCommandsAsync(worker, client, ct);
-                    var mode = await client.GetModeAsync();
-                    var freqHz = await client.GetFreqAsync();
-                    UpdateState(radio, true, mode, freqHz, null);
+
+                    // Query mode and frequency independently.  A query error (e.g. rig
+                    // backend returns RPRT -8 when no slice is open) does NOT disconnect —
+                    // we stay connected and keep the last-known values for that field.
+                    string? mode = null;
+                    int passband = 0;
+                    long? freqHz = null;
+                    string? queryError = null;
+
+                    try
+                    {
+                        (mode, passband) = await client.GetModeAndPassbandAsync();
+                    }
+                    catch (Exception ex) when (!IsConnectionLost(ex))
+                    {
+                        queryError = ex.Message;
+                    }
+
+                    try
+                    {
+                        freqHz = await client.GetFreqAsync();
+                    }
+                    catch (Exception ex) when (!IsConnectionLost(ex))
+                    {
+                        queryError ??= ex.Message;
+                    }
+
+                    UpdateState(radio, true, mode, passband, freqHz, queryError);
                     await Task.Delay(TimeSpan.FromSeconds(2), ct);
                 }
             }
@@ -175,23 +215,37 @@ public sealed class RigctldConnectionManager : IDisposable
             }
             catch (Exception ex)
             {
-                UpdateState(radio, false, null, null, ex.Message);
-                await Task.Delay(TimeSpan.FromSeconds(3), ct);
+                // TCP-level failure — mark offline and wait before reconnecting.
+                UpdateState(radio, false, null, 0, null, ex.Message);
+                await Task.Delay(TimeSpan.FromSeconds(_reconnectIntervalSeconds), ct);
             }
         }
     }
 
-    private async Task EnqueueControlCommandAsync(string tagName, ControlCommand command, CancellationToken ct)
+    private async Task EnqueueControlCommandAsync(string radioName, ControlCommand command, CancellationToken ct)
     {
         Worker worker;
+        RadioRuntimeState? state;
         lock (_gate)
         {
-            if (!_workers.TryGetValue(tagName, out worker!))
-                throw new InvalidOperationException($"No background service is running for radio '{tagName}'.");
+            if (!_workers.TryGetValue(radioName, out worker!))
+                throw new InvalidOperationException($"No background service is running for radio '{radioName}'.");
+
+            _states.TryGetValue(radioName, out state);
         }
 
+        if (state is null || !state.IsConnected)
+            throw new InvalidOperationException($"Radio '{radioName}' is not connected.");
+
         worker.Commands.Enqueue(command);
-        await command.Completion.Task.WaitAsync(ct);
+        try
+        {
+            await command.Completion.Task.WaitAsync(ct);
+        }
+        catch (OperationCanceledException ex) when (ct.IsCancellationRequested)
+        {
+            throw new TimeoutException($"Timed out waiting for radio '{radioName}' to accept the command.", ex);
+        }
     }
 
     private static async Task ProcessControlCommandsAsync(Worker worker, Wa1gonLib.RigControl.HamLibRigCtlClient client, CancellationToken ct)
@@ -225,16 +279,17 @@ public sealed class RigctldConnectionManager : IDisposable
         }
     }
 
-    private void UpdateState(RigRadioConfig radio, bool connected, string? mode, long? freqHz, string? error)
+    private void UpdateState(RigRadioConfig radio, bool connected, string? mode, int passband, long? freqHz, string? error)
     {
         var shouldNotify = false;
         lock (_gate)
         {
-            _states[radio.TagName] = new RadioRuntimeState(
-                radio.TagName,
-                string.IsNullOrWhiteSpace(radio.DisplayName) ? radio.TagName : radio.DisplayName,
+            _states[radio.RadioName] = new RadioRuntimeState(
+                radio.RadioName,
+                radio.RadioName,
                 connected,
                 mode,
+                passband,
                 freqHz,
                 error,
                 DateTime.UtcNow);
@@ -243,6 +298,24 @@ public sealed class RigctldConnectionManager : IDisposable
 
         if (shouldNotify)
             OnStatesChanged();
+    }
+
+    /// <summary>
+    /// Returns true when an exception signals a dropped TCP connection rather than
+    /// a rig-level protocol error (e.g. RPRT -8 because a slice is closed).
+    /// </summary>
+    private static bool IsConnectionLost(Exception ex)
+    {
+        if (ex is not IOException ioEx)
+            return false;
+
+        var msg = ioEx.Message;
+        return msg.Contains("Lost connection", StringComparison.OrdinalIgnoreCase)
+            || msg.Contains("Unable to connect", StringComparison.OrdinalIgnoreCase)
+            || msg.Contains("forcibly closed", StringComparison.OrdinalIgnoreCase)
+            || msg.Contains("connection reset", StringComparison.OrdinalIgnoreCase)
+            || msg.Contains("Broken pipe", StringComparison.OrdinalIgnoreCase)
+            || ioEx.InnerException is System.Net.Sockets.SocketException;
     }
 
     private void OnStatesChanged()
@@ -318,15 +391,28 @@ public sealed class RigctldConnectionManager : IDisposable
 }
 
 public sealed record RadioRuntimeState(
-    string TagName,
+    string RadioName,
     string Label,
     bool IsConnected,
     string? Mode,
+    int Passband,
     long? FrequencyHz,
     string? Error,
     DateTime LastUpdatedUtc)
 {
-    public decimal? FrequencyMhz => FrequencyHz is null ? null : Math.Round(FrequencyHz.Value / 1_000_000m, 6);
+    public decimal? FrequencyMhz => FrequencyHz is null ? null : Math.Round(FrequencyHz.Value / 1_000_000m, 3);
+
+    /// <summary>Display string combining mode and passband, e.g. "USB 2400" or "-" when unknown.</summary>
+    public string ModeDisplay
+    {
+        get
+        {
+            var hasMode = !string.IsNullOrWhiteSpace(Mode);
+            var hasPassband = Passband > 0;
+            if (!hasMode) return "-";
+            return hasPassband ? $"{Mode} {Passband}" : Mode!;
+        }
+    }
 }
 
 

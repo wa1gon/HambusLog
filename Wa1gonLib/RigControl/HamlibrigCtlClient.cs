@@ -41,13 +41,31 @@ public class HamLibRigCtlClient(string _host, int _port) : IDisposable, IRigCont
     {
         EnsureConnected();
         await SendCommandAsync($"F {freq}\n");
+        await EnsureCommandSucceededAsync("set frequency");
         Freq = freq;
     }
 
     public async Task SetModeAsync(string mode)
     {
         EnsureConnected();
-        await SendCommandAsync($"M {mode}\n");
+        // Hamlib expects mode + passband; 0 asks backend to choose a default passband.
+        await SendCommandAsync($"M {mode} 0\n");
+        await EnsureCommandSucceededAsync("set mode");
+    }
+
+    private async Task EnsureCommandSucceededAsync(string operation)
+    {
+        var response = await ReadLineAsync();
+        if (string.IsNullOrWhiteSpace(response))
+            throw new IOException($"rigctld returned an empty reply while trying to {operation}.");
+
+        // Most rigctld commands acknowledge with: RPRT <code> (0 = success)
+        if (!response.StartsWith("RPRT", StringComparison.OrdinalIgnoreCase))
+            throw new IOException($"Unexpected rigctld reply while trying to {operation}: '{response}'.");
+
+        var codeToken = response.Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1).FirstOrDefault();
+        if (!int.TryParse(codeToken, out var code) || code != 0)
+            throw new IOException($"rigctld rejected {operation} (RPRT {codeToken ?? "?"}).");
     }
 
     public async Task SendCommandAsync(string command)
@@ -114,19 +132,36 @@ public class HamLibRigCtlClient(string _host, int _port) : IDisposable, IRigCont
 
     public async Task<string> GetModeAsync()
     {
+        var (mode, _) = await GetModeAndPassbandAsync();
+        return mode;
+    }
+
+    /// <summary>
+    /// Returns the mode and passband width from rigctld.
+    /// Returns ("", 0) when the radio reports no active slice (mode "0" or passband 0).
+    /// </summary>
+    public async Task<(string Mode, int Passband)> GetModeAndPassbandAsync()
+    {
         EnsureConnected();
         await SendCommandAsync("m\n");
 
-        var response = await ReadLineAsync();
-        if (string.IsNullOrWhiteSpace(response))
+        // rigctld returns two lines for the 'm' command: first is the mode, second is the passband width.
+        var modeLine = await ReadLineAsync();
+        var passbandLine = await ReadLineAsync();
+
+        if (string.IsNullOrWhiteSpace(modeLine))
             throw new IOException("Failed to parse mode from rigctld response.");
 
-        // Typical responses are like: "USB 2400".
-        var mode = response.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-        if (!string.IsNullOrWhiteSpace(mode) && !string.Equals(mode, "RPRT", StringComparison.OrdinalIgnoreCase))
-            return mode;
+        var modeToken = modeLine.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(modeToken) || string.Equals(modeToken, "RPRT", StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Failed to parse mode from rigctld response.");
 
-        throw new IOException("Failed to parse mode from rigctld response.");
+        // "0" means the backend has no active slice / unknown mode
+        if (modeToken == "0")
+            return (string.Empty, 0);
+
+        int.TryParse(passbandLine?.Trim(), out var passband);
+        return (modeToken, passband);
     }
 
     public async Task<long> GetFreqAsync()

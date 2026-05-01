@@ -8,9 +8,11 @@ public partial class ConfigurationWindow
     private ColorPicker? _menuBgPicker;
     private ColorPicker? _menuFgPicker;
     private ColorPicker? _btnNormalPicker;
+    private ColorPicker? _btnNormalFgPicker;
     private ColorPicker? _btnCautionPicker;
+    private ColorPicker? _btnCautionFgPicker;
     private ColorPicker? _btnDangerPicker;
-    private ColorPicker? _btnFgPicker;
+    private ColorPicker? _btnDangerFgPicker;
     private ColorPicker? _inputBgPicker;
     private ColorPicker? _inputFgPicker;
     private ColorPicker? _inputBorderPicker;
@@ -21,9 +23,11 @@ public partial class ConfigurationWindow
     private TextBlock? _menuBgHex;
     private TextBlock? _menuFgHex;
     private TextBlock? _btnNormalHex;
+    private TextBlock? _btnNormalFgHex;
     private TextBlock? _btnCautionHex;
+    private TextBlock? _btnCautionFgHex;
     private TextBlock? _btnDangerHex;
-    private TextBlock? _btnFgHex;
+    private TextBlock? _btnDangerFgHex;
     private TextBlock? _inputBgHex;
     private TextBlock? _inputFgHex;
     private TextBlock? _inputBorderHex;
@@ -39,6 +43,7 @@ public partial class ConfigurationWindow
     public ConfigurationWindow()
     {
         InitializeComponent();
+        App.TrackWindowPlacement(this, nameof(ConfigurationWindow));
         _viewModel = new ConfigurationViewModel();
         DataContext = _viewModel;
     }
@@ -52,9 +57,11 @@ public partial class ConfigurationWindow
         _menuBgPicker = this.FindControl<ColorPicker>("MenuBgColorPicker");
         _menuFgPicker = this.FindControl<ColorPicker>("MenuFgColorPicker");
         _btnNormalPicker = this.FindControl<ColorPicker>("BtnNormalColorPicker");
+        _btnNormalFgPicker = this.FindControl<ColorPicker>("BtnNormalFgColorPicker");
         _btnCautionPicker = this.FindControl<ColorPicker>("BtnCautionColorPicker");
+        _btnCautionFgPicker = this.FindControl<ColorPicker>("BtnCautionFgColorPicker");
         _btnDangerPicker = this.FindControl<ColorPicker>("BtnDangerColorPicker");
-        _btnFgPicker = this.FindControl<ColorPicker>("BtnFgColorPicker");
+        _btnDangerFgPicker = this.FindControl<ColorPicker>("BtnDangerFgColorPicker");
         _inputBgPicker = this.FindControl<ColorPicker>("InputBgColorPicker");
         _inputFgPicker = this.FindControl<ColorPicker>("InputFgColorPicker");
         _inputBorderPicker = this.FindControl<ColorPicker>("InputBorderColorPicker");
@@ -65,9 +72,11 @@ public partial class ConfigurationWindow
         _menuBgHex = this.FindControl<TextBlock>("MenuBgColorHex");
         _menuFgHex = this.FindControl<TextBlock>("MenuFgColorHex");
         _btnNormalHex = this.FindControl<TextBlock>("BtnNormalColorHex");
+        _btnNormalFgHex = this.FindControl<TextBlock>("BtnNormalFgColorHex");
         _btnCautionHex = this.FindControl<TextBlock>("BtnCautionColorHex");
+        _btnCautionFgHex = this.FindControl<TextBlock>("BtnCautionFgColorHex");
         _btnDangerHex = this.FindControl<TextBlock>("BtnDangerColorHex");
-        _btnFgHex = this.FindControl<TextBlock>("BtnFgColorHex");
+        _btnDangerFgHex = this.FindControl<TextBlock>("BtnDangerFgColorHex");
         _inputBgHex = this.FindControl<TextBlock>("InputBgColorHex");
         _inputFgHex = this.FindControl<TextBlock>("InputFgColorHex");
         _inputBorderHex = this.FindControl<TextBlock>("InputBorderColorHex");
@@ -126,11 +135,28 @@ public partial class ConfigurationWindow
                 UpdateContrastLabels();
             };
 
+        if (_btnNormalFgPicker != null)
+            _btnNormalFgPicker.ColorChanged += (_, ev) =>
+            {
+                _viewModel.ButtonNormalForegroundColor = ev.NewColor;
+                _viewModel.ButtonForegroundColor = ev.NewColor;
+                UpdateHex(_btnNormalFgHex, ev.NewColor);
+                UpdateContrastLabels();
+            };
+
         if (_btnCautionPicker != null)
             _btnCautionPicker.ColorChanged += (_, ev) =>
             {
                 _viewModel.ButtonCautionColor = ev.NewColor;
                 UpdateHex(_btnCautionHex, ev.NewColor);
+                UpdateContrastLabels();
+            };
+
+        if (_btnCautionFgPicker != null)
+            _btnCautionFgPicker.ColorChanged += (_, ev) =>
+            {
+                _viewModel.ButtonCautionForegroundColor = ev.NewColor;
+                UpdateHex(_btnCautionFgHex, ev.NewColor);
                 UpdateContrastLabels();
             };
 
@@ -142,11 +168,11 @@ public partial class ConfigurationWindow
                 UpdateContrastLabels();
             };
 
-        if (_btnFgPicker != null)
-            _btnFgPicker.ColorChanged += (_, ev) =>
+        if (_btnDangerFgPicker != null)
+            _btnDangerFgPicker.ColorChanged += (_, ev) =>
             {
-                _viewModel.ButtonForegroundColor = ev.NewColor;
-                UpdateHex(_btnFgHex, ev.NewColor);
+                _viewModel.ButtonDangerForegroundColor = ev.NewColor;
+                UpdateHex(_btnDangerFgHex, ev.NewColor);
                 UpdateContrastLabels();
             };
 
@@ -213,9 +239,19 @@ public partial class ConfigurationWindow
             SyncPickerColor(_btnNormalPicker, _btnNormalHex, _viewModel.ButtonNormalColor);
             needsContrastRefresh = true;
         }
+        if (e.PropertyName is nameof(ConfigurationViewModel.ButtonNormalForegroundColor))
+        {
+            SyncPickerColor(_btnNormalFgPicker, _btnNormalFgHex, _viewModel.ButtonNormalForegroundColor);
+            needsContrastRefresh = true;
+        }
         if (e.PropertyName is nameof(ConfigurationViewModel.ButtonCautionColor))
         {
             SyncPickerColor(_btnCautionPicker, _btnCautionHex, _viewModel.ButtonCautionColor);
+            needsContrastRefresh = true;
+        }
+        if (e.PropertyName is nameof(ConfigurationViewModel.ButtonCautionForegroundColor))
+        {
+            SyncPickerColor(_btnCautionFgPicker, _btnCautionFgHex, _viewModel.ButtonCautionForegroundColor);
             needsContrastRefresh = true;
         }
         if (e.PropertyName is nameof(ConfigurationViewModel.ButtonDangerColor))
@@ -223,9 +259,9 @@ public partial class ConfigurationWindow
             SyncPickerColor(_btnDangerPicker, _btnDangerHex, _viewModel.ButtonDangerColor);
             needsContrastRefresh = true;
         }
-        if (e.PropertyName is nameof(ConfigurationViewModel.ButtonForegroundColor))
+        if (e.PropertyName is nameof(ConfigurationViewModel.ButtonDangerForegroundColor))
         {
-            SyncPickerColor(_btnFgPicker, _btnFgHex, _viewModel.ButtonForegroundColor);
+            SyncPickerColor(_btnDangerFgPicker, _btnDangerFgHex, _viewModel.ButtonDangerForegroundColor);
             needsContrastRefresh = true;
         }
         if (e.PropertyName is nameof(ConfigurationViewModel.InputBackgroundColor))
@@ -253,9 +289,11 @@ public partial class ConfigurationWindow
         SyncPickerColor(_menuBgPicker, _menuBgHex, _viewModel.MenuBackgroundColor);
         SyncPickerColor(_menuFgPicker, _menuFgHex, _viewModel.MenuForegroundColor);
         SyncPickerColor(_btnNormalPicker, _btnNormalHex, _viewModel.ButtonNormalColor);
+        SyncPickerColor(_btnNormalFgPicker, _btnNormalFgHex, _viewModel.ButtonNormalForegroundColor);
         SyncPickerColor(_btnCautionPicker, _btnCautionHex, _viewModel.ButtonCautionColor);
+        SyncPickerColor(_btnCautionFgPicker, _btnCautionFgHex, _viewModel.ButtonCautionForegroundColor);
         SyncPickerColor(_btnDangerPicker, _btnDangerHex, _viewModel.ButtonDangerColor);
-        SyncPickerColor(_btnFgPicker, _btnFgHex, _viewModel.ButtonForegroundColor);
+        SyncPickerColor(_btnDangerFgPicker, _btnDangerFgHex, _viewModel.ButtonDangerForegroundColor);
         SyncPickerColor(_inputBgPicker, _inputBgHex, _viewModel.InputBackgroundColor);
         SyncPickerColor(_inputFgPicker, _inputFgHex, _viewModel.InputForegroundColor);
         SyncPickerColor(_inputBorderPicker, _inputBorderHex, _viewModel.InputBorderColor);
@@ -267,9 +305,9 @@ public partial class ConfigurationWindow
     private void UpdateContrastLabels()
     {
         SetContrastLabel(_menuContrastLabel, "Menu contrast", _viewModel.MenuForegroundColor, _viewModel.MenuBackgroundColor);
-        SetContrastLabel(_buttonNormalContrastLabel, "Button normal", _viewModel.ButtonForegroundColor, _viewModel.ButtonNormalColor);
-        SetContrastLabel(_buttonCautionContrastLabel, "Button caution", _viewModel.ButtonForegroundColor, _viewModel.ButtonCautionColor);
-        SetContrastLabel(_buttonDangerContrastLabel, "Button danger", _viewModel.ButtonForegroundColor, _viewModel.ButtonDangerColor);
+        SetContrastLabel(_buttonNormalContrastLabel, "Button normal", _viewModel.ButtonNormalForegroundColor, _viewModel.ButtonNormalColor);
+        SetContrastLabel(_buttonCautionContrastLabel, "Button caution", _viewModel.ButtonCautionForegroundColor, _viewModel.ButtonCautionColor);
+        SetContrastLabel(_buttonDangerContrastLabel, "Button danger", _viewModel.ButtonDangerForegroundColor, _viewModel.ButtonDangerColor);
     }
 
     private static void SetContrastLabel(TextBlock? label, string title, Color foreground, Color background)
@@ -319,7 +357,12 @@ public partial class ConfigurationWindow
 
     public void OnSaveClicked(object? sender, RoutedEventArgs e) => _viewModel.Save();
     public void OnCloneProfileClicked(object? sender, RoutedEventArgs e) => _viewModel.CloneProfile();
-    public void OnAddRadioClicked(object? sender, RoutedEventArgs e) => _viewModel.AddRigRadio();
+    public async void OnAddRadioClicked(object? sender, RoutedEventArgs e)
+    {
+        _viewModel.AddRigRadio();
+        var editor = new RigRadioEditorWindow(_viewModel);
+        await editor.ShowDialog(this);
+    }
     public void OnRemoveRadioClicked(object? sender, RoutedEventArgs e) => _viewModel.RemoveSelectedRigRadio();
     public async void OnEditSelectedRadioClicked(object? sender, RoutedEventArgs e)
     {
@@ -374,12 +417,12 @@ public partial class ConfigurationWindow
         if (_syncingActiveRadiosSelection || sender is not ListBox listBox)
             return;
 
-        var selectedTags = listBox.SelectedItems?
+        var selectedNames = listBox.SelectedItems?
             .OfType<RigRadioOption>()
-            .Select(x => x.TagName)
+            .Select(x => x.RadioName)
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToList() ?? [];
-        _viewModel.SetActiveRigRadioTags(selectedTags);
+        _viewModel.SetActiveRigRadioNames(selectedNames);
     }
 
     public async void OnCatalogCopyCommandClicked(object? sender, RoutedEventArgs e)
@@ -425,6 +468,17 @@ public partial class ConfigurationWindow
         {
             _viewModel.RiglistFilePath = files[0].Path.LocalPath;
         }
+    }
+
+    public void OnLoadRiglistClicked(object? sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_viewModel.RiglistFilePath))
+        {
+            _viewModel.RigCatalog.SetStatusMessage("Rig list path is empty.");
+            return;
+        }
+
+        _viewModel.RigCatalog.LoadFromFile(_viewModel.RiglistFilePath);
     }
 
     public async void OnBrowseAdifDirectoryClicked(object? sender, RoutedEventArgs e)
@@ -501,12 +555,12 @@ public partial class ConfigurationWindow
         _syncingActiveRadiosSelection = true;
         try
         {
-            var selectedTagSet = _viewModel.GetActiveRigRadioTags()
+            var selectedNameSet = _viewModel.GetActiveRigRadioNames()
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             selectedItems.Clear();
-            foreach (var option in options.Where(x => selectedTagSet.Contains(x.TagName)))
+            foreach (var option in options.Where(x => selectedNameSet.Contains(x.RadioName)))
                 selectedItems.Add(option);
         }
         finally

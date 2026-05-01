@@ -1,5 +1,4 @@
 <Solution>
-  <Project Path="../wa1gonLib/Wa1gonLib/Wa1gonLib.csproj" />
+bl  <Project Path="Wa1gonLib/Wa1gonLib.csproj" />
   <Project Path="HamBusLog.csproj" />
-  <Project Path="Wa1gonAbstracts/Wa1gonAbstracts.csproj" />
 </Solution>

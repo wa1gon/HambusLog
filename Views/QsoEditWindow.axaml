@@ -49,8 +49,8 @@
                 <Grid ColumnDefinitions="*,*,Auto,Auto" ColumnSpacing="6">
                     <TextBox Grid.Column="0" Text="{Binding NewDetailField}" Watermark="Field name" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
                     <TextBox Grid.Column="1" Text="{Binding NewDetailValue}" Watermark="Value" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
-                    <Button Grid.Column="2" Content="Add" Click="OnAddDetailClicked" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="10,6" />
-                    <Button Grid.Column="3" Content="Remove" Click="OnRemoveDetailClicked" Background="{DynamicResource AppButtonDangerBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="10,6" />
+                    <Button Grid.Column="2" Content="Add" Click="OnAddDetailClicked" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" Padding="10,6" />
+                    <Button Grid.Column="3" Content="Remove" Click="OnRemoveDetailClicked" Background="{DynamicResource AppButtonDangerBrush}" Foreground="{DynamicResource AppButtonDangerForegroundBrush}" Padding="10,6" />
                 </Grid>
                 <DataGrid ItemsSource="{Binding Details}"
                           SelectedItem="{Binding SelectedDetail, Mode=TwoWay}"
@@ -72,8 +72,8 @@
         <Border Grid.Row="1" Padding="0,10,0,2" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
             <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Content="Save" Click="OnSaveClicked" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="16,8" FontWeight="Bold" />
-                    <Button Content="Cancel" Click="OnCancelClicked" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonForegroundBrush}" Padding="16,8" />
+                    <Button Content="Save" Click="OnSaveClicked" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" Padding="16,8" FontWeight="Bold" />
+                    <Button Content="Cancel" Click="OnCancelClicked" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" Padding="16,8" />
                 </StackPanel>
                 <TextBlock Name="StatusLabel" Foreground="{DynamicResource AppErrorBrush}" FontSize="12" />
             </StackPanel>

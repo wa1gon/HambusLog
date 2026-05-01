@@ -237,11 +237,11 @@ public sealed class LogInputViewModel : ViewModelBase
         var activeRig = App.RigctldConnectionManager.GetPrimaryActiveState();
         if (activeRig is not null)
         {
-            qso.Details.Add(new QsoDetail { FieldName = "radio_tag", FieldValue = activeRig.TagName });
+            qso.Details.Add(new QsoDetail { FieldName = "radio_name", FieldValue = activeRig.RadioName });
             qso.Details.Add(new QsoDetail { FieldName = "radio_label", FieldValue = activeRig.Label });
-            if (!string.IsNullOrWhiteSpace(activeRig.Mode))
+            if (!string.IsNullOrWhiteSpace(activeRig.Mode) && activeRig.Mode != "0")
                 qso.Details.Add(new QsoDetail { FieldName = "radio_mode", FieldValue = activeRig.Mode });
-            if (activeRig.FrequencyHz is long hz)
+            if (activeRig.FrequencyHz is long hz && hz > 0)
                 qso.Details.Add(new QsoDetail { FieldName = "radio_freq_hz", FieldValue = hz.ToString(CultureInfo.InvariantCulture) });
         }
 
@@ -270,7 +270,7 @@ public sealed class LogInputViewModel : ViewModelBase
         }
 
         ActiveRigStatus = "Connected";
-        ActiveRigLabel = string.IsNullOrWhiteSpace(state.Label) ? state.TagName : state.Label;
+        ActiveRigLabel = string.IsNullOrWhiteSpace(state.Label) ? state.RadioName : state.Label;
         ActiveRigMode = state.Mode ?? string.Empty;
         ActiveRigFrequency = state.FrequencyMhz is decimal mhz
             ? mhz.ToString("0.######", CultureInfo.InvariantCulture) + " MHz"

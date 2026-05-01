@@ -11,7 +11,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
     private ObservableCollection<string> _filteredModelSuggestions = [];
     private ObservableCollection<string> _availableSerialPorts = [];
     private string _selectedSearchModel = AllModelsOption;
-    private string _selectedSerialPort = string.Empty;
+    private string _resourcePath = string.Empty;
     private RigCatalogEntry? _selectedEntry;
     private string _rigctldCommandLine = string.Empty;
     private string? _statusMessageOverride;
@@ -22,6 +22,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
     private string _rigctldAdditionalArguments = string.Empty;
     private string _rigctldHost = "127.0.0.1";
     private int _rigctldPort = 4532;
+    private int _rigctldRetryCount = 3;
 
     public RigCatalogViewModel()
         : this(App.RigCatalogStore, new HamBusLog.Hardware.SerialPortCatalogService())
@@ -36,14 +37,9 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
 
         var config = AppConfigurationStore.Load();
         var rigctld = AppConfigurationStore.GetRigctld(config);
-        var activeRadio = AppConfigurationStore.GetRigctldRadio(rigctld, rigctld.ActiveRadioTag);
-        // Per-radio path takes priority; fall back to global rigctld path.
-        var configuredPath = !string.IsNullOrWhiteSpace(activeRadio.RiglistFilePath)
-            ? activeRadio.RiglistFilePath
-            : rigctld.RiglistFilePath;
-        _selectedSerialPort = !string.IsNullOrWhiteSpace(activeRadio.SerialPortName)
-            ? activeRadio.SerialPortName
-            : rigctld.SerialPortName;
+        var activeRadio = AppConfigurationStore.GetRigctldRadio(rigctld, rigctld.ActiveRadioName);
+        var configuredPath = rigctld.RiglistFilePath;
+        _resourcePath = activeRadio.SerialPortName;
         if (!string.IsNullOrWhiteSpace(configuredPath) && !string.Equals(configuredPath, _store.FilePath, StringComparison.Ordinal))
         {
             _store.LoadFromFile(configuredPath);
@@ -124,12 +120,12 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public string SelectedSerialPort
+    public string ResourcePath
     {
-        get => _selectedSerialPort;
+        get => _resourcePath;
         set
         {
-            if (SetProperty(ref _selectedSerialPort, value ?? string.Empty))
+            if (SetProperty(ref _resourcePath, value ?? string.Empty))
                 UpdateCommandLine();
         }
     }
@@ -143,6 +139,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
             {
                 _store.SetActiveRig(value?.RigNum);
                 UpdateCommandLine();
+                OnPropertyChanged(nameof(SelectedRigLabel));
             }
         }
     }
@@ -152,6 +149,10 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         get => _rigctldCommandLine;
         private set => SetProperty(ref _rigctldCommandLine, value);
     }
+
+    public string SelectedRigLabel => SelectedEntry is null
+        ? "No rig selected"
+        : $"{SelectedEntry.Model} (rigctld #{SelectedEntry.RigNum})";
 
     public string FilePath => _store.FilePath;
     public string StatusMessage => _statusMessageOverride ?? _store.StatusMessage;
@@ -206,6 +207,16 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         }
     }
 
+    public int RigctldRetryCount
+    {
+        get => _rigctldRetryCount;
+        set
+        {
+            if (SetProperty(ref _rigctldRetryCount, value < 0 ? 0 : value))
+                UpdateCommandLine();
+        }
+    }
+
     public void SetStatusMessage(string message)
     {
         _statusMessageOverride = message;
@@ -231,7 +242,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
 
     public void RefreshSerialPorts()
     {
-        var currentSelection = SelectedSerialPort;
+        var currentSelection = ResourcePath;
         var discovered = _serialPortCatalogService.GetAvailablePorts();
         AvailableSerialPorts = new ObservableCollection<string>(discovered);
 
@@ -259,6 +270,8 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
                 if (match is not null && !ReferenceEquals(SelectedEntry, match))
                     SelectedEntry = match;
             }
+
+            OnPropertyChanged(nameof(SelectedRigLabel));
         }
 
         if (e.PropertyName is nameof(RigCatalogStore.FilePath))
@@ -278,6 +291,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         if (!string.IsNullOrWhiteSpace(term))
         {
             SelectedEntry = FilteredEntries.FirstOrDefault();
+            OnPropertyChanged(nameof(SelectedRigLabel));
             return;
         }
 
@@ -287,6 +301,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
             if (active is not null)
             {
                 SelectedEntry = active;
+                OnPropertyChanged(nameof(SelectedRigLabel));
                 return;
             }
         }
@@ -294,10 +309,12 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         if (SelectedEntry is not null && FilteredEntries.Any(x => x.RigNum == SelectedEntry.RigNum))
         {
             UpdateCommandLine();
+            OnPropertyChanged(nameof(SelectedRigLabel));
             return;
         }
 
         SelectedEntry = FilteredEntries.FirstOrDefault();
+        OnPropertyChanged(nameof(SelectedRigLabel));
     }
 
     private void RefreshAvailableModels()
@@ -348,10 +365,8 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
             SelectedEntry,
             RigctldHost,
             RigctldPort,
-            SelectedSerialPort,
-            RigctldExecutable,
-            RigctldArgumentsTemplate,
-            RigctldAdditionalArguments);
+            ResourcePath,
+            retryCount: RigctldRetryCount);
         _statusMessageOverride = null;
         OnPropertyChanged(nameof(StatusMessage));
     }
@@ -361,6 +376,7 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         var first = entries?.FirstOrDefault();
         SelectedEntry = first;
         _store.SetActiveRig(first?.RigNum);
+        OnPropertyChanged(nameof(SelectedRigLabel));
     }
 
     public void ClearEntries()
@@ -371,24 +387,26 @@ public sealed class RigCatalogViewModel : ViewModelBase, IDisposable
         FilteredModelSuggestions = [];
         SelectedEntry = null;
         RigctldCommandLine = string.Empty;
+        OnPropertyChanged(nameof(SelectedRigLabel));
     }
 
     public void ReloadFromConfiguration()
     {
         var config = AppConfigurationStore.Load();
         var rigctld = AppConfigurationStore.GetRigctld(config);
-        var radio = AppConfigurationStore.GetRigctldRadio(rigctld, rigctld.ActiveRadioTag);
+        var radio = AppConfigurationStore.GetRigctldRadio(rigctld, rigctld.ActiveRadioName);
 
         RigctldExecutable = string.IsNullOrWhiteSpace(radio.Executable) ? "rigctld" : radio.Executable;
         RigctldArgumentsTemplate = string.IsNullOrWhiteSpace(radio.ArgumentsTemplate)
             ? "-m {rigNum} -T {host} -t {port}{serialArg}"
             : radio.ArgumentsTemplate;
         RigctldAdditionalArguments = radio.AdditionalArguments ?? string.Empty;
-        RigctldHost = string.IsNullOrWhiteSpace(radio.Host) ? rigctld.Host : radio.Host;
-        RigctldPort = radio.Port <= 0 ? rigctld.Port : radio.Port;
-        SelectedSerialPort = string.IsNullOrWhiteSpace(radio.SerialPortName) ? rigctld.SerialPortName : radio.SerialPortName;
+        RigctldHost = string.IsNullOrWhiteSpace(radio.Host) ? "127.0.0.1" : radio.Host;
+        RigctldPort = radio.Port <= 0 ? 4532 : radio.Port;
+        RigctldRetryCount = rigctld.ReconnectIntervalSeconds <= 0 ? 3 : rigctld.ReconnectIntervalSeconds;
+        ResourcePath = radio.SerialPortName ?? string.Empty;
 
-        var configuredPath = string.IsNullOrWhiteSpace(radio.RiglistFilePath) ? rigctld.RiglistFilePath : radio.RiglistFilePath;
+        var configuredPath = rigctld.RiglistFilePath ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(configuredPath) && !string.Equals(configuredPath, _store.FilePath, StringComparison.Ordinal))
             _store.LoadFromFile(configuredPath);
 

@@ -10,8 +10,11 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private Color _menuBackgroundColor = Color.Parse("#111827");
     private Color _menuForegroundColor = Color.Parse("#FFFFFF");
     private Color _buttonNormalColor = Color.Parse("#2563EB");
+    private Color _buttonNormalForegroundColor = Color.Parse("#FFFFFF");
     private Color _buttonCautionColor = Color.Parse("#D97706");
+    private Color _buttonCautionForegroundColor = Color.Parse("#FFFFFF");
     private Color _buttonDangerColor = Color.Parse("#DC2626");
+    private Color _buttonDangerForegroundColor = Color.Parse("#FFFFFF");
     private Color _buttonForegroundColor = Color.Parse("#FFFFFF");
     private Color _inputBackgroundColor = Color.Parse("#2C3E50");
     private Color _inputForegroundColor = Color.Parse("#FFFFFF");
@@ -22,14 +25,16 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _databaseFolderPath = string.Empty;
     private string _databaseFileName = "hambuslog.db";
     private string _connectionString = "Data Source=hambuslog.db";
-    private string _selectedRigRadioTag = "radio-1";
-    private string _rigctldRadioName = "radio-1";
+    private int? _selectedRigRadioId;
+    private string _selectedRigRadioName = string.Empty;
+    private string _rigctldRadioName = string.Empty;
     private string _rigctldExecutable = "rigctld";
     private string _rigctldArgumentsTemplate = "-m {rigNum} -T {host} -t {port}{serialArg}";
     private string _rigctldAdditionalArguments = string.Empty;
     private string _rigctldHost = "127.0.0.1";
     private int _rigctldPort = 4532;
-    private string _selectedSerialPort = string.Empty;
+    private int _rigctldReconnectIntervalSeconds = 3;
+    private string _resourcePath = string.Empty;
     private string _riglistFilePath = string.Empty;
     private string _statusMessage = string.Empty;
     private string _configFilePath = string.Empty;
@@ -95,16 +100,34 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _buttonNormalColor, value);
     }
 
+    public Color ButtonNormalForegroundColor
+    {
+        get => _buttonNormalForegroundColor;
+        set => SetProperty(ref _buttonNormalForegroundColor, value);
+    }
+
     public Color ButtonCautionColor
     {
         get => _buttonCautionColor;
         set => SetProperty(ref _buttonCautionColor, value);
     }
 
+    public Color ButtonCautionForegroundColor
+    {
+        get => _buttonCautionForegroundColor;
+        set => SetProperty(ref _buttonCautionForegroundColor, value);
+    }
+
     public Color ButtonDangerColor
     {
         get => _buttonDangerColor;
         set => SetProperty(ref _buttonDangerColor, value);
+    }
+
+    public Color ButtonDangerForegroundColor
+    {
+        get => _buttonDangerForegroundColor;
+        set => SetProperty(ref _buttonDangerForegroundColor, value);
     }
 
     public Color ButtonForegroundColor
@@ -186,36 +209,31 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _adifDirectory, value ?? string.Empty);
     }
 
-    public string SelectedRigRadioTag
+    public string SelectedRigRadioName
     {
-        get => _selectedRigRadioTag;
+        get => _selectedRigRadioName;
         set
         {
-            var nextTag = value ?? "radio-1";
-            if (string.Equals(nextTag, _selectedRigRadioTag, StringComparison.OrdinalIgnoreCase))
-                return;
-
-            // Preserve current editor values on the previously selected radio before switching.
-            PersistRigRadioSettings(_selectedRigRadioTag);
-
-            if (!SetProperty(ref _selectedRigRadioTag, nextTag))
-                return;
-
-            LoadSelectedRigRadioSettings();
-            ApplyEditorSettingsToRigCatalog();
+            var nextRadioName = value is null ? _selectedRigRadioName : value.Trim();
+            SelectRigRadio(_selectedRigRadioId, nextRadioName, persistCurrentSelection: true);
         }
     }
 
     public RigRadioOption? SelectedRigRadio
     {
-        get => AvailableRigRadioOptions.FirstOrDefault(x => string.Equals(x.TagName, SelectedRigRadioTag, StringComparison.OrdinalIgnoreCase));
+        get => AvailableRigRadioOptions.FirstOrDefault(x => x.RadioId == _selectedRigRadioId)
+            ?? AvailableRigRadioOptions.FirstOrDefault(x => string.Equals(x.RadioName, SelectedRigRadioName, StringComparison.OrdinalIgnoreCase));
         set
         {
-            var tag = value?.TagName ?? "radio-1";
-            if (string.Equals(tag, SelectedRigRadioTag, StringComparison.OrdinalIgnoreCase))
+            if (value is null)
                 return;
-            SelectedRigRadioTag = tag;
-            OnPropertyChanged(nameof(SelectedRigRadio));
+
+            var radioName = value.RadioName;
+            if (value.RadioId == _selectedRigRadioId
+                && string.Equals(radioName, SelectedRigRadioName, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            SelectRigRadio(value.RadioId, radioName, persistCurrentSelection: true);
         }
     }
 
@@ -225,57 +243,84 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set
         {
             var normalized = string.IsNullOrWhiteSpace(value)
-                ? SelectedRigRadioTag
+                ? SelectedRigRadioName
                 : value.Trim();
-            if (!SetProperty(ref _rigctldRadioName, normalized))
-                return;
-
-            var selectedOption = AvailableRigRadioOptions
-                .FirstOrDefault(x => string.Equals(x.TagName, SelectedRigRadioTag, StringComparison.OrdinalIgnoreCase));
-            if (selectedOption is not null)
-                selectedOption.DisplayName = normalized;
+            SetProperty(ref _rigctldRadioName, normalized);
         }
     }
 
     public string RigctldExecutable
     {
         get => _rigctldExecutable;
-        set => SetProperty(ref _rigctldExecutable, value ?? string.Empty);
+        set
+        {
+            if (SetProperty(ref _rigctldExecutable, value ?? string.Empty))
+                RigCatalog.RigctldExecutable = _rigctldExecutable;
+        }
     }
 
     public string RigctldArgumentsTemplate
     {
         get => _rigctldArgumentsTemplate;
-        set => SetProperty(ref _rigctldArgumentsTemplate, value ?? string.Empty);
+        set
+        {
+            if (SetProperty(ref _rigctldArgumentsTemplate, value ?? string.Empty))
+                RigCatalog.RigctldArgumentsTemplate = _rigctldArgumentsTemplate;
+        }
     }
 
     public string RigctldAdditionalArguments
     {
         get => _rigctldAdditionalArguments;
-        set => SetProperty(ref _rigctldAdditionalArguments, value ?? string.Empty);
+        set
+        {
+            if (SetProperty(ref _rigctldAdditionalArguments, value ?? string.Empty))
+                RigCatalog.RigctldAdditionalArguments = _rigctldAdditionalArguments;
+        }
     }
 
     public string RigctldHost
     {
         get => _rigctldHost;
-        set => SetProperty(ref _rigctldHost, value ?? string.Empty);
+        set
+        {
+            if (SetProperty(ref _rigctldHost, value ?? string.Empty))
+                RigCatalog.RigctldHost = _rigctldHost;
+        }
     }
 
     public int RigctldPort
     {
         get => _rigctldPort;
-        set => SetProperty(ref _rigctldPort, value);
-    }
-
-    public string SelectedSerialPort
-    {
-        get => _selectedSerialPort;
         set
         {
-            if (!SetProperty(ref _selectedSerialPort, value ?? string.Empty))
+            if (SetProperty(ref _rigctldPort, value))
+                RigCatalog.RigctldPort = _rigctldPort;
+        }
+    }
+
+    public int RigctldReconnectIntervalSeconds
+    {
+        get => _rigctldReconnectIntervalSeconds;
+        set
+        {
+            if (!SetProperty(ref _rigctldReconnectIntervalSeconds, value <= 0 ? 3 : Math.Min(value, 300)))
                 return;
 
-            EnsureSelectedSerialPortInList(_selectedSerialPort);
+            RigCatalog.RigctldRetryCount = _rigctldReconnectIntervalSeconds;
+        }
+    }
+
+    public string ResourcePath
+    {
+        get => _resourcePath;
+        set
+        {
+            if (!SetProperty(ref _resourcePath, value ?? string.Empty))
+                return;
+
+            EnsureResourcePathInList(_resourcePath);
+            RigCatalog.ResourcePath = _resourcePath;
         }
     }
 
@@ -310,13 +355,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         try
         {
             // Ensure the currently edited radio fields are written back before profile serialization.
-            PersistRigRadioSettings(SelectedRigRadioTag);
+            PersistRigRadioSettings(_selectedRigRadioId, SelectedRigRadioName);
 
             var normalizedDatabaseFolderPath = NormalizeDatabaseFolderPath(DatabaseFolderPath);
             var normalizedDatabaseFileName = NormalizeDatabaseFileName(DatabaseFileName);
             var normalizedDatabaseFilePath = BuildDatabasePath(normalizedDatabaseFolderPath, normalizedDatabaseFileName);
             var resolvedConnectionString = BuildConnectionString(ConnectionString, normalizedDatabaseFilePath);
-            var existingRigctld = AppConfigurationStore.GetRigctld(_appConfig);
 
             var profile = new ConfigProfile
             {
@@ -330,65 +374,77 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 MenuBackgroundColor = ToHexRgb(MenuBackgroundColor),
                 MenuForegroundColor = ToHexRgb(MenuForegroundColor),
                 ButtonNormalColor = ToHexRgb(ButtonNormalColor),
+                ButtonNormalForegroundColor = ToHexRgb(ButtonNormalForegroundColor),
                 ButtonCautionColor = ToHexRgb(ButtonCautionColor),
+                ButtonCautionForegroundColor = ToHexRgb(ButtonCautionForegroundColor),
                 ButtonDangerColor = ToHexRgb(ButtonDangerColor),
-                ButtonForegroundColor = ToHexRgb(ButtonForegroundColor),
+                ButtonDangerForegroundColor = ToHexRgb(ButtonDangerForegroundColor),
+                ButtonForegroundColor = ToHexRgb(ButtonNormalForegroundColor),
                 InputBackgroundColor = ToHexRgb(InputBackgroundColor),
                 InputForegroundColor = ToHexRgb(InputForegroundColor),
                 InputBorderColor = ToHexRgb(InputBorderColor),
                 InputSelectionBackgroundColor = ToHexRgb(InputSelectionBackgroundColor),
                 InputSelectionForegroundColor = ToHexRgb(InputSelectionForegroundColor),
-                ConnectionString = resolvedConnectionString,
-                Rigctld = existingRigctld
+                ConnectionString = resolvedConnectionString
             };
 
             _appConfig.Profiles[_selectedProfile] = profile;
             _appConfig.ActiveProfile = _selectedProfile;
             var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
-            rigctld.ActiveRadioTag = SelectedRigRadioTag;
-            var radio = AppConfigurationStore.GetRigctldRadio(rigctld, SelectedRigRadioTag);
-            radio.DisplayName = string.IsNullOrWhiteSpace(RigctldRadioName)
-                ? radio.TagName
+            rigctld.ReconnectIntervalSeconds = RigctldReconnectIntervalSeconds <= 0 ? 3 : Math.Min(RigctldReconnectIntervalSeconds, 300);
+            var radio = ResolveRigRadio(rigctld, _selectedRigRadioId, SelectedRigRadioName);
+            if (radio is null)
+            {
+                StatusMessage = "✗ Save failed: No radio is available to save.";
+                return;
+            }
+
+            radio.RadioName = string.IsNullOrWhiteSpace(RigctldRadioName)
+                ? radio.RadioName
                 : RigctldRadioName.Trim();
             radio.Executable = RigctldExecutable.Trim();
             radio.ArgumentsTemplate = RigctldArgumentsTemplate.Trim();
             radio.AdditionalArguments = RigctldAdditionalArguments.Trim();
             radio.Host = string.IsNullOrWhiteSpace(RigctldHost) ? "127.0.0.1" : RigctldHost.Trim();
             radio.Port = RigctldPort <= 0 ? DefaultRigctldPort : RigctldPort;
-            radio.SerialPortName = SelectedSerialPort.Trim();
-            radio.RiglistFilePath = RiglistFilePath.Trim();
-            var portCorrections = EnsureUniqueRigPorts(rigctld, radio.TagName);
+            radio.SerialPortName = ResourcePath.Trim();
+            rigctld.RiglistFilePath = RiglistFilePath.Trim();
+            rigctld.ActiveRadioName = radio.RadioName;
+            var portConflictMessage = BuildPortConflictMessage(rigctld);
+            if (!string.IsNullOrWhiteSpace(portConflictMessage))
+            {
+                StatusMessage = $"✗ Save failed: {portConflictMessage}";
+                return;
+            }
+
             RigctldPort = radio.Port;
-            if (_activeRigRadioTags.Count == 0)
-                _activeRigRadioTags.Add(radio.TagName);
-            rigctld.ActiveRadioTags = _activeRigRadioTags
+            if (_activeRigRadioNames.Count == 0)
+                _activeRigRadioNames.Add(radio.RadioName);
+            rigctld.ActiveRadioNames = _activeRigRadioNames
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
             foreach (var rigRadio in rigctld.Radios)
-                rigRadio.IsActive = rigctld.ActiveRadioTags.Contains(rigRadio.TagName, StringComparer.OrdinalIgnoreCase);
-            if (rigctld.ActiveRadioTags.Count == 0)
-                rigctld.ActiveRadioTags.Add(radio.TagName);
-            rigctld.ActiveRadioTag = rigctld.ActiveRadioTags[0];
+                rigRadio.IsActive = rigctld.ActiveRadioNames.Contains(rigRadio.RadioName, StringComparer.OrdinalIgnoreCase);
+            if (rigctld.ActiveRadioNames.Count == 0)
+                rigctld.ActiveRadioNames.Add(radio.RadioName);
+            rigctld.ActiveRadioName = rigctld.ActiveRadioNames[0];
             DatabaseFolderPath = normalizedDatabaseFolderPath;
             DatabaseFileName = normalizedDatabaseFileName;
             ConnectionString = resolvedConnectionString;
             AppConfigurationStore.Save(_appConfig);
             PopulateAvailableRigRadios(rigctld);
-            _activeRigRadioTags = rigctld.ActiveRadioTags
+            _activeRigRadioNames = rigctld.ActiveRadioNames
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            if (_activeRigRadioTags.Count == 0)
-                _activeRigRadioTags.Add(rigctld.ActiveRadioTag);
+            if (_activeRigRadioNames.Count == 0)
+                _activeRigRadioNames.Add(rigctld.ActiveRadioName);
             LoadSelectedRigRadioSettings();
             RigCatalog.ReloadFromConfiguration();
             App.ApplyThemeFromProfile(profile);
             _ = App.RigctldConnectionManager.RefreshActiveConnectionsAsync();
-            var correctionMessage = BuildPortCorrectionMessage(portCorrections);
-            StatusMessage = string.IsNullOrWhiteSpace(correctionMessage)
-                ? $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss}"
-                : $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss} ({correctionMessage})";
+            StatusMessage = $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss}";
         }
         catch (Exception ex)
         {
@@ -423,9 +479,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             MenuBackgroundColor = ToHexRgb(MenuBackgroundColor),
             MenuForegroundColor = ToHexRgb(MenuForegroundColor),
             ButtonNormalColor = ToHexRgb(ButtonNormalColor),
+            ButtonNormalForegroundColor = ToHexRgb(ButtonNormalForegroundColor),
             ButtonCautionColor = ToHexRgb(ButtonCautionColor),
+            ButtonCautionForegroundColor = ToHexRgb(ButtonCautionForegroundColor),
             ButtonDangerColor = ToHexRgb(ButtonDangerColor),
-            ButtonForegroundColor = ToHexRgb(ButtonForegroundColor),
+            ButtonDangerForegroundColor = ToHexRgb(ButtonDangerForegroundColor),
+            ButtonForegroundColor = ToHexRgb(ButtonNormalForegroundColor),
             InputBackgroundColor = ToHexRgb(InputBackgroundColor),
             InputForegroundColor = ToHexRgb(InputForegroundColor),
             InputBorderColor = ToHexRgb(InputBorderColor),
@@ -460,14 +519,23 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         try { ButtonNormalColor = Color.Parse(profile.ButtonNormalColor); }
         catch { ButtonNormalColor = Color.Parse("#2563EB"); }
 
+        try { ButtonNormalForegroundColor = Color.Parse(string.IsNullOrWhiteSpace(profile.ButtonNormalForegroundColor) ? profile.ButtonForegroundColor : profile.ButtonNormalForegroundColor); }
+        catch { ButtonNormalForegroundColor = Color.Parse("#FFFFFF"); }
+
         try { ButtonCautionColor = Color.Parse(profile.ButtonCautionColor); }
         catch { ButtonCautionColor = Color.Parse("#D97706"); }
+
+        try { ButtonCautionForegroundColor = Color.Parse(string.IsNullOrWhiteSpace(profile.ButtonCautionForegroundColor) ? profile.ButtonForegroundColor : profile.ButtonCautionForegroundColor); }
+        catch { ButtonCautionForegroundColor = Color.Parse("#FFFFFF"); }
 
         try { ButtonDangerColor = Color.Parse(profile.ButtonDangerColor); }
         catch { ButtonDangerColor = Color.Parse("#DC2626"); }
 
-        try { ButtonForegroundColor = Color.Parse(profile.ButtonForegroundColor); }
-        catch { ButtonForegroundColor = Color.Parse("#FFFFFF"); }
+        try { ButtonDangerForegroundColor = Color.Parse(string.IsNullOrWhiteSpace(profile.ButtonDangerForegroundColor) ? profile.ButtonForegroundColor : profile.ButtonDangerForegroundColor); }
+        catch { ButtonDangerForegroundColor = Color.Parse("#FFFFFF"); }
+
+        try { ButtonForegroundColor = Color.Parse(string.IsNullOrWhiteSpace(profile.ButtonForegroundColor) ? profile.ButtonNormalForegroundColor : profile.ButtonForegroundColor); }
+        catch { ButtonForegroundColor = ButtonNormalForegroundColor; }
 
         try { InputBackgroundColor = Color.Parse(profile.InputBackgroundColor); }
         catch { InputBackgroundColor = Color.Parse("#2C3E50"); }
@@ -502,16 +570,17 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
         AdifDirectory = profile.AdifDirectory;
         var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
+        RigctldReconnectIntervalSeconds = rigctld.ReconnectIntervalSeconds <= 0 ? 3 : Math.Min(rigctld.ReconnectIntervalSeconds, 300);
         PopulateAvailableRigRadios(rigctld);
-        _activeRigRadioTags = rigctld.ActiveRadioTags
-            .Concat(rigctld.Radios.Where(x => x.IsActive).Select(x => x.TagName))
+        _activeRigRadioNames = rigctld.ActiveRadioNames
+            .Concat(rigctld.Radios.Where(x => x.IsActive).Select(x => x.RadioName))
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-        if (_activeRigRadioTags.Count == 0)
-            _activeRigRadioTags.Add(rigctld.ActiveRadioTag);
-        SelectedRigRadioTag = rigctld.ActiveRadioTag;
-        LoadSelectedRigRadioSettings();
+        if (_activeRigRadioNames.Count == 0)
+            _activeRigRadioNames.Add(rigctld.ActiveRadioName);
+        var selectedRigRadioId = rigctld.Radios.FirstOrDefault(x => string.Equals(x.RadioName, rigctld.ActiveRadioName, StringComparison.OrdinalIgnoreCase))?.RadioId;
+        SelectRigRadio(selectedRigRadioId, rigctld.ActiveRadioName, persistCurrentSelection: false);
         RefreshSerialPorts();
         App.ApplyThemeFromProfile(profile);
     }
@@ -519,13 +588,13 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     public void RefreshSerialPorts()
     {
         var discovered = _serialPortCatalogService.GetAvailablePorts();
-        var currentSelection = SelectedSerialPort;
+        var currentSelection = ResourcePath;
 
         AvailableSerialPorts.Clear();
         foreach (var port in discovered)
             AvailableSerialPorts.Add(port);
 
-        EnsureSelectedSerialPortInList(currentSelection);
+        EnsureResourcePathInList(currentSelection);
 
         OnPropertyChanged(nameof(AvailableSerialPorts));
     }
@@ -556,42 +625,74 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         ConfigFilePath = AppConfigurationStore.GetConfigFilePath();
     }
 
-    private List<string> _activeRigRadioTags = [];
+    private List<string> _activeRigRadioNames = [];
 
     private void PopulateAvailableRigRadios(RigctldConfiguration rigctld)
     {
-        var activeTags = rigctld.ActiveRadioTags
-            .Concat(rigctld.Radios.Where(x => x.IsActive).Select(x => x.TagName))
+        var activeTags = rigctld.ActiveRadioNames
+            .Concat(rigctld.Radios.Where(x => x.IsActive).Select(x => x.RadioName))
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         AvailableRigRadioOptions.Clear();
         foreach (var radio in rigctld.Radios
                      .OrderBy(x => x.RadioId <= 0 ? 1 : x.RadioId)
-                     .ThenBy(x => x.TagName, StringComparer.OrdinalIgnoreCase))
-            AvailableRigRadioOptions.Add(new RigRadioOption(radio.TagName, radio.DisplayName, activeTags.Contains(radio.TagName)));
+                     .ThenBy(x => x.RadioName, StringComparer.OrdinalIgnoreCase))
+            AvailableRigRadioOptions.Add(new RigRadioOption(radio.RadioId, radio.RadioName, radio.RadioName, activeTags.Contains(radio.RadioName)));
         OnPropertyChanged(nameof(AvailableRigRadioOptions));
         OnPropertyChanged(nameof(SelectedRigRadio));
+    }
+
+    private void SelectRigRadio(int? radioId, string? radioName, bool persistCurrentSelection)
+    {
+        var normalizedName = radioName?.Trim() ?? string.Empty;
+        if (radioId == _selectedRigRadioId
+            && string.Equals(normalizedName, _selectedRigRadioName, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (persistCurrentSelection)
+            PersistRigRadioSettings(_selectedRigRadioId, _selectedRigRadioName);
+
+        UpdateSelectedRigRadioIdentity(radioId, normalizedName);
+        LoadSelectedRigRadioSettings();
+        ApplyEditorSettingsToRigCatalog();
+    }
+
+    private void UpdateSelectedRigRadioIdentity(int? radioId, string? radioName)
+    {
+        var normalizedName = radioName?.Trim() ?? string.Empty;
+        var idChanged = _selectedRigRadioId != radioId;
+        var nameChanged = !string.Equals(_selectedRigRadioName, normalizedName, StringComparison.OrdinalIgnoreCase);
+
+        _selectedRigRadioId = radioId;
+        _selectedRigRadioName = normalizedName;
+
+        if (nameChanged)
+            OnPropertyChanged(nameof(SelectedRigRadioName));
+
+        if (idChanged || nameChanged)
+            OnPropertyChanged(nameof(SelectedRigRadio));
     }
 
     private void LoadSelectedRigRadioSettings()
     {
         var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
-        var radio = AppConfigurationStore.GetRigctldRadio(rigctld, SelectedRigRadioTag);
-        rigctld.ActiveRadioTag = radio.TagName;
-        SelectedRigRadioTag = radio.TagName;
-        RigctldRadioName = string.IsNullOrWhiteSpace(radio.DisplayName) ? radio.TagName : radio.DisplayName;
+        var radio = ResolveRigRadio(rigctld, _selectedRigRadioId, SelectedRigRadioName)
+            ?? AppConfigurationStore.GetRigctldRadio(rigctld, SelectedRigRadioName);
+        rigctld.ActiveRadioName = radio.RadioName;
+        UpdateSelectedRigRadioIdentity(radio.RadioId, radio.RadioName);
+        RigctldRadioName = radio.RadioName;
         RigctldExecutable = radio.Executable ?? string.Empty;
         RigctldArgumentsTemplate = radio.ArgumentsTemplate ?? string.Empty;
         RigctldAdditionalArguments = radio.AdditionalArguments ?? string.Empty;
         RigctldHost = string.IsNullOrWhiteSpace(radio.Host) ? "127.0.0.1" : radio.Host;
         RigctldPort = radio.Port <= 0 ? 4532 : radio.Port;
-        SelectedSerialPort = radio.SerialPortName;
-        RiglistFilePath = radio.RiglistFilePath;
-        EnsureSelectedSerialPortInList(SelectedSerialPort);
+        ResourcePath = radio.SerialPortName;
+        RiglistFilePath = rigctld.RiglistFilePath;
+        EnsureResourcePathInList(ResourcePath);
         OnPropertyChanged(nameof(SelectedRigRadio));
     }
 
-    private void EnsureSelectedSerialPortInList(string? serialPort)
+    private void EnsureResourcePathInList(string? serialPort)
     {
         if (string.IsNullOrWhiteSpace(serialPort))
             return;
@@ -603,63 +704,55 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(AvailableSerialPorts));
     }
 
-    public IReadOnlyList<string> GetActiveRigRadioTags() => _activeRigRadioTags.ToList();
+    public IReadOnlyList<string> GetActiveRigRadioNames() => _activeRigRadioNames.ToList();
 
-    public void SetActiveRigRadioTags(IEnumerable<string>? tags)
+    public void SetActiveRigRadioNames(IEnumerable<string>? radioNames)
     {
-        var selected = (tags ?? [])
+        var selected = (radioNames ?? [])
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         if (selected.Count == 0)
-            selected.Add(SelectedRigRadioTag);
+            selected.Add(SelectedRigRadioName);
 
-        _activeRigRadioTags = selected;
+        _activeRigRadioNames = selected;
         var activeSet = selected.ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var option in AvailableRigRadioOptions)
-            option.IsActive = activeSet.Contains(option.TagName);
+            option.IsActive = activeSet.Contains(option.RadioName);
         OnPropertyChanged(nameof(AvailableRigRadioOptions));
     }
 
     public void AddRigRadio()
     {
-        PersistRigRadioSettings(SelectedRigRadioTag);
+        PersistRigRadioSettings(_selectedRigRadioId, SelectedRigRadioName);
         var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
 
         var nextId = rigctld.Radios.Count == 0 ? 1 : rigctld.Radios.Max(x => x.RadioId) + 1;
-        var tag = $"radio-{nextId}";
-        while (rigctld.Radios.Any(x => string.Equals(x.TagName, tag, StringComparison.OrdinalIgnoreCase)))
-        {
-            nextId++;
-            tag = $"radio-{nextId}";
-        }
 
         var newRadio = new RigRadioConfig
         {
             RadioId = nextId,
-            TagName = tag,
-            DisplayName = tag,
+            RadioName = string.Empty,
             Executable = "rigctld",
             ArgumentsTemplate = "-m {rigNum} -T {host} -t {port}{serialArg}",
             AdditionalArguments = string.Empty,
-            Host = string.IsNullOrWhiteSpace(rigctld.Host) ? "127.0.0.1" : rigctld.Host,
+            Host = "127.0.0.1",
             Port = GetNextAvailableRigPort(rigctld, null),
-            SerialPortName = rigctld.SerialPortName,
-            RiglistFilePath = rigctld.RiglistFilePath,
+            SerialPortName = string.Empty,
             IsActive = false
         };
 
         rigctld.Radios.Add(newRadio);
+        AppConfigurationStore.Save(_appConfig);
         PopulateAvailableRigRadios(rigctld);
-        SelectedRigRadioTag = newRadio.TagName;
-        OnPropertyChanged(nameof(SelectedRigRadio));
-        StatusMessage = $"Added {newRadio.TagName}.";
+        SelectRigRadio(newRadio.RadioId, newRadio.RadioName, persistCurrentSelection: false);
+        StatusMessage = "Added new radio.";
     }
 
     public void RemoveSelectedRigRadio()
     {
-        PersistRigRadioSettings(SelectedRigRadioTag);
+        PersistRigRadioSettings(_selectedRigRadioId, SelectedRigRadioName);
         var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
         if (rigctld.Radios.Count <= 1)
         {
@@ -667,26 +760,27 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        var selected = rigctld.Radios.FirstOrDefault(x => string.Equals(x.TagName, SelectedRigRadioTag, StringComparison.OrdinalIgnoreCase));
+        var selected = ResolveRigRadio(rigctld, _selectedRigRadioId, SelectedRigRadioName);
         if (selected is null)
             return;
 
         rigctld.Radios.Remove(selected);
-        rigctld.ActiveRadioTags = rigctld.ActiveRadioTags
-            .Where(x => !string.Equals(x, selected.TagName, StringComparison.OrdinalIgnoreCase))
+        rigctld.ActiveRadioNames = rigctld.ActiveRadioNames
+            .Where(x => !string.Equals(x, selected.RadioName, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        _activeRigRadioTags = _activeRigRadioTags
-            .Where(x => !string.Equals(x, selected.TagName, StringComparison.OrdinalIgnoreCase))
+        _activeRigRadioNames = _activeRigRadioNames
+            .Where(x => !string.Equals(x, selected.RadioName, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        if (_activeRigRadioTags.Count == 0 && rigctld.Radios.Count > 0)
-            _activeRigRadioTags.Add(rigctld.Radios[0].TagName);
+        if (_activeRigRadioNames.Count == 0 && rigctld.Radios.Count > 0)
+            _activeRigRadioNames.Add(rigctld.Radios[0].RadioName);
 
-        rigctld.ActiveRadioTag = _activeRigRadioTags[0];
+        rigctld.ActiveRadioName = _activeRigRadioNames[0];
         PopulateAvailableRigRadios(rigctld);
-        SelectedRigRadioTag = rigctld.ActiveRadioTag;
-        StatusMessage = $"Removed radio '{selected.TagName}'.";
+        var nextRadioId = rigctld.Radios.FirstOrDefault(x => string.Equals(x.RadioName, rigctld.ActiveRadioName, StringComparison.OrdinalIgnoreCase))?.RadioId;
+        SelectRigRadio(nextRadioId, rigctld.ActiveRadioName, persistCurrentSelection: false);
+        StatusMessage = $"Removed radio '{selected.RadioName}'.";
     }
 
     private static string ToHexRgb(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
@@ -772,37 +866,132 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         return Path.GetFileName(path);
     }
 
-    private void PersistRigRadioSettings(string? tagName)
+    private void PersistRigRadioSettings(int? radioId, string? radioName)
     {
-        if (string.IsNullOrWhiteSpace(tagName))
+        if (radioId is null && radioName is null)
             return;
 
         var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
-        var radio = AppConfigurationStore.GetRigctldRadio(rigctld, tagName);
-        radio.DisplayName = string.IsNullOrWhiteSpace(RigctldRadioName)
-            ? radio.TagName
+        var radio = ResolveRigRadio(rigctld, radioId, radioName);
+        if (radio is null)
+            return;
+
+        var previousName = radio.RadioName;
+        radio.RadioName = string.IsNullOrWhiteSpace(RigctldRadioName)
+            ? radio.RadioName
             : RigctldRadioName.Trim();
         radio.Executable = RigctldExecutable.Trim();
         radio.ArgumentsTemplate = RigctldArgumentsTemplate.Trim();
         radio.AdditionalArguments = RigctldAdditionalArguments.Trim();
         radio.Host = string.IsNullOrWhiteSpace(RigctldHost) ? "127.0.0.1" : RigctldHost.Trim();
         radio.Port = RigctldPort <= 0 ? DefaultRigctldPort : RigctldPort;
-        radio.SerialPortName = SelectedSerialPort.Trim();
-        radio.RiglistFilePath = RiglistFilePath.Trim();
+        radio.SerialPortName = ResourcePath.Trim();
+        rigctld.RiglistFilePath = RiglistFilePath.Trim();
+
+        if (!string.Equals(previousName, radio.RadioName, StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.Equals(rigctld.ActiveRadioName, previousName, StringComparison.OrdinalIgnoreCase))
+                rigctld.ActiveRadioName = radio.RadioName;
+
+            for (var i = 0; i < rigctld.ActiveRadioNames.Count; i++)
+            {
+                if (string.Equals(rigctld.ActiveRadioNames[i], previousName, StringComparison.OrdinalIgnoreCase))
+                    rigctld.ActiveRadioNames[i] = radio.RadioName;
+            }
+
+            for (var i = 0; i < _activeRigRadioNames.Count; i++)
+            {
+                if (string.Equals(_activeRigRadioNames[i], previousName, StringComparison.OrdinalIgnoreCase))
+                    _activeRigRadioNames[i] = radio.RadioName;
+            }
+
+            if (string.Equals(SelectedRigRadioName, previousName, StringComparison.OrdinalIgnoreCase))
+                UpdateSelectedRigRadioIdentity(radio.RadioId, radio.RadioName);
+        }
     }
 
-    public void CommitSelectedRigRadioEdits()
+    public bool CommitSelectedRigRadioEdits()
     {
-        PersistRigRadioSettings(SelectedRigRadioTag);
+        PersistRigRadioSettings(_selectedRigRadioId, SelectedRigRadioName);
         var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
-        var portCorrections = EnsureUniqueRigPorts(rigctld, SelectedRigRadioTag);
-        var selectedRadio = AppConfigurationStore.GetRigctldRadio(rigctld, SelectedRigRadioTag);
+        var portConflictMessage = BuildPortConflictMessage(rigctld);
+        if (!string.IsNullOrWhiteSpace(portConflictMessage))
+        {
+            StatusMessage = $"✗ Save failed: {portConflictMessage}";
+            return false;
+        }
+
+        var selectedRadio = ResolveRigRadio(rigctld, _selectedRigRadioId, SelectedRigRadioName);
+        if (selectedRadio is null)
+        {
+            StatusMessage = "✗ Save failed: No radio is available to save.";
+            return false;
+        }
+
         RigctldPort = selectedRadio.Port;
         ApplyEditorSettingsToRigCatalog();
+        PopulateAvailableRigRadios(rigctld);
+        OnPropertyChanged(nameof(SelectedRigRadio));
 
-        var correctionMessage = BuildPortCorrectionMessage(portCorrections);
-        if (!string.IsNullOrWhiteSpace(correctionMessage))
-            StatusMessage = correctionMessage;
+        // Persist radio edits directly from the editor dialog so display name changes are not lost.
+        AppConfigurationStore.Save(_appConfig);
+
+        StatusMessage = $"Saved radio '{selectedRadio.RadioName}'.";
+        return true;
+    }
+
+    private static RigRadioConfig? ResolveRigRadio(RigctldConfiguration rigctld, int? radioId, string? radioName)
+    {
+        if (radioId is int id)
+        {
+            var byId = rigctld.Radios.FirstOrDefault(x => x.RadioId == id);
+            if (byId is not null)
+                return byId;
+        }
+
+        var requested = radioName?.Trim();
+        if (requested is not null)
+        {
+            var byRequested = rigctld.Radios.FirstOrDefault(x =>
+                string.Equals(x.RadioName, requested, StringComparison.OrdinalIgnoreCase));
+            if (byRequested is not null)
+                return byRequested;
+        }
+
+        var active = rigctld.ActiveRadioName?.Trim();
+        if (!string.IsNullOrWhiteSpace(active))
+        {
+            var byActive = rigctld.Radios.FirstOrDefault(x =>
+                string.Equals(x.RadioName, active, StringComparison.OrdinalIgnoreCase));
+            if (byActive is not null)
+                return byActive;
+        }
+
+        return rigctld.Radios.FirstOrDefault();
+    }
+
+    private static string BuildPortConflictMessage(RigctldConfiguration rigctld)
+    {
+        var conflicts = rigctld.Radios
+            .Where(x => x.Port > 0)
+            .GroupBy(x => x.Port)
+            .Where(group => group.Count() > 1)
+            .OrderBy(group => group.Key)
+            .ToList();
+
+        if (conflicts.Count == 0)
+            return string.Empty;
+
+        var messages = conflicts.Select(group =>
+        {
+            var radios = group
+                    .Select(radio => radio.RadioName)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            return $"Port {group.Key} is used by {string.Join(", ", radios)}";
+        });
+
+        return string.Join("; ", messages);
     }
 
     public void RevertSelectedRigRadioEdits()
@@ -818,34 +1007,36 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         RigCatalog.RigctldAdditionalArguments = RigctldAdditionalArguments;
         RigCatalog.RigctldHost = RigctldHost;
         RigCatalog.RigctldPort = RigctldPort;
-        RigCatalog.SelectedSerialPort = SelectedSerialPort;
+        RigCatalog.RigctldRetryCount = RigctldReconnectIntervalSeconds;
+        RigCatalog.ResourcePath = ResourcePath;
 
         var configuredPath = RiglistFilePath.Trim();
         if (!string.IsNullOrWhiteSpace(configuredPath)
-            && !string.Equals(configuredPath, RigCatalog.FilePath, StringComparison.Ordinal))
+            && (!string.Equals(configuredPath, RigCatalog.FilePath, StringComparison.Ordinal)
+                || RigCatalog.FilteredEntries.Count == 0))
             RigCatalog.LoadFromFile(configuredPath);
     }
 
-    private static int GetNextAvailableRigPort(RigctldConfiguration rigctld, string? excludeTag)
+    private static int GetNextAvailableRigPort(RigctldConfiguration rigctld, string? excludeRadioName)
     {
         var usedPorts = rigctld.Radios
-            .Where(x => x.Port > 0 && (string.IsNullOrWhiteSpace(excludeTag)
-                || !string.Equals(x.TagName, excludeTag, StringComparison.OrdinalIgnoreCase)))
+            .Where(x => x.Port > 0 && (string.IsNullOrWhiteSpace(excludeRadioName)
+                || !string.Equals(x.RadioName, excludeRadioName, StringComparison.OrdinalIgnoreCase)))
             .Select(x => x.Port)
             .ToHashSet();
 
         return FindFirstAvailablePort(usedPorts);
     }
 
-    private static List<(string TagName, int FromPort, int ToPort)> EnsureUniqueRigPorts(RigctldConfiguration rigctld, string? priorityTag)
+    private static List<(string RadioName, int FromPort, int ToPort)> EnsureUniqueRigPorts(RigctldConfiguration rigctld, string? priorityRadioName)
     {
         var orderedRadios = rigctld.Radios
-            .OrderBy(x => string.Equals(x.TagName, priorityTag, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .OrderBy(x => string.Equals(x.RadioName, priorityRadioName, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
             .ThenBy(x => x.RadioId <= 0 ? int.MaxValue : x.RadioId)
-            .ThenBy(x => x.TagName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(x => x.RadioName, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var corrections = new List<(string TagName, int FromPort, int ToPort)>();
+        var corrections = new List<(string RadioName, int FromPort, int ToPort)>();
         var usedPorts = new HashSet<int>();
         foreach (var radio in orderedRadios)
         {
@@ -861,19 +1052,19 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             usedPorts.Add(candidate);
 
             if (candidate != original)
-                corrections.Add((radio.TagName, original, candidate));
+                corrections.Add((radio.RadioName, original, candidate));
         }
 
         return corrections;
     }
 
-    private static string BuildPortCorrectionMessage(IReadOnlyCollection<(string TagName, int FromPort, int ToPort)> corrections)
+    private static string BuildPortCorrectionMessage(IReadOnlyCollection<(string RadioName, int FromPort, int ToPort)> corrections)
     {
         if (corrections.Count == 0)
             return string.Empty;
 
         var items = corrections
-            .Select(x => $"{x.TagName}: {x.FromPort}->{x.ToPort}")
+            .Select(x => $"{x.RadioName}: {x.FromPort}->{x.ToPort}")
             .ToList();
         return $"Port conflict resolved ({string.Join(", ", items)})";
     }
@@ -903,28 +1094,30 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
 public sealed class RigRadioOption : ObservableObject
 {
+    private readonly int _radioId;
     private bool _isActive;
-    private string _displayName;
+    private string _radioName;
 
-    public RigRadioOption(string tagName, string? displayName, bool isActive = false)
+    public RigRadioOption(int radioId, string radioName, string? displayName, bool isActive = false)
     {
-        TagName = tagName;
-        _displayName = string.IsNullOrWhiteSpace(displayName) ? tagName : displayName.Trim();
+        _radioId = radioId;
+        _radioName = string.IsNullOrWhiteSpace(displayName) ? radioName : displayName.Trim();
         _isActive = isActive;
     }
 
-    public string TagName { get; }
-    public string DisplayName
+    public int RadioId => _radioId;
+
+    public string RadioName
     {
-        get => _displayName;
+        get => _radioName;
         set
         {
-            if (SetProperty(ref _displayName, string.IsNullOrWhiteSpace(value) ? TagName : value.Trim()))
+            if (SetProperty(ref _radioName, value?.Trim() ?? string.Empty))
                 OnPropertyChanged(nameof(Display));
         }
     }
 
-    public string Display => DisplayName;
+    public string Display => string.IsNullOrWhiteSpace(RadioName) ? "(new radio)" : RadioName;
     public bool IsActive
     {
         get => _isActive;

@@ -117,4 +117,26 @@ public class RigctldRadioCatalogServiceTests
 
         Assert.Equal("rigctld -m 123 -T 127.0.0.1 -t 4532 -r \"/dev/serial/by-id/usb-FT710 CAT\"", command);
     }
+
+    [Fact]
+    public void CreateRigctldCommandLine_AppendsRetryControlWhenProvided()
+    {
+        var entry = new RigCatalogEntry
+        {
+            RigNum = 1,
+            Mfg = "Hamlib",
+            Model = "Dummy",
+            Version = "1",
+            Status = "Stable",
+            Macro = "RIG_MODEL_DUMMY"
+        };
+
+        var command = RigctldRadioCatalogService.CreateRigctldCommandLine(
+            entry,
+            "127.0.0.1",
+            4532,
+            retryCount: 5);
+
+        Assert.Equal("rigctld -m 1 -T 127.0.0.1 -t 4532 -C retry=5", command);
+    }
 }

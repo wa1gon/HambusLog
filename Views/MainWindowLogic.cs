@@ -9,6 +9,7 @@ public partial class MainWindow
     public MainWindow()
     {
         InitializeComponent();
+        App.TrackWindowPlacement(this, nameof(MainWindow));
     }
 
     public async void OnMenuTreeViewSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -46,6 +47,7 @@ public partial class MainWindow
     {
         if (_gridWindow is { IsVisible: true })
         {
+            App.SaveWindowPlacement(_gridWindow, nameof(GridWindow));
             _gridWindow.Hide();
             return;
         }
@@ -206,6 +208,8 @@ public partial class MainWindow
             WindowStartupLocation = WindowStartupLocation.CenterOwner
         };
 
+        App.TrackWindowPlacement(dialog, "MessageDialog");
+
         ok.Click += (_, _) => dialog.Close();
 
         var owner = GetPreferredDialogOwner();
@@ -278,6 +282,15 @@ public partial class MainWindow
             return;
 
         await vm.ApplyPresetModeToSelectedRadioAsync(mode);
+    }
+
+    private void OnRadioRowPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        if (sender is Border { DataContext: RadioConnectionStatusViewModel row })
+            vm.SelectedRadioStatus = row;
     }
 }
 

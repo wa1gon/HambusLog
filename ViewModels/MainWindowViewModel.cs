@@ -1,5 +1,6 @@
 ﻿namespace HamBusLog.ViewModels;
 
+using Avalonia.Media;
 using Avalonia.Threading;
 
 public partial class MainWindowViewModel : ViewModelBase, IDisposable
@@ -37,6 +38,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private string _controlFrequencyMhz = string.Empty;
     private string _controlMode = string.Empty;
     private string _radioControlMessage = string.Empty;
+    private string _radioStatusSummary = "Rig status: none";
 
     public MainWindowViewModel()
     {
@@ -104,7 +106,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public bool HasNoRadioStatuses => !HasRadioStatuses;
 
     public string RadioStatusSummary
-        => HasRadioStatuses ? string.Empty : "No radios configured.";
+    {
+        get => _radioStatusSummary;
+        private set => SetProperty(ref _radioStatusSummary, value);
+    }
 
     public RadioConnectionStatusViewModel? SelectedRadioStatus
     {
@@ -127,7 +132,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public bool CanControlSelectedRadio => SelectedRadioStatus is not null;
+    public bool CanControlSelectedRadio => SelectedRadioStatus?.IsConnected == true;
 
     public string ControlFrequencyMhz
     {
@@ -186,40 +191,105 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         var rigctld = AppConfigurationStore.GetRigctld(config);
         var snapshot = _rigctldConnectionManager.GetSnapshot();
 
-        var snapshotByTag = snapshot
-            .GroupBy(x => x.TagName, StringComparer.OrdinalIgnoreCase)
+        var snapshotByName = snapshot
+            .GroupBy(x => x.RadioName, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(x => x.Key, x => x.Last(), StringComparer.OrdinalIgnoreCase);
 
         var rows = rigctld.Radios
-            .Select(radio =>
+            .Select((radio, index) =>
             {
-                if (snapshotByTag.TryGetValue(radio.TagName, out var state))
-                    return BuildStatusRow(state.Label, state.TagName, state.FrequencyMhz, state.Mode, state.IsConnected, state.Error);
+                if (snapshotByName.TryGetValue(radio.RadioName, out var state))
+                    return BuildStatusRow(index + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, radio.Port, state.FrequencyMhz, state.ModeDisplay, state.IsConnected, state.Error);
 
-                var label = string.IsNullOrWhiteSpace(radio.DisplayName) ? radio.TagName : radio.DisplayName;
-                return BuildStatusRow(label, radio.TagName, null, null, false, $"Not connected ({radio.Host}:{radio.Port})");
+                return BuildStatusRow(index + 1, radio.RadioName, radio.RadioName, rigctld.ActiveRigNum, radio.Port, null, null, false, $"Not connected ({radio.Host}:{radio.Port})");
             })
             .ToList();
 
         foreach (var state in snapshot)
         {
-            if (rows.Any(x => string.Equals(x.TagName, state.TagName, StringComparison.OrdinalIgnoreCase)))
+            if (rows.Any(x => string.Equals(x.RadioName, state.RadioName, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
-            rows.Add(BuildStatusRow(state.Label, state.TagName, state.FrequencyMhz, state.Mode, state.IsConnected, state.Error));
+            rows.Add(BuildStatusRow(rows.Count + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, null, state.FrequencyMhz, state.ModeDisplay, state.IsConnected, state.Error));
         }
 
-        RadioStatuses = new ObservableCollection<RadioConnectionStatusViewModel>(rows);
+        // Update items in-place to avoid resetting DataGrid selection and scroll position
+        var prevSelectedName = SelectedRadioStatus?.RadioName;
 
-        if (SelectedRadioStatus is not null)
+        // Remove rows no longer present
+        for (var i = _radioStatuses.Count - 1; i >= 0; i--)
         {
-            SelectedRadioStatus = RadioStatuses.FirstOrDefault(x =>
-                string.Equals(x.TagName, SelectedRadioStatus.TagName, StringComparison.OrdinalIgnoreCase));
+            if (!rows.Any(r => string.Equals(r.RadioName, _radioStatuses[i].RadioName, StringComparison.OrdinalIgnoreCase)))
+                _radioStatuses.RemoveAt(i);
+        }
+
+        // Add or update rows
+        for (var i = 0; i < rows.Count; i++)
+        {
+            var newRow = rows[i];
+            var existingIndex = -1;
+            for (var j = 0; j < _radioStatuses.Count; j++)
+            {
+                if (string.Equals(_radioStatuses[j].RadioName, newRow.RadioName, StringComparison.OrdinalIgnoreCase))
+                {
+                    existingIndex = j;
+                    break;
+                }
+            }
+
+            if (existingIndex < 0)
+            {
+                // Insert at correct position
+                if (i <= _radioStatuses.Count)
+                    _radioStatuses.Insert(i, newRow);
+                else
+                    _radioStatuses.Add(newRow);
+            }
+            else
+            {
+                // Replace in-place if data changed
+                _radioStatuses[existingIndex] = newRow;
+
+                // Move to correct index if needed
+                if (existingIndex != i && i < _radioStatuses.Count)
+                    _radioStatuses.Move(existingIndex, i);
+            }
+        }
+
+        // Restore selection, or auto-select first connected radio (or first radio if none connected)
+        if (prevSelectedName is not null)
+        {
+            var restoredRow = _radioStatuses.FirstOrDefault(x =>
+                string.Equals(x.RadioName, prevSelectedName, StringComparison.OrdinalIgnoreCase));
+            if (restoredRow is not null && !ReferenceEquals(SelectedRadioStatus, restoredRow))
+                SelectedRadioStatus = restoredRow;
+        }
+        else if (SelectedRadioStatus is null && _radioStatuses.Count > 0)
+        {
+            SelectedRadioStatus = _radioStatuses.FirstOrDefault(x => x.IsConnected)
+                                  ?? _radioStatuses[0];
         }
 
         OnPropertyChanged(nameof(HasRadioStatuses));
         OnPropertyChanged(nameof(HasNoRadioStatuses));
         OnPropertyChanged(nameof(RadioStatusSummary));
+
+        var primary = rows.FirstOrDefault(x => x.Status.StartsWith("Connected", StringComparison.OrdinalIgnoreCase))
+                      ?? rows.FirstOrDefault();
+
+        if (primary is null)
+        {
+            var none = "Rig status: none";
+            RadioStatusSummary = none;
+            return;
+        }
+
+        var mode = primary.Mode == "-" ? string.Empty : $" {primary.Mode}";
+        var freq = primary.Frequency == "-" ? string.Empty : $" {primary.Frequency}";
+        var model = primary.RigModel == "-" ? string.Empty : $" model {primary.RigModel}";
+        var endpoint = primary.ListenPort == "-" ? string.Empty : $" port {primary.ListenPort}";
+        var summary = $"Rig: {primary.Label}{model}{endpoint}{freq}{mode} - {primary.Status}";
+        RadioStatusSummary = summary;
     }
 
     public async Task ApplyFrequencyToSelectedRadioAsync()
@@ -227,6 +297,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         if (SelectedRadioStatus is null)
         {
             RadioControlMessage = "Select a radio first.";
+            return;
+        }
+
+        if (!SelectedRadioStatus.IsConnected)
+        {
+            RadioControlMessage = $"{SelectedRadioStatus.Label} is not connected.";
             return;
         }
 
@@ -239,7 +315,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
-            RadioControlMessage = await _rigctldConnectionManager.SetFrequencyByTagAsync(SelectedRadioStatus.TagName, mhz, cts.Token);
+            RadioControlMessage = await _rigctldConnectionManager.SetFrequencyByNameAsync(SelectedRadioStatus.RadioName, mhz, cts.Token);
+        }
+        catch (TimeoutException)
+        {
+            RadioControlMessage = "Frequency update timed out. Verify the radio is connected and try again.";
         }
         catch (Exception ex)
         {
@@ -255,6 +335,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        if (!SelectedRadioStatus.IsConnected)
+        {
+            RadioControlMessage = $"{SelectedRadioStatus.Label} is not connected.";
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(ControlMode))
         {
             RadioControlMessage = "Enter a mode (USB, LSB, CW, FM, AM...).";
@@ -264,7 +350,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
-            RadioControlMessage = await _rigctldConnectionManager.SetModeByTagAsync(SelectedRadioStatus.TagName, ControlMode, cts.Token);
+            RadioControlMessage = await _rigctldConnectionManager.SetModeByNameAsync(SelectedRadioStatus.RadioName, ControlMode, cts.Token);
+        }
+        catch (TimeoutException)
+        {
+            RadioControlMessage = "Mode update timed out. Verify the radio is connected and try again.";
         }
         catch (Exception ex)
         {
@@ -278,28 +368,35 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         await ApplyModeToSelectedRadioAsync();
     }
 
-    private static RadioConnectionStatusViewModel BuildStatusRow(
-        string label,
-        string tagName,
-        decimal? frequencyMhz,
-        string? mode,
-        bool isConnected,
-        string? error)
-    {
-        return new RadioConnectionStatusViewModel(
-            label,
-            tagName,
-            frequencyMhz,
-            frequencyMhz is decimal mhz
-                ? mhz.ToString("0.######", CultureInfo.InvariantCulture) + " MHz"
-                : "-",
-            string.IsNullOrWhiteSpace(mode) ? "-" : mode,
-            isConnected
-                ? "Connected"
-                : string.IsNullOrWhiteSpace(error)
-                    ? "Not connected"
-                    : "Not connected: " + error);
-    }
+     private static RadioConnectionStatusViewModel BuildStatusRow(
+         int rowNumber,
+         string label,
+          string radioName,
+          int? rigModelNumber,
+          int? listenPort,
+         decimal? frequencyMhz,
+         string? mode,
+         bool isConnected,
+         string? error)
+     {
+         return new RadioConnectionStatusViewModel(
+             rowNumber,
+             label,
+             radioName,
+             rigModelNumber,
+             listenPort,
+             frequencyMhz,
+             frequencyMhz is decimal mhz
+                 ? (mhz < 0.001m ? "-" : mhz.ToString("0.000", CultureInfo.InvariantCulture) + " MHz")
+                 : "-",
+             string.IsNullOrWhiteSpace(mode) ? "-" : mode,
+             isConnected,
+             isConnected
+                 ? "Connected"
+                 : string.IsNullOrWhiteSpace(error)
+                     ? "Not connected"
+                     : "Not connected: " + error);
+     }
 
     private void OnRadioStatusRefreshTimerTick(object? sender, EventArgs e)
     {
@@ -317,22 +414,36 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
 public sealed class RadioConnectionStatusViewModel
 {
-    public RadioConnectionStatusViewModel(string label, string tagName, decimal? frequencyMhz, string frequency, string mode, string status)
+    public RadioConnectionStatusViewModel(int rowNumber, string label, string radioName, int? rigModelNumber, int? listenPort, decimal? frequencyMhz, string frequency, string mode, bool isConnected, string status)
     {
+        RowNumber = rowNumber;
         Label = label;
-        TagName = tagName;
+        RadioName = radioName;
+        RigModel = rigModelNumber?.ToString(CultureInfo.InvariantCulture) ?? "-";
+        ListenPort = listenPort?.ToString(CultureInfo.InvariantCulture) ?? "-";
         FrequencyMhz = frequencyMhz;
         Frequency = frequency;
         Mode = mode;
+        IsConnected = isConnected;
         Status = status;
+        RowBackground = isConnected
+            ? new SolidColorBrush(Color.Parse("#1E3A2F"))   // dark green tint
+            : new SolidColorBrush(Color.Parse("#3A1E1E"));  // dark red tint
+        RowForeground = new SolidColorBrush(Colors.White);
     }
 
+    public int RowNumber { get; }
     public string Label { get; }
-    public string TagName { get; }
+    public string RadioName { get; }
+    public string RigModel { get; }
+    public string ListenPort { get; }
     public decimal? FrequencyMhz { get; }
     public string Frequency { get; }
     public string Mode { get; }
+    public bool IsConnected { get; }
     public string Status { get; }
+    public SolidColorBrush RowBackground { get; }
+    public SolidColorBrush RowForeground { get; }
 }
 
 public sealed class ActiveRadioOption

@@ -9,33 +9,33 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <AvaloniaResource Include="Assets\**" />
-    <Compile Remove="**\obj\**\*.cs" />
-    <Compile Remove="**\bin\**\*.cs" />
-    <Compile Remove="HamBusLog.Tests\**\*.cs" />
-    <Compile Remove="Wa1gonAbstracts\**\*.cs" />
-    <Compile Remove="Wa1gonLib\**\*.cs" />
-    <Compile Remove="Wa1gonLib.Tests\**\*.cs" />
-    <Compile Include="Wa1gonLib\Adif\AdifReader.cs" />
-    <Compile Include="Wa1gonLib\Adif\AdifWriter.cs" />
-    <Compile Include="Wa1gonLib\ApiClients\ApiOptions.cs" />
-    <Compile Include="Wa1gonLib\Configuration\CallBookConf.cs" />
-    <Compile Include="Wa1gonLib\Configuration\DxClusterConf.cs" />
-    <Compile Include="Wa1gonLib\Configuration\LogConfig.cs" />
-    <Compile Include="Wa1gonLib\Configuration\RigCtlConf.cs" />
-    <Compile Include="Wa1gonLib\IRegControlClient.cs" />
-    <Compile Include="Wa1gonLib\Models\CallSign.cs" />
-    <Compile Include="Wa1gonLib\Models\DxccEntry.cs" />
-    <Compile Include="Wa1gonLib\Models\RigCatalogEntry.cs" />
-    <Compile Include="Wa1gonLib\Models\DxSpot.cs" />
-    <Compile Include="Wa1gonLib\Models\OperatorProfile.cs" />
-    <Compile Include="Wa1gonLib\Models\Qso.cs" />
-    <Compile Include="Wa1gonLib\Models\QsoDetails.cs" />
-    <Compile Include="Wa1gonLib\Models\QsoQslnfo.cs" />
-    <Compile Include="Wa1gonLib\zGlobal.cs" />
-    <Compile Include="Wa1gonLib\RigControl\FrequencyRange.cs" />
-    <Compile Include="Wa1gonLib\RigControl\HamlibrigCtlClient.cs" />
-    <Compile Include="Wa1gonLib\RigControl\RigCapabilities.cs" />
+    <AvaloniaResource Include="Assets/**" />
+    <Compile Remove="**/obj/**/*.cs" />
+    <Compile Remove="**/bin/**/*.cs" />
+    <Compile Remove="HamBusLog.Tests/**/*.cs" />
+    <Compile Remove="Wa1gonAbstracts/**/*.cs" />
+    <Compile Remove="Wa1gonLib/**/*.cs" />
+    <Compile Remove="Wa1gonLib.Tests/**/*.cs" />
+    <Compile Include="Wa1gonLib/Adif/AdifReader.cs" />
+    <Compile Include="Wa1gonLib/Adif/AdifWriter.cs" />
+    <Compile Include="Wa1gonLib/ApiClients/ApiOptions.cs" />
+    <Compile Include="Wa1gonLib/Configuration/CallBookConf.cs" />
+    <Compile Include="Wa1gonLib/Configuration/DxClusterConf.cs" />
+    <Compile Include="Wa1gonLib/Configuration/LogConfig.cs" />
+    <Compile Include="Wa1gonLib/Configuration/RigCtlConf.cs" />
+    <Compile Include="Wa1gonLib/IRegControlClient.cs" />
+    <Compile Include="Wa1gonLib/Models/CallSign.cs" />
+    <Compile Include="Wa1gonLib/Models/DxccEntry.cs" />
+    <Compile Include="Wa1gonLib/Models/RigCatalogEntry.cs" />
+    <Compile Include="Wa1gonLib/Models/DxSpot.cs" />
+    <Compile Include="Wa1gonLib/Models/OperatorProfile.cs" />
+    <Compile Include="Wa1gonLib/Models/Qso.cs" />
+    <Compile Include="Wa1gonLib/Models/QsoDetails.cs" />
+    <Compile Include="Wa1gonLib/Models/QsoQslnfo.cs" />
+    <Compile Include="Wa1gonLib/zGlobal.cs" />
+    <Compile Include="Wa1gonLib/RigControl/FrequencyRange.cs" />
+    <Compile Include="Wa1gonLib/RigControl/HamlibrigCtlClient.cs" />
+    <Compile Include="Wa1gonLib/RigControl/RigCapabilities.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -60,9 +60,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="HamBusLog.Tests\HamBusLog.Tests.csproj" />
-    <Content Include="Wa1gonLib.Tests\Wa1gonLib.Tests.csproj" />
-    <Content Include="Wa1gonLib\Wa1gonLib.csproj" />
+    <Content Include="HamBusLog.Tests/HamBusLog.Tests.csproj" />
+    <Content Include="Wa1gonLib.Tests/Wa1gonLib.Tests.csproj" />
+    <Content Include="Wa1gonLib/Wa1gonLib.csproj" />
   </ItemGroup>
 
 </Project>

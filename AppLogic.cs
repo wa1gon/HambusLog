@@ -85,6 +85,56 @@ public partial class App
         ApplyThemeFromProfile(profile);
     }
 
+    public static void TrackWindowPlacement(Window window, string placementKey)
+    {
+        if (window is null || string.IsNullOrWhiteSpace(placementKey))
+            return;
+
+        void OnOpened(object? sender, EventArgs e) => RestoreWindowPlacement(window, placementKey);
+        void OnClosing(object? sender, WindowClosingEventArgs e) => SaveWindowPlacement(window, placementKey);
+        void OnClosed(object? sender, EventArgs e)
+        {
+            window.Opened -= OnOpened;
+            window.Closing -= OnClosing;
+            window.Closed -= OnClosed;
+        }
+
+        window.Opened += OnOpened;
+        window.Closing += OnClosing;
+        window.Closed += OnClosed;
+    }
+
+    public static void RestoreWindowPlacement(Window window, string placementKey)
+    {
+        if (window is null || string.IsNullOrWhiteSpace(placementKey))
+            return;
+
+        var config = AppConfigurationStore.Load();
+        if (!config.WindowPlacements.TryGetValue(placementKey, out var placement))
+            return;
+
+        var target = new PixelPoint(placement.X, placement.Y);
+        if (!IsPlacementOnScreen(window, target))
+            return;
+
+        window.Position = target;
+    }
+
+    public static void SaveWindowPlacement(Window window, string placementKey)
+    {
+        if (window is null || string.IsNullOrWhiteSpace(placementKey))
+            return;
+
+        var config = AppConfigurationStore.Load();
+        config.WindowPlacements[placementKey] = new WindowPlacement
+        {
+            X = window.Position.X,
+            Y = window.Position.Y
+        };
+
+        AppConfigurationStore.Save(config);
+    }
+
     public static void ApplyThemeFromProfile(ConfigProfile profile)
     {
         if (Current?.Resources is not ResourceDictionary resources)
@@ -95,9 +145,12 @@ public partial class App
         var menuBackground = ParseColor(profile.MenuBackgroundColor, Color.Parse("#111827"));
         var menuForeground = ParseColor(profile.MenuForegroundColor, foreground);
         var buttonNormal = ParseColor(profile.ButtonNormalColor, Color.Parse("#2563EB"));
+        var legacyButtonForeground = ParseColor(profile.ButtonForegroundColor, Color.Parse("#FFFFFF"));
+        var buttonNormalForeground = ParseColor(profile.ButtonNormalForegroundColor, legacyButtonForeground);
         var buttonCaution = ParseColor(profile.ButtonCautionColor, Color.Parse("#D97706"));
+        var buttonCautionForeground = ParseColor(profile.ButtonCautionForegroundColor, legacyButtonForeground);
         var buttonDanger = ParseColor(profile.ButtonDangerColor, Color.Parse("#DC2626"));
-        var buttonForeground = ParseColor(profile.ButtonForegroundColor, Color.Parse("#FFFFFF"));
+        var buttonDangerForeground = ParseColor(profile.ButtonDangerForegroundColor, legacyButtonForeground);
 
         SetBrush(resources, "AppWindowBackgroundBrush", background);
         SetBrush(resources, "AppHeaderBackgroundBrush", background);
@@ -109,9 +162,12 @@ public partial class App
         SetBrush(resources, "AppBorderBrush", AdjustBrightness(background, 0.16));
         SetBrush(resources, "AppAccentBrush", Color.Parse("#3498DB"));
         SetBrush(resources, "AppButtonNormalBrush", buttonNormal);
+        SetBrush(resources, "AppButtonNormalForegroundBrush", buttonNormalForeground);
         SetBrush(resources, "AppButtonCautionBrush", buttonCaution);
+        SetBrush(resources, "AppButtonCautionForegroundBrush", buttonCautionForeground);
         SetBrush(resources, "AppButtonDangerBrush", buttonDanger);
-        SetBrush(resources, "AppButtonForegroundBrush", buttonForeground);
+        SetBrush(resources, "AppButtonDangerForegroundBrush", buttonDangerForeground);
+        SetBrush(resources, "AppButtonForegroundBrush", buttonNormalForeground);
         SetBrush(resources, "AppErrorBrush", Color.Parse("#FF6B6B"));
         SetBrush(resources, "AppWarningBrush", Color.Parse("#FFD700"));
     }
@@ -150,6 +206,25 @@ public partial class App
         }
 
         return Color.FromArgb(color.A, Adjust(color.R), Adjust(color.G), Adjust(color.B));
+    }
+
+    private static bool IsPlacementOnScreen(Window window, PixelPoint position)
+    {
+        var screens = window.Screens?.All;
+        if (screens is null || screens.Count == 0)
+            return true;
+
+        foreach (var screen in screens)
+        {
+            var area = screen.WorkingArea;
+            if (position.X >= area.X
+                && position.X <= area.Right - 80
+                && position.Y >= area.Y
+                && position.Y <= area.Bottom - 40)
+                return true;
+        }
+
+        return false;
     }
 
     private void DisableAvaloniaDataAnnotationValidation()

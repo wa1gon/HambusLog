@@ -7,6 +7,7 @@ public partial class RigCatalogWindow
     public RigCatalogWindow()
     {
         InitializeComponent();
+        App.TrackWindowPlacement(this, nameof(RigCatalogWindow));
         _viewModel = new RigCatalogViewModel();
         DataContext = _viewModel;
     }
