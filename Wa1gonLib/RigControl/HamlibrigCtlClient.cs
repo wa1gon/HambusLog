@@ -132,22 +132,36 @@ public class HamLibRigCtlClient(string _host, int _port) : IDisposable, IRigCont
 
     public async Task<string> GetModeAsync()
     {
+        var (mode, _) = await GetModeAndPassbandAsync();
+        return mode;
+    }
+
+    /// <summary>
+    /// Returns the mode and passband width from rigctld.
+    /// Returns ("", 0) when the radio reports no active slice (mode "0" or passband 0).
+    /// </summary>
+    public async Task<(string Mode, int Passband)> GetModeAndPassbandAsync()
+    {
         EnsureConnected();
         await SendCommandAsync("m\n");
 
         // rigctld returns two lines for the 'm' command: first is the mode, second is the passband width.
         var modeLine = await ReadLineAsync();
-        // Drain the passband width line so it doesn't bleed into the next command's response.
-        await ReadLineAsync();
+        var passbandLine = await ReadLineAsync();
 
         if (string.IsNullOrWhiteSpace(modeLine))
             throw new IOException("Failed to parse mode from rigctld response.");
 
-        var mode = modeLine.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-        if (!string.IsNullOrWhiteSpace(mode) && !string.Equals(mode, "RPRT", StringComparison.OrdinalIgnoreCase))
-            return mode;
+        var modeToken = modeLine.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(modeToken) || string.Equals(modeToken, "RPRT", StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Failed to parse mode from rigctld response.");
 
-        throw new IOException("Failed to parse mode from rigctld response.");
+        // "0" means the backend has no active slice / unknown mode
+        if (modeToken == "0")
+            return (string.Empty, 0);
+
+        int.TryParse(passbandLine?.Trim(), out var passband);
+        return (modeToken, passband);
     }
 
     public async Task<long> GetFreqAsync()

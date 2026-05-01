@@ -199,7 +199,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             .Select((radio, index) =>
             {
                 if (snapshotByName.TryGetValue(radio.RadioName, out var state))
-                    return BuildStatusRow(index + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, radio.Port, state.FrequencyMhz, state.Mode, state.IsConnected, state.Error);
+                    return BuildStatusRow(index + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, radio.Port, state.FrequencyMhz, state.ModeDisplay, state.IsConnected, state.Error);
 
                 return BuildStatusRow(index + 1, radio.RadioName, radio.RadioName, rigctld.ActiveRigNum, radio.Port, null, null, false, $"Not connected ({radio.Host}:{radio.Port})");
             })
@@ -210,7 +210,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             if (rows.Any(x => string.Equals(x.RadioName, state.RadioName, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
-            rows.Add(BuildStatusRow(rows.Count + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, null, state.FrequencyMhz, state.Mode, state.IsConnected, state.Error));
+            rows.Add(BuildStatusRow(rows.Count + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, null, state.FrequencyMhz, state.ModeDisplay, state.IsConnected, state.Error));
         }
 
         // Update items in-place to avoid resetting DataGrid selection and scroll position
