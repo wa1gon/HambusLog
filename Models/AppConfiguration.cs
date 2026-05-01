@@ -55,12 +55,44 @@ public sealed class RigctldConfiguration
     public string ActiveRadioName { get; set; } = string.Empty;
     public List<string> ActiveRadioNames { get; set; } = [];
     public List<RigRadioConfig> Radios { get; set; } = [];
+
+    // ── Migration shims: read old field names from config files written before the rename ──
+    // These are never written back (null returned on get → WhenWritingNull suppresses them).
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ActiveRadioTag
+    {
+        get => null;
+        set { if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(ActiveRadioName)) ActiveRadioName = value!.Trim(); }
+    }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? ActiveRadioTags
+    {
+        get => null;
+        set { if (value?.Count > 0 && ActiveRadioNames.Count == 0) ActiveRadioNames = value; }
+    }
 }
 
 public sealed class RigRadioConfig
 {
     public int RadioId { get; set; }
     public string RadioName { get; set; } = string.Empty;
+
+    // ── Migration shims: read TagName / DisplayName from old config files ──
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? TagName
+    {
+        get => null;
+        set { if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(RadioName)) RadioName = value!.Trim(); }
+    }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? DisplayName
+    {
+        get => null;
+        set { if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(RadioName)) RadioName = value!.Trim(); }
+    }
     public string Executable { get; set; } = "rigctld";
     public string ArgumentsTemplate { get; set; } = "-m {rigNum} -T {host} -t {port}{serialArg}";
     public string AdditionalArguments { get; set; } = string.Empty;

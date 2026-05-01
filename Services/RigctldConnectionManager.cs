@@ -191,7 +191,7 @@ public sealed class RigctldConnectionManager : IDisposable
                     {
                         (mode, passband) = await client.GetModeAndPassbandAsync();
                     }
-                    catch (Exception ex) when (!IsConnectionLost(ex))
+                    catch (IOException ex) when (!IsConnectionLost(ex))
                     {
                         queryError = ex.Message;
                     }
@@ -200,7 +200,7 @@ public sealed class RigctldConnectionManager : IDisposable
                     {
                         freqHz = await client.GetFreqAsync();
                     }
-                    catch (Exception ex) when (!IsConnectionLost(ex))
+                    catch (IOException ex) when (!IsConnectionLost(ex))
                     {
                         queryError ??= ex.Message;
                     }
@@ -274,7 +274,11 @@ public sealed class RigctldConnectionManager : IDisposable
             catch (Exception ex)
             {
                 command.Completion.TrySetException(ex);
-                throw;
+
+                // Keep polling for rig-level errors (RPRT failures, unsupported ops, etc.).
+                // Only bubble up when transport is actually lost so the worker reconnects.
+                if (IsConnectionLost(ex))
+                    throw;
             }
         }
     }
