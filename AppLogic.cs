@@ -4,6 +4,7 @@ public partial class App
 {
     public static RigCatalogStore RigCatalogStore { get; } = new();
     public static HamBusLog.Hardware.RigctldConnectionManager RigctldConnectionManager { get; } = new();
+    public static HamBusLog.Services.IToastService Toasts { get; } = new HamBusLog.Services.ToastService();
 
     private static HamBusLogDbContext? _dbContext;
     public static HamBusLogDbContext DbContext
@@ -73,6 +74,7 @@ public partial class App
             {
                 DataContext = new MainWindowViewModel(),
             };
+            Toasts.RegisterWindow(desktop.MainWindow);
         }
 
         base.OnFrameworkInitializationCompleted();

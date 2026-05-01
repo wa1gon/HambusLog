@@ -15,6 +15,7 @@ public partial class LogInputWindow
     {
         InitializeComponent();
         App.TrackWindowPlacement(this, nameof(LogInputWindow));
+        App.Toasts.RegisterWindow(this);
         _viewModel = new LogInputViewModel();
         DataContext = _viewModel;
 
@@ -64,12 +65,14 @@ public partial class LogInputWindow
         if (qso is null)
         {
             SetStatus(error);
+            App.Toasts.ShowError("QSO not logged", error);
             return;
         }
 
         QsoLogged?.Invoke(this, qso);
         _viewModel.PrepareForNextLogEntry();
         SetStatus("QSO logged.");
+        App.Toasts.ShowSuccess("QSO logged", $"{qso.Call} on {qso.Band} {qso.Mode}");
     }
 
     public void OnCancelClicked(object? sender, RoutedEventArgs e) => Close();

@@ -294,67 +294,95 @@
                 </StackPanel>
             </TabItem>
 
+            <!-- ── Rig Control Tab ──────────────────────────────────── -->
             <TabItem Header="Rig Control">
-                <Grid Margin="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
-                    <TextBlock Grid.Row="0" Text="rigctld Configuration" FontWeight="SemiBold" FontSize="14" />
-                    <TextBlock Grid.Row="1" Text="Manage radios here, then open the editor dialog for detailed rigctld fields." Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" Margin="0,0,0,6" />
-                    <Grid Grid.Row="2" ColumnDefinitions="160,*" RowDefinitions="Auto,Auto" RowSpacing="10" ColumnSpacing="8" Margin="0,0,0,12">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Radio" VerticalAlignment="Center" />
-                        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                            <ComboBox ItemsSource="{Binding AvailableRigRadioOptions}"
-                                      SelectedItem="{Binding SelectedRigRadio, Mode=TwoWay}"
-                                      DisplayMemberBinding="{Binding Display}"
-                                      Background="{DynamicResource AppPanelBackgroundBrush}"
-                                      Foreground="{DynamicResource AppForegroundBrush}"
-                                      Width="220"
-                                      IsEditable="False"
-                                      HorizontalAlignment="Left" />
-                            <Button Content="Add Radio" Click="OnAddRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
-                            <Button Content="Remove" Click="OnRemoveRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonDangerBrush}" Foreground="{DynamicResource AppButtonDangerForegroundBrush}" />
-                            <Button Content="Edit" Click="OnEditSelectedRadioClicked" Padding="10,6" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
-                        </StackPanel>
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Active Radios" VerticalAlignment="Top" />
-                        <ListBox Grid.Row="1" Grid.Column="1"
-                                 Name="ActiveRadiosListBox"
-                                 ItemsSource="{Binding AvailableRigRadioOptions}"
-                                 SelectionMode="Multiple,Toggle"
-                                 SelectionChanged="OnActiveRigRadiosSelectionChanged"
-                                 Height="110"
-                                 BorderBrush="{DynamicResource AppBorderBrush}"
-                                 Background="{DynamicResource AppPanelBackgroundBrush}"
-                                 Foreground="{DynamicResource AppForegroundBrush}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <CheckBox IsChecked="{Binding IsActive}" IsHitTestVisible="False" VerticalAlignment="Center" />
-                                        <TextBlock Text="{Binding Display}" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Grid>
+                <ScrollViewer Margin="12" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="12">
+                        <Border Padding="14"
+                                CornerRadius="8"
+                                BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="rigctld Configuration" FontWeight="SemiBold" FontSize="15" />
+                                <TextBlock Text="Manage radios here, then open the editor dialog for detailed rigctld fields."
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                            </StackPanel>
+                        </Border>
 
-                    <Grid Grid.Row="3" ColumnDefinitions="160,*" ColumnSpacing="8" Margin="0,0,0,10">
-                        <TextBlock Grid.Column="0" Text="Rig List" VerticalAlignment="Center" />
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                            <TextBox Text="{Binding RiglistFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="420" />
-                            <Button Content="Browse..." Click="OnBrowseRiglistClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
-                            <Button Content="Load" Click="OnLoadRiglistClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
-                            <Button Content="Reload" Click="OnCatalogReloadClicked" Padding="10,6" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
-                        </StackPanel>
-                    </Grid>
+                        <Border Padding="14"
+                                CornerRadius="8"
+                                BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="12">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Radio" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <ComboBox ItemsSource="{Binding AvailableRigRadioOptions}"
+                                              SelectedItem="{Binding SelectedRigRadio, Mode=TwoWay}"
+                                              DisplayMemberBinding="{Binding Display}"
+                                              Width="240"
+                                              IsEditable="False"
+                                              HorizontalAlignment="Left" />
+                                    <Button Content="Add Radio" Click="OnAddRadioClicked" Padding="12,7" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+                                    <Button Content="Edit" Click="OnEditSelectedRadioClicked" Padding="12,7" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+                                    <Button Content="Remove" Click="OnRemoveRadioClicked" Padding="12,7" Background="{DynamicResource AppButtonDangerBrush}" Foreground="{DynamicResource AppButtonDangerForegroundBrush}" />
+                                </StackPanel>
 
-                    <Grid Grid.Row="4" ColumnDefinitions="160,*" ColumnSpacing="8" Margin="0,0,0,10">
-                        <TextBlock Grid.Column="0" Text="Reconnect (sec)" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1"
-                                 Width="120"
-                                 Text="{Binding RigctldReconnectIntervalSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    </Grid>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Active Radios" VerticalAlignment="Top" FontWeight="SemiBold" />
+                                <Border Grid.Row="1" Grid.Column="1"
+                                        BorderBrush="{DynamicResource AppBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="0"
+                                        Background="{DynamicResource AppWindowBackgroundBrush}">
+                                    <ListBox Name="ActiveRadiosListBox"
+                                             ItemsSource="{Binding AvailableRigRadioOptions}"
+                                             SelectionMode="Multiple,Toggle"
+                                             SelectionChanged="OnActiveRigRadiosSelectionChanged"
+                                             Height="126"
+                                             BorderThickness="0"
+                                             Background="Transparent"
+                                             Foreground="{DynamicResource AppForegroundBrush}">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="8,6">
+                                                    <CheckBox IsChecked="{Binding IsActive}" IsHitTestVisible="False" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{Binding Display}" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Border>
+                            </Grid>
+                        </Border>
 
-                    <StackPanel Grid.Row="5" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
-                        <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource AppMutedForegroundBrush}" Text="Use Edit to configure radio fields (name, args, host/port, resource path, and model search)." />
+                        <Border Padding="14"
+                                CornerRadius="8"
+                                BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="12">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Rig List" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <TextBox Text="{Binding RiglistFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="460" />
+                                    <Button Content="Browse..." Click="OnBrowseRiglistClicked" Padding="10,7" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+                                    <Button Content="Load" Click="OnLoadRiglistClicked" Padding="10,7" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+                                    <Button Content="Reload" Click="OnCatalogReloadClicked" Padding="10,7" Background="{DynamicResource AppButtonCautionBrush}" Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Reconnect (sec)" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                                    <TextBox Width="120"
+                                             Text="{Binding RigctldReconnectIntervalSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock VerticalAlignment="Center"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                               Text="Use Edit to configure radio fields (name, args, host/port, resource path, and model search)." />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
                     </StackPanel>
-                </Grid>
+                </ScrollViewer>
             </TabItem>
 
         </TabControl>
