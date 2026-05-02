@@ -12,9 +12,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         new MenuNode("File", true,
             new MenuNode("Open/Reopen Grid"),
             new MenuNode("Import ADIF"),
+            new MenuNode("DX Cluster"),
             new MenuNode("Export ADIF"),
             new MenuNode("Remove Dups"),
             new MenuNode("Watch List")),
+        new MenuNode("DX Cluster"),
         new MenuNode("Edit"),
         new MenuNode("Configuration"),
         new MenuNode("Callbook"),
@@ -204,7 +206,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             .GroupBy(x => x.RadioName, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(x => x.Key, x => x.Last(), StringComparer.OrdinalIgnoreCase);
 
-        var rows = rigctld.Radios
+        var activeRadios = rigctld.Radios.Where(r => r.IsActive).ToList();
+        var activeRadioNames = new HashSet<string>(activeRadios.Select(r => r.RadioName), StringComparer.OrdinalIgnoreCase);
+
+        var rows = activeRadios
             .Select((radio, index) =>
             {
                 if (snapshotByName.TryGetValue(radio.RadioName, out var state))
@@ -216,6 +221,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         foreach (var state in snapshot)
         {
+            if (!activeRadioNames.Contains(state.RadioName))
+                continue;
+
             if (rows.Any(x => string.Equals(x.RadioName, state.RadioName, StringComparison.OrdinalIgnoreCase)))
                 continue;
 

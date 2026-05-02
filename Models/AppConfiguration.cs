@@ -11,6 +11,9 @@ public sealed class AppConfiguration
 
     /// <summary>System-wide radio configuration, shared across all profiles.</summary>
     public RigctldConfiguration Rigctld { get; set; } = new();
+
+    /// <summary>System-wide DX cluster connection settings.</summary>
+    public ClusterConfig Cluster { get; set; } = new();
 }
 
 public sealed class WindowPlacement

@@ -12,11 +12,27 @@ public partial class LogInputWindow
     public event EventHandler<Qso>? QsoLogged;
 
     public LogInputWindow()
+        : this(null, null, null)
+    {
+    }
+
+    public LogInputWindow(string? initialCallsign)
+        : this(initialCallsign, null, null)
+    {
+    }
+
+    public LogInputWindow(string? initialCallsign, decimal? initialFrequencyMhz)
+        : this(initialCallsign, initialFrequencyMhz, null)
+    {
+    }
+
+    public LogInputWindow(string? initialCallsign, decimal? initialFrequencyMhz, string? initialSpotInfo)
     {
         InitializeComponent();
         App.TrackWindowPlacement(this, nameof(LogInputWindow));
         App.Toasts.RegisterWindow(this);
         _viewModel = new LogInputViewModel();
+        _viewModel.SetInitialSpot(initialCallsign, initialFrequencyMhz, initialSpotInfo);
         DataContext = _viewModel;
 
         _activeRigRefreshTimer.Tick += OnActiveRigRefreshTick;
@@ -56,6 +72,7 @@ public partial class LogInputWindow
 
     public void OnApplySelectedRadioClicked(object? sender, RoutedEventArgs e)
     {
+        _viewModel.EnableAutoRadioPopulate();
         _viewModel.ApplySelectedRadioToInputs();
     }
 

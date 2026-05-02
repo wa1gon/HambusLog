@@ -388,9 +388,15 @@ public partial class ConfigurationWindow
             return $"{f.Name}: {f.Ratio:0.00}:1 ({grade})";
         });
 
+        var message =
+            "Some UI color pairs are hard to read. " +
+            "Target contrast is 4.5:1 or higher for normal text.\n" +
+            "Adjust foreground/background colors in the Colors tab, then re-check.\n\n" +
+            string.Join("\n", lines);
+
         App.Toasts.ShowWarning(
-            "Low contrast — ADA AA not met",
-            string.Join("\n", lines));
+            "Accessibility contrast warning",
+            message);
     }
 
     private static void SetContrastLabel(TextBlock? label, string title, Color foreground, Color background)

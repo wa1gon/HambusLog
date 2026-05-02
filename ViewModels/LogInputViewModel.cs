@@ -56,6 +56,7 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _activeRigMode = string.Empty;
     private string _activeRigFrequency = string.Empty;
     private bool _isActiveRigConnected;
+    private bool _keepInitialSpotValues;
     private ObservableCollection<ConnectedRadioOption> _availableConnectedRadios = [];
     private ConnectedRadioOption? _selectedConnectedRadio;
 
@@ -364,6 +365,42 @@ public sealed class LogInputViewModel : ViewModelBase
         InputTimeOn = DateTime.UtcNow.ToString("HHmm");
     }
 
+    public void SetInitialCallsign(string? callsign)
+    {
+        var normalized = callsign?.Trim().ToUpperInvariant() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalized))
+            return;
+
+        InputCall = normalized;
+    }
+
+    public void SetInitialSpot(string? callsign, decimal? frequencyMhz, string? spotInfo = null)
+    {
+        SetInitialCallsign(callsign);
+
+        if (frequencyMhz is not decimal mhz || mhz <= 0)
+            return;
+
+        InputFreq = mhz.ToString("0.000", CultureInfo.InvariantCulture);
+        var derivedBand = TryDeriveBandFromMhz(mhz);
+        if (!string.IsNullOrWhiteSpace(derivedBand) && _bandValidator.Validate(derivedBand).IsValid)
+            InputBand = derivedBand;
+
+        var derivedMode = TryDeriveModeFromSpotInfo(spotInfo, mhz);
+        if (string.IsNullOrWhiteSpace(derivedMode))
+            derivedMode = TryDeriveModeFromMhz(mhz);
+        if (!string.IsNullOrWhiteSpace(derivedMode))
+            InputMode = derivedMode;
+
+        // Preserve the clicked spot values until the user explicitly applies rig values.
+        _keepInitialSpotValues = true;
+    }
+
+    public void EnableAutoRadioPopulate()
+    {
+        _keepInitialSpotValues = false;
+    }
+
     public void PrepareForNextLogEntry()
     {
         InputCall = string.Empty;
@@ -381,11 +418,17 @@ public sealed class LogInputViewModel : ViewModelBase
     public void RefreshSelectedRadioInputs()
     {
         RefreshActiveRigSnapshot();
+        if (_keepInitialSpotValues)
+            return;
+
         ApplySelectedRadioToInputs();
     }
 
     public void ApplySelectedRadioToInputs()
     {
+        if (_keepInitialSpotValues)
+            return;
+
         var state = SelectedConnectedRadio?.State;
         if (state is null || !state.IsConnected)
             return;
@@ -601,6 +644,69 @@ public sealed class LogInputViewModel : ViewModelBase
             _ => string.Empty
         };
     }
+
+    private static string TryDeriveModeFromSpotInfo(string? info, decimal mhz)
+    {
+        if (string.IsNullOrWhiteSpace(info))
+            return string.Empty;
+
+        var text = info.Trim().ToUpperInvariant();
+
+        if (Regex.IsMatch(text, @"\bFT8\b")) return "FT8";
+        if (Regex.IsMatch(text, @"\bFT4\b")) return "FT4";
+        if (Regex.IsMatch(text, @"\bRTTY\b")) return "RTTY";
+        if (Regex.IsMatch(text, @"\bPSK\d*\b")) return "DIGU";
+        if (Regex.IsMatch(text, @"\bCW\b")) return "CW";
+        if (Regex.IsMatch(text, @"\bUSB\b")) return "USB";
+        if (Regex.IsMatch(text, @"\bLSB\b")) return "LSB";
+        if (Regex.IsMatch(text, @"\bAM\b")) return "AM";
+        if (Regex.IsMatch(text, @"\bFM\b")) return "FM";
+        if (Regex.IsMatch(text, @"\bSSB\b")) return mhz < 10m ? "LSB" : "USB";
+
+        return string.Empty;
+    }
+
+    private static string TryDeriveModeFromMhz(decimal mhz)
+    {
+        // Common weak-signal digital calling frequencies.
+        if (IsNear(mhz, 1.840m) || IsNear(mhz, 3.573m) || IsNear(mhz, 5.357m)
+            || IsNear(mhz, 7.074m) || IsNear(mhz, 10.136m) || IsNear(mhz, 14.074m)
+            || IsNear(mhz, 18.100m) || IsNear(mhz, 21.074m) || IsNear(mhz, 24.915m)
+            || IsNear(mhz, 28.074m) || IsNear(mhz, 50.313m) || IsNear(mhz, 144.174m))
+            return "FT8";
+
+        if (IsNear(mhz, 3.575m) || IsNear(mhz, 7.0475m) || IsNear(mhz, 10.140m)
+            || IsNear(mhz, 14.080m) || IsNear(mhz, 18.104m) || IsNear(mhz, 21.140m)
+            || IsNear(mhz, 24.919m) || IsNear(mhz, 28.180m) || IsNear(mhz, 50.318m))
+            return "FT4";
+
+        // Typical CW portions across HF bands.
+        if ((mhz >= 1.8m && mhz <= 2.0m)
+            || (mhz >= 3.5m && mhz <= 3.6m)
+            || (mhz >= 7.0m && mhz <= 7.1m)
+            || (mhz >= 10.1m && mhz <= 10.15m)
+            || (mhz >= 14.0m && mhz <= 14.07m)
+            || (mhz >= 18.068m && mhz <= 18.1m)
+            || (mhz >= 21.0m && mhz <= 21.07m)
+            || (mhz >= 24.89m && mhz <= 24.92m)
+            || (mhz >= 28.0m && mhz <= 28.07m))
+            return "CW";
+
+        // Broad voice-mode defaults when no better hint exists.
+        if (mhz >= 28m && mhz < 54m)
+            return "USB";
+        if (mhz >= 50m)
+            return "FM";
+        if (mhz >= 1.8m && mhz < 10m)
+            return "LSB";
+        if (mhz >= 10m)
+            return "USB";
+
+        return string.Empty;
+    }
+
+    private static bool IsNear(decimal mhz, decimal target, decimal tolerance = 0.003m)
+        => Math.Abs(mhz - target) <= tolerance;
 }
 
 /// <summary>Mutable detail row displayed in the QsoDetail DataGrid.</summary>

@@ -40,6 +40,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _statusMessage = string.Empty;
     private string _configFilePath = string.Empty;
     private string _newProfileName = string.Empty;
+    private string _clusterHostname = "127.0.0.1";
+    private int _clusterTcpPort = 7300;
+    private string _clusterCallsign = string.Empty;
+    private string _clusterPassword = string.Empty;
+    private string _clusterCommand = string.Empty;
+    private int _clusterQueueLength = 500;
 
     private const int DefaultRigctldPort = 4532;
 
@@ -355,6 +361,42 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _newProfileName, value);
     }
 
+    public string ClusterHostname
+    {
+        get => _clusterHostname;
+        set => SetProperty(ref _clusterHostname, value ?? string.Empty);
+    }
+
+    public int ClusterTcpPort
+    {
+        get => _clusterTcpPort;
+        set => SetProperty(ref _clusterTcpPort, value);
+    }
+
+    public string ClusterCallsign
+    {
+        get => _clusterCallsign;
+        set => SetProperty(ref _clusterCallsign, value ?? string.Empty);
+    }
+
+    public string ClusterPassword
+    {
+        get => _clusterPassword;
+        set => SetProperty(ref _clusterPassword, value ?? string.Empty);
+    }
+
+    public string ClusterCommand
+    {
+        get => _clusterCommand;
+        set => SetProperty(ref _clusterCommand, value ?? string.Empty);
+    }
+
+    public int ClusterQueueLength
+    {
+        get => _clusterQueueLength;
+        set => SetProperty(ref _clusterQueueLength, value);
+    }
+
     public RigCatalogViewModel RigCatalog { get; } = new();
 
     public void Save()
@@ -437,6 +479,17 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             if (rigctld.ActiveRadioNames.Count == 0)
                 rigctld.ActiveRadioNames.Add(radio.RadioName);
             rigctld.ActiveRadioName = rigctld.ActiveRadioNames[0];
+
+            _appConfig.Cluster = new ClusterConfig
+            {
+                Hostname = string.IsNullOrWhiteSpace(ClusterHostname) ? "127.0.0.1" : ClusterHostname.Trim(),
+                TcpPort = ClusterTcpPort <= 0 ? 7300 : ClusterTcpPort,
+                Callsign = ClusterCallsign.Trim(),
+                Password = ClusterPassword,
+                Command = ClusterCommand.Trim(),
+                QueueLength = ClusterQueueLength <= 0 ? 500 : ClusterQueueLength
+            };
+
             DatabaseFolderPath = normalizedDatabaseFolderPath;
             DatabaseFileName = normalizedDatabaseFileName;
             ConnectionString = resolvedConnectionString;
@@ -452,6 +505,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             RigCatalog.ReloadFromConfiguration();
             App.ApplyThemeFromProfile(profile);
             _ = App.RigctldConnectionManager.RefreshActiveConnectionsAsync();
+            _ = App.DxClusterReader.RestartAsync();
             StatusMessage = $"✓ Profile '{_selectedProfile}' saved at {DateTime.Now:HH:mm:ss}";
         }
         catch (Exception ex)
@@ -588,6 +642,15 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             DatabaseFileName = "hambuslog.db";
 
         AdifDirectory = profile.AdifDirectory;
+
+        var cluster = _appConfig.Cluster ?? new ClusterConfig();
+        ClusterHostname = string.IsNullOrWhiteSpace(cluster.Hostname) ? "127.0.0.1" : cluster.Hostname;
+        ClusterTcpPort = cluster.TcpPort <= 0 ? 7300 : cluster.TcpPort;
+        ClusterCallsign = cluster.Callsign ?? string.Empty;
+        ClusterPassword = cluster.Password ?? string.Empty;
+        ClusterCommand = cluster.Command ?? string.Empty;
+        ClusterQueueLength = cluster.QueueLength <= 0 ? 500 : cluster.QueueLength;
+
         var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
         RigctldReconnectIntervalSeconds = rigctld.ReconnectIntervalSeconds <= 0 ? 3 : Math.Min(rigctld.ReconnectIntervalSeconds, 300);
         PopulateAvailableRigRadios(rigctld);

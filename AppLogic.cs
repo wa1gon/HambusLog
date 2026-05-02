@@ -4,6 +4,8 @@ public partial class App
 {
     public static RigCatalogStore RigCatalogStore { get; } = new();
     public static IRigctldConnectionManager RigctldConnectionManager { get; } = new RigctldConnectionManager();
+    public static IDxSpotFeed DxSpotFeed { get; } = new DxSpotFeed();
+    public static IDxClusterTcpReader DxClusterReader { get; } = new DxClusterTcpReader();
     public static IToastService Toasts { get; } = new ToastService();
 
     private static HamBusLogDbContext? _dbContext;
@@ -69,7 +71,12 @@ public partial class App
             DisableAvaloniaDataAnnotationValidation();
             RigCatalogStore.InitializeFromConfiguration();
             _ = RigctldConnectionManager.RefreshActiveConnectionsAsync();
-            desktop.Exit += (_, _) => RigctldConnectionManager.Dispose();
+            _ = DxClusterReader.StartAsync();
+            desktop.Exit += (_, _) =>
+            {
+                RigctldConnectionManager.Dispose();
+                DxClusterReader.Dispose();
+            };
             desktop.MainWindow = new MainWindow
             {
                 DataContext = new MainWindowViewModel(),

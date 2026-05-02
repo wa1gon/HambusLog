@@ -31,6 +31,7 @@ public static class AppConfigurationStore
             EnsureActiveProfile(config, json);
             EnsureWindowPlacements(config);
             EnsureRigConfiguration(config);
+            EnsureClusterConfiguration(config);
 
             if (!ContainsActiveProfileProperty(json))
                 Save(config);
@@ -51,6 +52,7 @@ public static class AppConfigurationStore
             EnsureActiveProfile(configuration, null);
             EnsureWindowPlacements(configuration);
             EnsureRigConfiguration(configuration);
+            EnsureClusterConfiguration(configuration);
 
             var directory = Path.GetDirectoryName(ConfigFilePath);
             if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
@@ -184,6 +186,12 @@ public static class AppConfigurationStore
         NormalizeRigctld(config.Rigctld);
     }
 
+    private static void EnsureClusterConfiguration(AppConfiguration config)
+    {
+        config.Cluster ??= new ClusterConfig();
+        NormalizeCluster(config.Cluster);
+    }
+
     private static void EnsureWindowPlacements(AppConfiguration config)
     {
         config.WindowPlacements ??= new Dictionary<string, WindowPlacement>(StringComparer.OrdinalIgnoreCase);
@@ -278,5 +286,15 @@ public static class AppConfigurationStore
 
         if (!rigctld.ActiveRadioNames.Contains(rigctld.ActiveRadioName, StringComparer.OrdinalIgnoreCase))
             rigctld.ActiveRadioName = rigctld.ActiveRadioNames[0];
+    }
+
+    private static void NormalizeCluster(ClusterConfig cluster)
+    {
+        cluster.Hostname = string.IsNullOrWhiteSpace(cluster.Hostname) ? "127.0.0.1" : cluster.Hostname.Trim();
+        cluster.TcpPort = cluster.TcpPort <= 0 ? 7300 : cluster.TcpPort;
+        cluster.Callsign = cluster.Callsign?.Trim() ?? string.Empty;
+        cluster.Password = cluster.Password ?? string.Empty;
+        cluster.Command = cluster.Command?.Trim() ?? string.Empty;
+        cluster.QueueLength = cluster.QueueLength <= 0 ? 500 : cluster.QueueLength;
     }
 }
