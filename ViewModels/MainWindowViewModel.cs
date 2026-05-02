@@ -110,11 +110,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         set
         {
             var previousRadioName = _selectedRadioStatus?.RadioName;
+            var previousCanControl = _selectedRadioStatus?.IsConnected == true;
             if (!SetProperty(ref _selectedRadioStatus, value))
                 return;
 
             var selectedRadioChanged = !string.Equals(previousRadioName, value?.RadioName, StringComparison.OrdinalIgnoreCase);
-            var previousCanControl = _selectedRadioStatus?.IsConnected == true;
 
             if (value is not null)
             {
@@ -283,7 +283,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(HasNoRadioStatuses));
         OnPropertyChanged(nameof(RadioStatusSummary));
 
-        var primary = rows.FirstOrDefault(x => x.Status.StartsWith("Connected", StringComparison.OrdinalIgnoreCase))
+        var primary = SelectedRadioStatus
+                      ?? rows.FirstOrDefault(x => x.Status.StartsWith("Connected", StringComparison.OrdinalIgnoreCase))
                       ?? rows.FirstOrDefault();
 
         if (primary is null)
@@ -403,7 +404,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
              radioName,
              rigModelNumber,
              listenPort,
-             string.IsNullOrWhiteSpace(mode) ? "-" : mode,
+             NormalizeModeForDisplay(mode),
              isConnected,
              isConnected
                  ? "Connected"
@@ -411,6 +412,19 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                      ? "Not connected"
                      : "Not connected: " + error);
      }
+
+    private static string NormalizeModeForDisplay(string? mode)
+    {
+        if (string.IsNullOrWhiteSpace(mode))
+            return "-";
+
+        return mode.Trim().ToUpperInvariant() switch
+        {
+            "PKTUSB" => "DIGU",
+            "PKTLSB" => "DIGL",
+            var x => x
+        };
+    }
 
     public void Dispose()
     {

@@ -7,6 +7,8 @@ public sealed class RigctldConnectionManager : IDisposable
     private readonly object _gate = new();
     private readonly Dictionary<string, Worker> _workers = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, RadioRuntimeState> _states = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _radioToCanonical = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<string>> _canonicalMembers = new(StringComparer.OrdinalIgnoreCase);
     private int _reconnectIntervalSeconds = 3;
 
     public event EventHandler? StatesChanged;
@@ -21,10 +23,11 @@ public sealed class RigctldConnectionManager : IDisposable
         if (frequencyMhz <= 0)
             throw new ArgumentOutOfRangeException(nameof(frequencyMhz), "Frequency must be greater than zero.");
 
+        var trimmedRadioName = radioName.Trim();
         var hz = (long)Math.Round(frequencyMhz * 1_000_000m);
         var command = new ControlCommand(ControlCommandType.SetFrequency, hz, null);
-        await EnqueueControlCommandAsync(radioName.Trim(), command, ct);
-        return $"Frequency set to {frequencyMhz:0.######} MHz";
+        await EnqueueControlCommandAsync(trimmedRadioName, command, ct);
+        return $"{trimmedRadioName}: frequency set to {frequencyMhz:0.######} MHz";
     }
 
     public Task<string> SetModeByTagAsync(string tagName, string mode, CancellationToken ct = default)
@@ -37,10 +40,11 @@ public sealed class RigctldConnectionManager : IDisposable
         if (string.IsNullOrWhiteSpace(mode))
             throw new ArgumentException("Mode is required.", nameof(mode));
 
+        var trimmedRadioName = radioName.Trim();
         var normalizedMode = mode.Trim().ToUpperInvariant();
         var command = new ControlCommand(ControlCommandType.SetMode, null, normalizedMode);
-        await EnqueueControlCommandAsync(radioName.Trim(), command, ct);
-        return $"Mode set to {normalizedMode}";
+        await EnqueueControlCommandAsync(trimmedRadioName, command, ct);
+        return $"{trimmedRadioName}: mode set to {normalizedMode}";
     }
 
     public async Task RefreshActiveConnectionsAsync()
@@ -49,30 +53,53 @@ public sealed class RigctldConnectionManager : IDisposable
         var rigctld = AppConfigurationStore.GetRigctld(config);
         _reconnectIntervalSeconds = rigctld.ReconnectIntervalSeconds <= 0 ? 3 : Math.Min(rigctld.ReconnectIntervalSeconds, 300);
 
-        // Poll every configured radio so status reflects all endpoints, even when a radio
-        // is not currently selected as the active control target.
-        var monitoredNames = rigctld.Radios
+        // Use one worker per unique endpoint to avoid conflicting mode snapshots from
+        // multiple concurrent clients connected to the same rigctld host:port.
+        var endpointGroups = rigctld.Radios
+            .Where(x => !string.IsNullOrWhiteSpace(x.RadioName))
+            .GroupBy(BuildEndpointKey, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.ToList())
+            .ToList();
+
+        var canonicalRadios = endpointGroups
+            .Select(group => group.First())
+            .ToList();
+
+        var monitoredCanonicals = canonicalRadios
             .Select(x => x.RadioName)
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var activeRadios = rigctld.Radios
-            .Where(x => monitoredNames.Contains(x.RadioName, StringComparer.OrdinalIgnoreCase))
-            .ToList();
-
         List<string> toStop;
         lock (_gate)
         {
+            _radioToCanonical.Clear();
+            _canonicalMembers.Clear();
+
+            foreach (var group in endpointGroups)
+            {
+                var canonical = group[0].RadioName;
+                var members = group
+                    .Select(x => x.RadioName)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                _canonicalMembers[canonical] = members;
+                foreach (var member in members)
+                    _radioToCanonical[member] = canonical;
+            }
+
             toStop = _workers.Keys
-                .Where(existingName => !monitoredNames.Contains(existingName, StringComparer.OrdinalIgnoreCase))
+                .Where(existingName => !monitoredCanonicals.Contains(existingName, StringComparer.OrdinalIgnoreCase))
                 .ToList();
         }
 
         foreach (var tag in toStop)
             await StopWorkerAsync(tag);
 
-        foreach (var radio in activeRadios)
+        foreach (var radio in canonicalRadios)
             StartWorkerIfNeeded(radio);
     }
 
@@ -106,13 +133,19 @@ public sealed class RigctldConnectionManager : IDisposable
             if (_workers.ContainsKey(radio.RadioName))
                 return;
 
-            _states[radio.RadioName] = new RadioRuntimeState(
-                radio.RadioName,
-                radio.RadioName,
-                false,
-                null,
-                $"Not connected ({radio.Host}:{radio.Port})",
-                DateTime.UtcNow);
+            if (!_canonicalMembers.TryGetValue(radio.RadioName, out var members) || members.Count == 0)
+                members = [radio.RadioName];
+
+            foreach (var member in members)
+            {
+                _states[member] = new RadioRuntimeState(
+                    member,
+                    member,
+                    false,
+                    null,
+                    $"Not connected ({radio.Host}:{radio.Port})",
+                    DateTime.UtcNow);
+            }
 
             var cts = new CancellationTokenSource();
             var worker = new Worker(radio, cts);
@@ -129,11 +162,15 @@ public sealed class RigctldConnectionManager : IDisposable
     {
         Worker? worker;
         var shouldNotify = false;
+        List<string> members;
         lock (_gate)
         {
             if (!_workers.TryGetValue(radioName, out worker))
                 return;
             _workers.Remove(radioName);
+
+            if (!_canonicalMembers.TryGetValue(radioName, out members!))
+                members = [radioName];
         }
 
         try
@@ -152,7 +189,8 @@ public sealed class RigctldConnectionManager : IDisposable
             worker.Cts.Dispose();
             lock (_gate)
             {
-                shouldNotify = _states.Remove(radioName) || shouldNotify;
+                foreach (var member in members)
+                    shouldNotify = _states.Remove(member) || shouldNotify;
             }
         }
 
@@ -165,7 +203,7 @@ public sealed class RigctldConnectionManager : IDisposable
         var radio = worker.Radio;
         while (!ct.IsCancellationRequested)
         {
-            using var client = new Wa1gonLib.RigControl.HamLibRigCtlClient(radio.Host, radio.Port);
+            using var client = new HamBusLog.Wa1gonLib.RigControl.HamLibRigCtlClient(radio.Host, radio.Port);
             try
             {
                 await client.OpenAsync();
@@ -213,9 +251,14 @@ public sealed class RigctldConnectionManager : IDisposable
     {
         Worker worker;
         RadioRuntimeState? state;
+        string canonicalName;
         lock (_gate)
         {
-            if (!_workers.TryGetValue(radioName, out worker!))
+            canonicalName = _radioToCanonical.TryGetValue(radioName, out var mapped)
+                ? mapped
+                : radioName;
+
+            if (!_workers.TryGetValue(canonicalName, out worker!))
                 throw new InvalidOperationException($"No background service is running for radio '{radioName}'.");
 
             _states.TryGetValue(radioName, out state);
@@ -235,7 +278,7 @@ public sealed class RigctldConnectionManager : IDisposable
         }
     }
 
-    private static async Task ProcessControlCommandsAsync(Worker worker, Wa1gonLib.RigControl.HamLibRigCtlClient client, CancellationToken ct)
+    private static async Task ProcessControlCommandsAsync(Worker worker, HamBusLog.Wa1gonLib.RigControl.HamLibRigCtlClient client, CancellationToken ct)
     {
         while (worker.Commands.TryDequeue(out var command))
         {
@@ -275,24 +318,34 @@ public sealed class RigctldConnectionManager : IDisposable
         var shouldNotify = false;
         lock (_gate)
         {
-            _states.TryGetValue(radio.RadioName, out var prev);
-            var next = new RadioRuntimeState(
-                radio.RadioName,
-                radio.RadioName,
-                connected,
-                mode,
-                error,
-                DateTime.UtcNow);
+            var canonicalName = _radioToCanonical.TryGetValue(radio.RadioName, out var mapped)
+                ? mapped
+                : radio.RadioName;
 
-            if (prev is null
-                || prev.IsConnected != next.IsConnected
-                || prev.Mode != next.Mode
-                || prev.Error != next.Error)
+            if (!_canonicalMembers.TryGetValue(canonicalName, out var members) || members.Count == 0)
+                members = [radio.RadioName];
+
+            foreach (var member in members)
             {
-                shouldNotify = true;
-            }
+                _states.TryGetValue(member, out var prev);
+                var next = new RadioRuntimeState(
+                    member,
+                    member,
+                    connected,
+                    mode,
+                    error,
+                    DateTime.UtcNow);
 
-            _states[radio.RadioName] = next;
+                if (prev is null
+                    || prev.IsConnected != next.IsConnected
+                    || prev.Mode != next.Mode
+                    || prev.Error != next.Error)
+                {
+                    shouldNotify = true;
+                }
+
+                _states[member] = next;
+            }
         }
 
         if (shouldNotify)
@@ -326,6 +379,28 @@ public sealed class RigctldConnectionManager : IDisposable
         catch
         {
         }
+    }
+
+    private static string BuildEndpointKey(RigRadioConfig radio)
+        => string.Create(CultureInfo.InvariantCulture, $"{NormalizeEndpointHost(radio.Host)}:{radio.Port}");
+
+    private static string NormalizeEndpointHost(string? host)
+    {
+        var normalized = (host ?? string.Empty).Trim().ToLowerInvariant();
+
+        if (normalized.StartsWith("[") && normalized.EndsWith("]") && normalized.Length > 2)
+            normalized = normalized[1..^1];
+
+        // Treat loopback aliases as the same endpoint so we don't start duplicate workers
+        // for localhost and 127.0.0.1 that target the same rigctld instance.
+        return normalized switch
+        {
+            "localhost" => "loopback",
+            "127.0.0.1" => "loopback",
+            "::1" => "loopback",
+            "0:0:0:0:0:0:0:1" => "loopback",
+            _ => normalized
+        };
     }
 
     public void Dispose()

@@ -6,7 +6,6 @@ public class HamLibRigCtlClient(string _host, int _port) : IDisposable, IRigCont
     private TcpClient? _client;
     private NetworkStream? _stream;
 
-
     public long Freq { get; set; }
     public string Mode { get; set; } = "USB"; // Default mode
 
@@ -48,24 +47,63 @@ public class HamLibRigCtlClient(string _host, int _port) : IDisposable, IRigCont
     public async Task SetModeAsync(string mode)
     {
         EnsureConnected();
+        var trimmedMode = mode.Trim().ToUpperInvariant();
+
         // Hamlib expects mode + passband; 0 asks backend to choose a default passband.
-        await SendCommandAsync($"M {mode} 0\n");
+        await SendCommandAsync($"M {trimmedMode} 0\n");
         await EnsureCommandSucceededAsync("set mode");
+
+        // Some backends acknowledge DIGU/DIGL but keep reporting USB/LSB.
+        // Verify once and retry with packet aliases when needed.
+        if (trimmedMode is "DIGU" or "DIGL")
+        {
+            try
+            {
+                var (readback, _) = await GetModeAndPassbandAsync();
+                var normalizedReadback = NormalizeModeToken(readback);
+
+                if (!string.Equals(normalizedReadback, trimmedMode, StringComparison.OrdinalIgnoreCase))
+                {
+                    var aliasMode = trimmedMode == "DIGU" ? "PKTUSB" : "PKTLSB";
+                    await SendCommandAsync($"M {aliasMode} 0\n");
+                    await EnsureCommandSucceededAsync("set mode alias");
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        Mode = trimmedMode;
     }
 
     private async Task EnsureCommandSucceededAsync(string operation)
     {
-        var response = await ReadLineAsync();
-        if (string.IsNullOrWhiteSpace(response))
+        var seenLines = new List<string>();
+
+        // Some backends may emit an informational line before RPRT.
+        // Read a few lines until we find the canonical RPRT status.
+        for (var i = 0; i < 4; i++)
+        {
+            var response = await ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(response))
+                continue;
+
+            seenLines.Add(response);
+            if (!response.StartsWith("RPRT", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var codeToken = response.Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1).FirstOrDefault();
+            if (!int.TryParse(codeToken, out var code) || code != 0)
+                throw new IOException($"rigctld rejected {operation} (RPRT {codeToken ?? "?"}).");
+
+            return;
+        }
+
+        if (seenLines.Count == 0)
             throw new IOException($"rigctld returned an empty reply while trying to {operation}.");
 
-        // Most rigctld commands acknowledge with: RPRT <code> (0 = success)
-        if (!response.StartsWith("RPRT", StringComparison.OrdinalIgnoreCase))
-            throw new IOException($"Unexpected rigctld reply while trying to {operation}: '{response}'.");
-
-        var codeToken = response.Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1).FirstOrDefault();
-        if (!int.TryParse(codeToken, out var code) || code != 0)
-            throw new IOException($"rigctld rejected {operation} (RPRT {codeToken ?? "?"}).");
+        throw new IOException($"Unexpected rigctld reply while trying to {operation}: '{string.Join(" | ", seenLines)}'.");
     }
 
     public async Task SendCommandAsync(string command)
@@ -160,8 +198,20 @@ public class HamLibRigCtlClient(string _host, int _port) : IDisposable, IRigCont
         if (modeToken == "0")
             return (string.Empty, 0);
 
+        modeToken = NormalizeModeToken(modeToken);
+
         int.TryParse(passbandLine?.Trim(), out var passband);
         return (modeToken, passband);
+    }
+
+    private static string NormalizeModeToken(string modeToken)
+    {
+        return modeToken.Trim().ToUpperInvariant() switch
+        {
+            "PKTUSB" => "DIGU",
+            "PKTLSB" => "DIGL",
+            var x => x
+        };
     }
 
     public async Task<long> GetFreqAsync()
