@@ -29,16 +29,16 @@ public sealed class ToastService : IToastService
     }
 
     public void ShowInfo(string title, string message, TimeSpan? timeout = null)
-        => Show(NotificationType.Information, title, message, timeout ?? TimeSpan.FromSeconds(3));
+        => Show(NotificationType.Information, title, message, timeout ?? TimeSpan.FromSeconds(30));
 
     public void ShowSuccess(string title, string message, TimeSpan? timeout = null)
-        => Show(NotificationType.Success, title, message, timeout ?? TimeSpan.FromSeconds(3));
+        => Show(NotificationType.Success, title, message, timeout ?? TimeSpan.FromSeconds(30));
 
     public void ShowWarning(string title, string message, TimeSpan? timeout = null)
-        => Show(NotificationType.Warning, title, message, timeout ?? TimeSpan.FromSeconds(4));
+        => Show(NotificationType.Warning, title, message, timeout ?? TimeSpan.FromSeconds(30));
 
     public void ShowError(string title, string message, TimeSpan? timeout = null)
-        => Show(NotificationType.Error, title, message, timeout ?? TimeSpan.FromSeconds(5));
+        => Show(NotificationType.Error, title, message, timeout ?? TimeSpan.FromSeconds(30));
 
     private void Show(NotificationType type, string title, string message, TimeSpan timeout)
     {

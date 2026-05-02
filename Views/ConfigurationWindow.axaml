@@ -478,6 +478,49 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- ── Cluster Tab ─────────────────────────────────────── -->
+            <TabItem Header="Cluster">
+                <ScrollViewer Margin="12" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="10">
+
+                        <Border Padding="14" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="CardHeading" Text="DX Cluster Configuration" />
+                                <TextBlock Text="Connection and startup command settings for your cluster client."
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="14" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Hostname" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ClusterHostname}" Watermark="dxc.example.net" Width="320" Padding="8,7" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="TCP Port" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ClusterTcpPort, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Padding="8,7" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Callsign" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ClusterCallsign}" Watermark="K1ABC" Width="220" Padding="8,7" />
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Password" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ClusterPassword}" Width="220" Padding="8,7" />
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Command" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding ClusterCommand}" Watermark="set/filter ..." Width="460" Padding="8,7" />
+
+                                <TextBlock Grid.Row="5" Grid.Column="0" Text="Queue Length" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding ClusterQueueLength, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Padding="8,7" />
+                            </Grid>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
         </TabControl>
 
         <!-- ── Footer ────────────────────────────────────────────── -->

@@ -25,6 +25,7 @@
     <Compile Include="Wa1gonLib/Configuration/RigCtlConf.cs" />
     <Compile Include="Wa1gonLib/IRegControlClient.cs" />
     <Compile Include="Wa1gonLib/Models/CallSign.cs" />
+    <Compile Include="Wa1gonLib/Models/ClusterConfig.cs" />
     <Compile Include="Wa1gonLib/Models/DxccEntry.cs" />
     <Compile Include="Wa1gonLib/Models/RigCatalogEntry.cs" />
     <Compile Include="Wa1gonLib/Models/DxSpot.cs" />

@@ -4,6 +4,7 @@ public partial class MainWindow
 {
     private MenuNode? _previousSelection;
     private GridWindow? _gridWindow;
+    private DxSpotsWindow? _dxSpotsWindow;
     private bool _isImportingAdif;
 
     public MainWindow()
@@ -37,6 +38,11 @@ public partial class MainWindow
                 await ImportAdifAsync();
                 ResetTreeSelection(sender);
             }
+            else if (node.Title == "DX Spots" || node.Title == "DX Cluster")
+            {
+                ToggleDxSpotsWindow();
+                ResetTreeSelection(sender);
+            }
             else
             {
                 _previousSelection = node;
@@ -51,6 +57,8 @@ public partial class MainWindow
     public void OnOpenConfigurationClicked(object? sender, RoutedEventArgs e) => OpenConfigurationWindow();
 
     public async void OnImportAdifClicked(object? sender, RoutedEventArgs e) => await ImportAdifAsync();
+
+    public void OnOpenDxClusterClicked(object? sender, RoutedEventArgs e) => ToggleDxSpotsWindow();
 
     private void ToggleGridWindow()
     {
@@ -74,6 +82,24 @@ public partial class MainWindow
     {
         var configurationWindow = new ConfigurationWindow();
         ShowWithVisibleOwner(configurationWindow);
+    }
+
+    private void ToggleDxSpotsWindow()
+    {
+        if (_dxSpotsWindow is { IsVisible: true })
+        {
+            App.SaveWindowPlacement(_dxSpotsWindow, nameof(DxSpotsWindow));
+            _dxSpotsWindow.Hide();
+            return;
+        }
+
+        if (_dxSpotsWindow is null)
+        {
+            _dxSpotsWindow = new DxSpotsWindow();
+            _dxSpotsWindow.Closed += (_, _) => _dxSpotsWindow = null;
+        }
+
+        ShowWithVisibleOwner(_dxSpotsWindow);
     }
 
     private void OpenNewContactWindow()

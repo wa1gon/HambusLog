@@ -1,0 +1,58 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:HamBusLog.ViewModels"
+        x:Class="HamBusLog.Views.DxSpotsWindow"
+        x:DataType="vm:DxSpotsWindowViewModel"
+        Title="DX Spots"
+        Width="980"
+        Height="560"
+        MinWidth="760"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppWindowBackgroundBrush}"
+        Foreground="{DynamicResource AppForegroundBrush}">
+
+    <Window.Styles>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource AppHeaderBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+        </Style>
+    </Window.Styles>
+
+    <Grid Margin="14" RowDefinitions="Auto,*" RowSpacing="10">
+        <Border Grid.Row="0" Padding="12" CornerRadius="8"
+                BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
+                Background="{DynamicResource AppPanelBackgroundBrush}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <TextBlock Grid.Column="0" Text="Live DX Spots" FontSize="20" FontWeight="Bold" />
+                <TextBlock Grid.Column="1" Text="{Binding SpotSummary}" VerticalAlignment="Center"
+                           Foreground="{DynamicResource AppMutedForegroundBrush}" />
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" CornerRadius="8"
+                BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
+                Background="{DynamicResource AppPanelBackgroundBrush}">
+            <DataGrid ItemsSource="{Binding Spots}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      GridLinesVisibility="All"
+                      CanUserReorderColumns="True"
+                      CanUserSortColumns="True"
+                      HeadersVisibility="Column"
+                      RowHeight="30"
+                      Margin="8">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Spotter" Binding="{Binding Spotter}" Width="140" />
+                    <DataGridTextColumn Header="Freq" Binding="{Binding Frequency, StringFormat='{}{0:F1}'}" Width="100" />
+                    <DataGridTextColumn Header="Station" Binding="{Binding Callsign}" Width="140" />
+                    <DataGridTextColumn Header="Comment" Binding="{Binding Info}" Width="*" />
+                    <DataGridTextColumn Header="Time (UTC)" Binding="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}" Width="120" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+    </Grid>
+</Window>
+
