@@ -10,6 +10,7 @@ public partial class MainWindow
     {
         InitializeComponent();
         App.TrackWindowPlacement(this, nameof(MainWindow));
+        App.Toasts.RegisterWindow(this);
     }
 
     public async void OnMenuTreeViewSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -42,6 +43,14 @@ public partial class MainWindow
             }
         }
     }
+
+    public void OnOpenGridClicked(object? sender, RoutedEventArgs e) => ToggleGridWindow();
+
+    public void OnOpenNewContactClicked(object? sender, RoutedEventArgs e) => OpenNewContactWindow();
+
+    public void OnOpenConfigurationClicked(object? sender, RoutedEventArgs e) => OpenConfigurationWindow();
+
+    public async void OnImportAdifClicked(object? sender, RoutedEventArgs e) => await ImportAdifAsync();
 
     private void ToggleGridWindow()
     {
@@ -159,66 +168,22 @@ public partial class MainWindow
 
         if (importException is not null)
         {
-            await ShowMessageAsync("ADIF Import Failed", importException.Message);
+            App.Toasts.ShowError("ADIF import failed", importException.Message);
             return;
         }
 
         if (result is not null)
         {
-            var message = result.Value.ParsedCount == 0
-                ? $"No QSO records were found in:\n{result.Value.FilePath}"
-                : $"Imported {result.Value.ParsedCount} QSO record(s) from:\n{result.Value.FilePath}\n\nDatabase change count: {result.Value.SavedChanges}";
+            if (result.Value.ParsedCount == 0)
+            {
+                App.Toasts.ShowWarning("ADIF import complete", "No QSO records were found in the selected file.");
+                return;
+            }
 
-            await ShowMessageAsync("ADIF Import Complete", message);
+            App.Toasts.ShowSuccess(
+                "ADIF import complete",
+                $"Imported {result.Value.ParsedCount} QSO record(s). Database changes: {result.Value.SavedChanges}.");
         }
-    }
-
-    private async Task ShowMessageAsync(string title, string message)
-    {
-        var text = new TextBlock
-        {
-            Text = message,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, 0, 0, 10)
-        };
-
-        var ok = new Button
-        {
-            Content = "OK",
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
-            MinWidth = 80
-        };
-
-        var panel = new StackPanel
-        {
-            Margin = new Thickness(14),
-            Spacing = 8,
-            Children = { text, ok }
-        };
-
-        var dialog = new Window
-        {
-            Width = 520,
-            Height = 220,
-            MinWidth = 420,
-            MinHeight = 180,
-            CanResize = false,
-            Title = title,
-            Content = panel,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner
-        };
-
-        App.TrackWindowPlacement(dialog, "MessageDialog");
-
-        ok.Click += (_, _) => dialog.Close();
-
-        var owner = GetPreferredDialogOwner();
-        if (owner is not null)
-            dialog.Show(owner);
-        else
-            dialog.Show();
-
-        await Task.CompletedTask;
     }
 
     private Window? GetPreferredDialogOwner()
@@ -293,7 +258,4 @@ public partial class MainWindow
             vm.SelectedRadioStatus = row;
     }
 }
-
-
-
 

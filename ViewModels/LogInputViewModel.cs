@@ -39,6 +39,17 @@ public sealed class LogInputViewModel : ViewModelBase
     private AppConfiguration _appConfig = new();
     private string _selectedProfile = "default";
 
+    // ----- station / operator config -----
+    private string _myCall = string.Empty;
+    private string _myLocation = string.Empty;
+    private string _myGridSquare = string.Empty;
+    private string _myLatitude = string.Empty;
+    private string _myLongitude = string.Empty;
+    private string _myItuZone = string.Empty;
+    private string _myCqZone = string.Empty;
+    private string _myFieldDaySection = string.Empty;
+    private string _myFieldDayClass = string.Empty;
+
     // ----- active rig snapshot for status display -----
     private string _activeRigStatus = "No active rig";
     private string _activeRigLabel = string.Empty;
@@ -56,6 +67,7 @@ public sealed class LogInputViewModel : ViewModelBase
         AvailableProfiles = new ObservableCollection<string>();
         AvailableConnectedRadios = new ObservableCollection<ConnectedRadioOption>();
         LoadProfiles();
+        LoadStationConfig();
         InputDate       = DateTime.UtcNow.ToString("yyyyMMdd");
         InputTimeOn     = DateTime.UtcNow.ToString("HHmm");
         ApplyActiveRigSnapshot();
@@ -146,6 +158,54 @@ public sealed class LogInputViewModel : ViewModelBase
         set { if (SetProperty(ref _selectedContestType, value)) OnPropertyChanged(nameof(IsFieldDay)); }
     }
     public bool IsFieldDay => SelectedContestType == ContestType.ArrlFieldDay;
+
+    // ── Station / Operator Config Properties ─────────────────────────
+    public string MyCall
+    {
+        get => _myCall;
+        set { if (SetProperty(ref _myCall, (value ?? string.Empty).ToUpperInvariant())) SaveStationConfig(); }
+    }
+    public string MyLocation
+    {
+        get => _myLocation;
+        set { if (SetProperty(ref _myLocation, value ?? string.Empty)) SaveStationConfig(); }
+    }
+    public string MyGridSquare
+    {
+        get => _myGridSquare;
+        set { if (SetProperty(ref _myGridSquare, value ?? string.Empty)) SaveStationConfig(); }
+    }
+    public string MyLatitude
+    {
+        get => _myLatitude;
+        set { if (SetProperty(ref _myLatitude, value ?? string.Empty)) SaveStationConfig(); }
+    }
+    public string MyLongitude
+    {
+        get => _myLongitude;
+        set { if (SetProperty(ref _myLongitude, value ?? string.Empty)) SaveStationConfig(); }
+    }
+    public string MyItuZone
+    {
+        get => _myItuZone;
+        set { if (SetProperty(ref _myItuZone, value ?? string.Empty)) SaveStationConfig(); }
+    }
+    public string MyCqZone
+    {
+        get => _myCqZone;
+        set { if (SetProperty(ref _myCqZone, value ?? string.Empty)) SaveStationConfig(); }
+    }
+    public string MyFieldDaySection
+    {
+        get => _myFieldDaySection;
+        set { if (SetProperty(ref _myFieldDaySection, (value ?? string.Empty).ToUpperInvariant())) SaveStationConfig(); }
+    }
+    public string MyFieldDayClass
+    {
+        get => _myFieldDayClass;
+        set { if (SetProperty(ref _myFieldDayClass, (value ?? string.Empty).ToUpperInvariant())) SaveStationConfig(); }
+    }
+
 
     public string InputCall
     {
@@ -291,8 +351,6 @@ public sealed class LogInputViewModel : ViewModelBase
             qso.Details.Add(new QsoDetail { FieldName = "radio_label", FieldValue = activeRig.Label });
             if (!string.IsNullOrWhiteSpace(activeRig.Mode) && activeRig.Mode != "0")
                 qso.Details.Add(new QsoDetail { FieldName = "radio_mode", FieldValue = activeRig.Mode });
-            if (activeRig.FrequencyHz is long hz && hz > 0)
-                qso.Details.Add(new QsoDetail { FieldName = "radio_freq_hz", FieldValue = hz.ToString(CultureInfo.InvariantCulture) });
         }
 
         errorMessage = string.Empty;
@@ -404,6 +462,55 @@ public sealed class LogInputViewModel : ViewModelBase
 
         _appConfig.ActiveProfile = _selectedProfile;
         AppConfigurationStore.Save(_appConfig);
+    }
+
+    private void LoadStationConfig()
+    {
+        var p = ActiveConfigProfile();
+        _myCall             = p.MyCall;
+        _myLocation         = p.MyLocation;
+        _myGridSquare       = p.MyGridSquare;
+        _myLatitude         = p.MyLatitude;
+        _myLongitude        = p.MyLongitude;
+        _myItuZone          = p.MyItuZone;
+        _myCqZone           = p.MyCqZone;
+        _myFieldDaySection  = p.MyFieldDaySection;
+        _myFieldDayClass    = p.MyFieldDayClass;
+        OnPropertyChanged(nameof(MyCall));
+        OnPropertyChanged(nameof(MyLocation));
+        OnPropertyChanged(nameof(MyGridSquare));
+        OnPropertyChanged(nameof(MyLatitude));
+        OnPropertyChanged(nameof(MyLongitude));
+        OnPropertyChanged(nameof(MyItuZone));
+        OnPropertyChanged(nameof(MyCqZone));
+        OnPropertyChanged(nameof(MyFieldDaySection));
+        OnPropertyChanged(nameof(MyFieldDayClass));
+    }
+
+    private void SaveStationConfig()
+    {
+        var p = ActiveConfigProfile();
+        p.MyCall            = _myCall;
+        p.MyLocation        = _myLocation;
+        p.MyGridSquare      = _myGridSquare;
+        p.MyLatitude        = _myLatitude;
+        p.MyLongitude       = _myLongitude;
+        p.MyItuZone         = _myItuZone;
+        p.MyCqZone          = _myCqZone;
+        p.MyFieldDaySection = _myFieldDaySection;
+        p.MyFieldDayClass   = _myFieldDayClass;
+        AppConfigurationStore.Save(_appConfig);
+    }
+
+    private ConfigProfile ActiveConfigProfile()
+    {
+        var key = string.IsNullOrWhiteSpace(_selectedProfile) ? "default" : _selectedProfile;
+        if (!_appConfig.Profiles.TryGetValue(key, out var profile))
+        {
+            profile = new ConfigProfile { Name = key };
+            _appConfig.Profiles[key] = profile;
+        }
+        return profile;
     }
 
     private void ApplyActiveRigSnapshot()

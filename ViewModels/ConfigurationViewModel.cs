@@ -21,6 +21,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private Color _inputBorderColor = Color.Parse("#34495E");
     private Color _inputSelectionBackgroundColor = Color.Parse("#2C3E50");
     private Color _inputSelectionForegroundColor = Color.Parse("#FFFFFF");
+    private Color _mutedForegroundColor = Color.Parse("#9CA3AF");
     private string _adifDirectory = string.Empty;
     private string _databaseFolderPath = string.Empty;
     private string _databaseFileName = "hambuslog.db";
@@ -164,6 +165,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     {
         get => _inputSelectionForegroundColor;
         set => SetProperty(ref _inputSelectionForegroundColor, value);
+    }
+
+    public Color MutedForegroundColor
+    {
+        get => _mutedForegroundColor;
+        set => SetProperty(ref _mutedForegroundColor, value);
     }
 
     public string ConnectionString
@@ -385,6 +392,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 InputBorderColor = ToHexRgb(InputBorderColor),
                 InputSelectionBackgroundColor = ToHexRgb(InputSelectionBackgroundColor),
                 InputSelectionForegroundColor = ToHexRgb(InputSelectionForegroundColor),
+                MutedForegroundColor = ToHexRgb(MutedForegroundColor),
                 ConnectionString = resolvedConnectionString
             };
 
@@ -490,6 +498,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             InputBorderColor = ToHexRgb(InputBorderColor),
             InputSelectionBackgroundColor = ToHexRgb(InputSelectionBackgroundColor),
             InputSelectionForegroundColor = ToHexRgb(InputSelectionForegroundColor),
+            MutedForegroundColor = ToHexRgb(MutedForegroundColor),
             ConnectionString = src.ConnectionString
         };
 
@@ -551,6 +560,16 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
         try { InputSelectionForegroundColor = Color.Parse(profile.InputSelectionForegroundColor); }
         catch { InputSelectionForegroundColor = Color.Parse("#FFFFFF"); }
+
+        if (!string.IsNullOrWhiteSpace(profile.MutedForegroundColor))
+        {
+            try { MutedForegroundColor = Color.Parse(profile.MutedForegroundColor); }
+            catch { MutedForegroundColor = AdjustBrightness(ForegroundColor, -0.35); }
+        }
+        else
+        {
+            MutedForegroundColor = AdjustBrightness(ForegroundColor, -0.35);
+        }
 
         ConnectionString = profile.ConnectionString;
         var configuredDatabasePath = !string.IsNullOrWhiteSpace(profile.DatabaseFilePath)
@@ -784,6 +803,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     }
 
     private static string ToHexRgb(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+
+    private static Color AdjustBrightness(Color color, double delta)
+    {
+        byte Clamp(double v) => (byte)Math.Max(0, Math.Min(255, v));
+        return Color.FromArgb(color.A, Clamp(color.R + 255 * delta), Clamp(color.G + 255 * delta), Clamp(color.B + 255 * delta));
+    }
 
     private static string NormalizeDatabaseFolderPath(string? path)
     {

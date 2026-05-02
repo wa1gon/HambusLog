@@ -11,6 +11,7 @@ public partial class GridWindow
     {
         InitializeComponent();
         App.TrackWindowPlacement(this, nameof(GridWindow));
+        App.Toasts.RegisterWindow(this);
         _repository = new SqliteQsoRepository(App.DbContext);
         _viewModel = new GridViewModel(_repository);
         DataContext = _viewModel;
@@ -42,29 +43,25 @@ public partial class GridWindow
         {
             if (_repository is null)
                 return;
-                
+
             await _repository.AddAsync(qso);
             await _repository.SaveChangesAsync();
             System.Diagnostics.Debug.WriteLine($"Saved QSO: {qso.Call}");
+            App.Toasts.ShowSuccess("QSO saved", $"{qso.Call} logged on {qso.Band} {qso.Mode}");
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Error saving QSO: {ex.Message}");
+            App.Toasts.ShowError("Save failed", ex.Message);
         }
     }
 
-    public void OnSortHeaderClick(object? sender, RoutedEventArgs e)
-    {
-        if (sender is Button { Tag: string column })
-            _viewModel?.SortBy(column);
-    }
-
-    public async void OnGridRowPointerPressed(object? sender, PointerPressedEventArgs e)
+    public async void OnDataGridDoubleTapped(object? sender, TappedEventArgs e)
     {
         if (_viewModel is null || _repository is null)
             return;
 
-        if (sender is not Border { DataContext: Qso rowQso })
+        if (sender is not DataGrid { SelectedItem: Qso rowQso })
             return;
 
         var fullQso = await _repository.GetByIdAsync(rowQso.Id);
@@ -102,11 +99,13 @@ public partial class GridWindow
             var index = _viewModel.LogEntries.IndexOf(existing);
             _viewModel.LogEntries.RemoveAt(index);
             _viewModel.LogEntries.Insert(index, existing);
+
+            App.Toasts.ShowSuccess("QSO updated", $"Changes saved for {updated.Call}");
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Error saving edited QSO: {ex.Message}");
+            App.Toasts.ShowError("Update failed", ex.Message);
         }
     }
 }
-
