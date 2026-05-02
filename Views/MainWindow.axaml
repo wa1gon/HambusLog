@@ -57,9 +57,9 @@
             <Setter Property="BorderBrush" Value="{DynamicResource AppButtonNormalBrush}" />
         </Style>
         <Style Selector="Button.ModePreset.CwPreset">
-            <Setter Property="Background" Value="{DynamicResource AppButtonCautionBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource AppButtonCautionForegroundBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource AppButtonCautionBrush}" />
+            <Setter Property="Background" Value="{DynamicResource AppButtonNormalBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppButtonNormalForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppButtonNormalBrush}" />
         </Style>
         <Style Selector="Button.ModePreset.DigitalPreset">
             <Setter Property="Background" Value="{DynamicResource AppButtonNormalBrush}" />
@@ -169,11 +169,13 @@
                                 Margin="0,0,8,0" />
                         <Button Classes="QuickAction" Content="Configuration"
                                 Click="OnOpenConfigurationClicked"
-                                Background="{DynamicResource AppButtonCautionBrush}"
-                                Foreground="{DynamicResource AppButtonCautionForegroundBrush}"
+                                Background="{DynamicResource AppButtonNormalBrush}"
+                                Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
                                 Margin="0,0,8,0" />
-                        <Button Classes="GhostButton" Content="Import ADIF"
+                        <Button Classes="QuickAction" Content="Import ADIF"
                                 Click="OnImportAdifClicked"
+                                Background="{DynamicResource AppButtonNormalBrush}"
+                                Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
                                 Margin="0,0,0,0" />
                     </WrapPanel>
                 </Grid>
@@ -261,34 +263,32 @@
                                     BorderThickness="1"
                                     Background="{DynamicResource AppWindowBackgroundBrush}">
                                 <Grid RowDefinitions="Auto,*">
-                                    <Grid ColumnDefinitions="44,160,88,84,118,86,*"
+                                    <Grid ColumnDefinitions="44,160,88,84,86,*"
                                           Background="{DynamicResource AppHeaderBackgroundBrush}">
                                         <TextBlock Grid.Column="0" Text="#" Margin="8,7" Classes="FieldLabel" />
                                         <TextBlock Grid.Column="1" Text="RADIO" Margin="8,7" Classes="FieldLabel" />
                                         <TextBlock Grid.Column="2" Text="MODEL" Margin="8,7" Classes="FieldLabel" />
                                         <TextBlock Grid.Column="3" Text="PORT" Margin="8,7" Classes="FieldLabel" />
-                                        <TextBlock Grid.Column="4" Text="FREQUENCY" Margin="8,7" Classes="FieldLabel" />
-                                        <TextBlock Grid.Column="5" Text="MODE" Margin="8,7" Classes="FieldLabel" />
-                                        <TextBlock Grid.Column="6" Text="STATUS" Margin="8,7" Classes="FieldLabel" />
+                                        <TextBlock Grid.Column="4" Text="MODE" Margin="8,7" Classes="FieldLabel" />
+                                        <TextBlock Grid.Column="5" Text="STATUS" Margin="8,7" Classes="FieldLabel" />
                                     </Grid>
 
                                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                                         <ItemsControl ItemsSource="{Binding RadioStatuses}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="vm:RadioConnectionStatusViewModel">
-                                                    <Border Padding="0"
+                                                     <Border Padding="0"
                                                             BorderThickness="0,0,0,1"
                                                             BorderBrush="{DynamicResource AppBorderBrush}"
                                                             Background="{Binding RowBackground}"
                                                             PointerPressed="OnRadioRowPointerPressed">
-                                                        <Grid ColumnDefinitions="44,160,88,84,118,86,*">
+                                                        <Grid ColumnDefinitions="44,160,88,84,86,*">
                                                             <TextBlock Grid.Column="0" Text="{Binding RowNumber}" Foreground="{Binding RowForeground}" Margin="8,8" />
                                                             <TextBlock Grid.Column="1" Text="{Binding Label}" Foreground="{Binding RowForeground}" Margin="8,8" FontWeight="SemiBold" />
                                                             <TextBlock Grid.Column="2" Text="{Binding RigModel}" Foreground="{Binding RowForeground}" Margin="8,8" />
                                                             <TextBlock Grid.Column="3" Text="{Binding ListenPort}" Foreground="{Binding RowForeground}" Margin="8,8" />
-                                                            <TextBlock Grid.Column="4" Text="{Binding Frequency}" Foreground="{Binding RowForeground}" Margin="8,8" />
-                                                            <TextBlock Grid.Column="5" Text="{Binding Mode}" Foreground="{Binding RowForeground}" Margin="8,8" />
-                                                            <TextBlock Grid.Column="6" Text="{Binding Status}" Foreground="{Binding RowForeground}" Margin="8,8" TextWrapping="Wrap" />
+                                                            <TextBlock Grid.Column="4" Text="{Binding Mode}" Foreground="{Binding RowForeground}" Margin="8,8" />
+                                                            <TextBlock Grid.Column="5" Text="{Binding Status}" Foreground="{Binding RowForeground}" Margin="8,8" TextWrapping="Wrap" />
                                                         </Grid>
                                                     </Border>
                                                 </DataTemplate>
@@ -362,7 +362,7 @@
 
                             <StackPanel Spacing="5">
                                 <TextBlock Classes="FieldLabel" Text="PRESET MODES" />
-                                <TextBlock Text="Standard: phone + digital modes = primary, CW = caution."
+                                <TextBlock Text="Common mode presets — click to apply directly to the selected radio."
                                            Foreground="{DynamicResource AppMutedForegroundBrush}"
                                            FontSize="12"
                                            TextWrapping="Wrap" />

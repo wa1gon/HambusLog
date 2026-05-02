@@ -351,8 +351,6 @@ public sealed class LogInputViewModel : ViewModelBase
             qso.Details.Add(new QsoDetail { FieldName = "radio_label", FieldValue = activeRig.Label });
             if (!string.IsNullOrWhiteSpace(activeRig.Mode) && activeRig.Mode != "0")
                 qso.Details.Add(new QsoDetail { FieldName = "radio_mode", FieldValue = activeRig.Mode });
-            if (activeRig.FrequencyHz is long hz && hz > 0)
-                qso.Details.Add(new QsoDetail { FieldName = "radio_freq_hz", FieldValue = hz.ToString(CultureInfo.InvariantCulture) });
         }
 
         errorMessage = string.Empty;

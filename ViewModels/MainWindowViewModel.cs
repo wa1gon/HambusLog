@@ -30,7 +30,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private MenuNode? _selectedMenuItem;
     private readonly RigCatalogStore _rigCatalogStore;
     private readonly HamBusLog.Hardware.RigctldConnectionManager _rigctldConnectionManager;
-    private readonly DispatcherTimer _radioStatusRefreshTimer;
     private ObservableCollection<ActiveRadioOption> _availableRadios = [];
     private ActiveRadioOption? _selectedActiveRadio;
     private ObservableCollection<RadioConnectionStatusViewModel> _radioStatuses = [];
@@ -46,12 +45,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _rigctldConnectionManager = App.RigctldConnectionManager;
         _rigCatalogStore.PropertyChanged += OnRigCatalogStorePropertyChanged;
         _rigctldConnectionManager.StatesChanged += OnRigctldStatesChanged;
-        _radioStatusRefreshTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(1)
-        };
-        _radioStatusRefreshTimer.Tick += OnRadioStatusRefreshTimerTick;
-        _radioStatusRefreshTimer.Start();
         RefreshActiveRadioOptions();
         RefreshRadioStatuses();
         _ = _rigctldConnectionManager.RefreshActiveConnectionsAsync();
@@ -121,32 +114,30 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 return;
 
             var selectedRadioChanged = !string.Equals(previousRadioName, value?.RadioName, StringComparison.OrdinalIgnoreCase);
+            var previousCanControl = _selectedRadioStatus?.IsConnected == true;
 
             if (value is not null)
             {
                 if (selectedRadioChanged)
                 {
-                    ControlFrequencyMhz = FormatFrequencyForEditor(value.FrequencyMhz);
                     ControlMode = string.IsNullOrWhiteSpace(value.Mode) || value.Mode == "-"
                         ? string.Empty
                         : value.Mode;
                 }
                 else
                 {
-                    if (string.IsNullOrWhiteSpace(_controlFrequencyMhz) && value.FrequencyMhz is decimal mhz)
-                        ControlFrequencyMhz = FormatFrequencyForEditor(mhz);
-
                     if (string.IsNullOrWhiteSpace(_controlMode) && !string.IsNullOrWhiteSpace(value.Mode) && value.Mode != "-")
                         ControlMode = value.Mode;
                 }
             }
             else if (selectedRadioChanged)
             {
-                ControlFrequencyMhz = string.Empty;
                 ControlMode = string.Empty;
             }
 
-            OnPropertyChanged(nameof(CanControlSelectedRadio));
+            var newCanControl = value?.IsConnected == true;
+            if (newCanControl != previousCanControl)
+                OnPropertyChanged(nameof(CanControlSelectedRadio));
         }
     }
 
@@ -217,9 +208,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             .Select((radio, index) =>
             {
                 if (snapshotByName.TryGetValue(radio.RadioName, out var state))
-                    return BuildStatusRow(index + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, radio.Port, state.FrequencyMhz, state.ModeDisplay, state.IsConnected, state.Error);
+                    return BuildStatusRow(index + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, radio.Port, state.Mode, state.IsConnected, state.Error);
 
-                return BuildStatusRow(index + 1, radio.RadioName, radio.RadioName, rigctld.ActiveRigNum, radio.Port, null, null, false, $"Not connected ({radio.Host}:{radio.Port})");
+                return BuildStatusRow(index + 1, radio.RadioName, radio.RadioName, rigctld.ActiveRigNum, radio.Port, null, false, $"Not connected ({radio.Host}:{radio.Port})");
             })
             .ToList();
 
@@ -228,7 +219,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             if (rows.Any(x => string.Equals(x.RadioName, state.RadioName, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
-            rows.Add(BuildStatusRow(rows.Count + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, null, state.FrequencyMhz, state.ModeDisplay, state.IsConnected, state.Error));
+            rows.Add(BuildStatusRow(rows.Count + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, null, state.Mode, state.IsConnected, state.Error));
         }
 
         // Update items in-place to avoid resetting DataGrid selection and scroll position
@@ -303,10 +294,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         var mode = primary.Mode == "-" ? string.Empty : $" {primary.Mode}";
-        var freq = primary.Frequency == "-" ? string.Empty : $" {primary.Frequency}";
         var model = primary.RigModel == "-" ? string.Empty : $" model {primary.RigModel}";
         var endpoint = primary.ListenPort == "-" ? string.Empty : $" port {primary.ListenPort}";
-        var summary = $"Rig: {primary.Label}{model}{endpoint}{freq}{mode} - {primary.Status}";
+        var summary = $"Rig: {primary.Label}{model}{endpoint}{mode} - {primary.Status}";
         RadioStatusSummary = summary;
     }
 
@@ -389,14 +379,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public async Task ApplyPresetModeToSelectedRadioAsync(string mode)
     {
         ControlMode = mode;
-        var modeToApply = mode.ToUpperInvariant() switch
-        {
-            "DIGU" => "PKTUSB",
-            "DIGL" => "PKTLSB",
-            _ => mode
-        };
-
-        await ApplyModeToSelectedRadioAsync(modeToApply);
+        await ApplyModeToSelectedRadioAsync(mode);
     }
 
     private static string FormatFrequencyForEditor(decimal? mhz)
@@ -410,7 +393,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
           string radioName,
           int? rigModelNumber,
           int? listenPort,
-         decimal? frequencyMhz,
          string? mode,
          bool isConnected,
          string? error)
@@ -421,10 +403,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
              radioName,
              rigModelNumber,
              listenPort,
-             frequencyMhz,
-             frequencyMhz is decimal mhz
-                 ? (mhz < 0.001m ? "-" : mhz.ToString("0.000", CultureInfo.InvariantCulture) + " MHz")
-                 : "-",
              string.IsNullOrWhiteSpace(mode) ? "-" : mode,
              isConnected,
              isConnected
@@ -434,31 +412,22 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                      : "Not connected: " + error);
      }
 
-    private void OnRadioStatusRefreshTimerTick(object? sender, EventArgs e)
-    {
-        RefreshRadioStatuses();
-    }
-
     public void Dispose()
     {
         _rigCatalogStore.PropertyChanged -= OnRigCatalogStorePropertyChanged;
         _rigctldConnectionManager.StatesChanged -= OnRigctldStatesChanged;
-        _radioStatusRefreshTimer.Stop();
-        _radioStatusRefreshTimer.Tick -= OnRadioStatusRefreshTimerTick;
     }
 }
 
 public sealed class RadioConnectionStatusViewModel
 {
-    public RadioConnectionStatusViewModel(int rowNumber, string label, string radioName, int? rigModelNumber, int? listenPort, decimal? frequencyMhz, string frequency, string mode, bool isConnected, string status)
+    public RadioConnectionStatusViewModel(int rowNumber, string label, string radioName, int? rigModelNumber, int? listenPort, string mode, bool isConnected, string status)
     {
         RowNumber = rowNumber;
         Label = label;
         RadioName = radioName;
         RigModel = rigModelNumber?.ToString(CultureInfo.InvariantCulture) ?? "-";
         ListenPort = listenPort?.ToString(CultureInfo.InvariantCulture) ?? "-";
-        FrequencyMhz = frequencyMhz;
-        Frequency = frequency;
         Mode = mode;
         IsConnected = isConnected;
         Status = status;
@@ -473,8 +442,6 @@ public sealed class RadioConnectionStatusViewModel
     public string RadioName { get; }
     public string RigModel { get; }
     public string ListenPort { get; }
-    public decimal? FrequencyMhz { get; }
-    public string Frequency { get; }
     public string Mode { get; }
     public bool IsConnected { get; }
     public string Status { get; }

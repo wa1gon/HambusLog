@@ -111,8 +111,6 @@ public sealed class RigctldConnectionManager : IDisposable
                 radio.RadioName,
                 false,
                 null,
-                0,
-                null,
                 $"Not connected ({radio.Host}:{radio.Port})",
                 DateTime.UtcNow);
 
@@ -173,40 +171,29 @@ public sealed class RigctldConnectionManager : IDisposable
                 await client.OpenAsync();
 
                 // Connected — mark online immediately even before first successful query.
-                UpdateState(radio, true, null, 0, null, null);
+                UpdateState(radio, true, null, null);
 
                 while (!ct.IsCancellationRequested)
                 {
                     await ProcessControlCommandsAsync(worker, client, ct);
 
-                    // Query mode and frequency independently.  A query error (e.g. rig
-                    // backend returns RPRT -8 when no slice is open) does NOT disconnect —
-                    // we stay connected and keep the last-known values for that field.
+                    // Query mode only (frequency/bandwidth display has been removed).
+                    // A query error does NOT disconnect — we stay connected and keep
+                    // the last-known value for that field.
                     string? mode = null;
-                    int passband = 0;
-                    long? freqHz = null;
                     string? queryError = null;
 
                     try
                     {
-                        (mode, passband) = await client.GetModeAndPassbandAsync();
+                        (mode, _) = await client.GetModeAndPassbandAsync();
                     }
                     catch (IOException ex) when (!IsConnectionLost(ex))
                     {
                         queryError = ex.Message;
                     }
 
-                    try
-                    {
-                        freqHz = await client.GetFreqAsync();
-                    }
-                    catch (IOException ex) when (!IsConnectionLost(ex))
-                    {
-                        queryError ??= ex.Message;
-                    }
-
-                    UpdateState(radio, true, mode, passband, freqHz, queryError);
-                    await Task.Delay(TimeSpan.FromSeconds(0.5), ct);
+                    UpdateState(radio, true, mode, queryError);
+                    await Task.Delay(TimeSpan.FromSeconds(1), ct);
                 }
             }
             catch (OperationCanceledException)
@@ -216,7 +203,7 @@ public sealed class RigctldConnectionManager : IDisposable
             catch (Exception ex)
             {
                 // TCP-level failure — mark offline and wait before reconnecting.
-                UpdateState(radio, false, null, 0, null, ex.Message);
+                UpdateState(radio, false, null, ex.Message);
                 await Task.Delay(TimeSpan.FromSeconds(_reconnectIntervalSeconds), ct);
             }
         }
@@ -283,21 +270,29 @@ public sealed class RigctldConnectionManager : IDisposable
         }
     }
 
-    private void UpdateState(RigRadioConfig radio, bool connected, string? mode, int passband, long? freqHz, string? error)
+    private void UpdateState(RigRadioConfig radio, bool connected, string? mode, string? error)
     {
         var shouldNotify = false;
         lock (_gate)
         {
-            _states[radio.RadioName] = new RadioRuntimeState(
+            _states.TryGetValue(radio.RadioName, out var prev);
+            var next = new RadioRuntimeState(
                 radio.RadioName,
                 radio.RadioName,
                 connected,
                 mode,
-                passband,
-                freqHz,
                 error,
                 DateTime.UtcNow);
-            shouldNotify = true;
+
+            if (prev is null
+                || prev.IsConnected != next.IsConnected
+                || prev.Mode != next.Mode
+                || prev.Error != next.Error)
+            {
+                shouldNotify = true;
+            }
+
+            _states[radio.RadioName] = next;
         }
 
         if (shouldNotify)
@@ -399,24 +394,12 @@ public sealed record RadioRuntimeState(
     string Label,
     bool IsConnected,
     string? Mode,
-    int Passband,
-    long? FrequencyHz,
     string? Error,
     DateTime LastUpdatedUtc)
 {
-    public decimal? FrequencyMhz => FrequencyHz is null ? null : FrequencyHz.Value / 1_000_000m;
+    public decimal? FrequencyMhz => null;
 
-    /// <summary>Display string combining mode and passband, e.g. "USB 2400" or "-" when unknown.</summary>
-    public string ModeDisplay
-    {
-        get
-        {
-            var hasMode = !string.IsNullOrWhiteSpace(Mode);
-            var hasPassband = Passband > 0;
-            if (!hasMode) return "-";
-            return hasPassband ? $"{Mode} {Passband}" : Mode!;
-        }
-    }
+    public string ModeDisplay => string.IsNullOrWhiteSpace(Mode) ? "-" : Mode!;
 }
 
 
