@@ -116,16 +116,34 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         get => _selectedRadioStatus;
         set
         {
+            var previousRadioName = _selectedRadioStatus?.RadioName;
             if (!SetProperty(ref _selectedRadioStatus, value))
                 return;
 
+            var selectedRadioChanged = !string.Equals(previousRadioName, value?.RadioName, StringComparison.OrdinalIgnoreCase);
+
             if (value is not null)
             {
-                if (string.IsNullOrWhiteSpace(_controlFrequencyMhz) && value.FrequencyMhz is decimal mhz)
-                    ControlFrequencyMhz = mhz.ToString("0.######", CultureInfo.InvariantCulture);
+                if (selectedRadioChanged)
+                {
+                    ControlFrequencyMhz = FormatFrequencyForEditor(value.FrequencyMhz);
+                    ControlMode = string.IsNullOrWhiteSpace(value.Mode) || value.Mode == "-"
+                        ? string.Empty
+                        : value.Mode;
+                }
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(_controlFrequencyMhz) && value.FrequencyMhz is decimal mhz)
+                        ControlFrequencyMhz = FormatFrequencyForEditor(mhz);
 
-                if (string.IsNullOrWhiteSpace(_controlMode) && !string.IsNullOrWhiteSpace(value.Mode) && value.Mode != "-")
-                    ControlMode = value.Mode;
+                    if (string.IsNullOrWhiteSpace(_controlMode) && !string.IsNullOrWhiteSpace(value.Mode) && value.Mode != "-")
+                        ControlMode = value.Mode;
+                }
+            }
+            else if (selectedRadioChanged)
+            {
+                ControlFrequencyMhz = string.Empty;
+                ControlMode = string.Empty;
             }
 
             OnPropertyChanged(nameof(CanControlSelectedRadio));
@@ -315,6 +333,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
+            ControlFrequencyMhz = FormatFrequencyForEditor(mhz);
             RadioControlMessage = await _rigctldConnectionManager.SetFrequencyByNameAsync(SelectedRadioStatus.RadioName, mhz, cts.Token);
         }
         catch (TimeoutException)
@@ -329,6 +348,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public async Task ApplyModeToSelectedRadioAsync()
     {
+        await ApplyModeToSelectedRadioAsync(ControlMode);
+    }
+
+    private async Task ApplyModeToSelectedRadioAsync(string modeToApply)
+    {
         if (SelectedRadioStatus is null)
         {
             RadioControlMessage = "Select a radio first.";
@@ -341,7 +365,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(ControlMode))
+        if (string.IsNullOrWhiteSpace(modeToApply))
         {
             RadioControlMessage = "Enter a mode (USB, LSB, CW, FM, AM...).";
             return;
@@ -350,7 +374,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
-            RadioControlMessage = await _rigctldConnectionManager.SetModeByNameAsync(SelectedRadioStatus.RadioName, ControlMode, cts.Token);
+            RadioControlMessage = await _rigctldConnectionManager.SetModeByNameAsync(SelectedRadioStatus.RadioName, modeToApply, cts.Token);
         }
         catch (TimeoutException)
         {
@@ -365,8 +389,20 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public async Task ApplyPresetModeToSelectedRadioAsync(string mode)
     {
         ControlMode = mode;
-        await ApplyModeToSelectedRadioAsync();
+        var modeToApply = mode.ToUpperInvariant() switch
+        {
+            "DIGU" => "PKTUSB",
+            "DIGL" => "PKTLSB",
+            _ => mode
+        };
+
+        await ApplyModeToSelectedRadioAsync(modeToApply);
     }
+
+    private static string FormatFrequencyForEditor(decimal? mhz)
+        => mhz is decimal value && value > 0
+            ? value.ToString("0.000", CultureInfo.InvariantCulture)
+            : string.Empty;
 
      private static RadioConnectionStatusViewModel BuildStatusRow(
          int rowNumber,

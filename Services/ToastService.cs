@@ -13,7 +13,7 @@ public sealed class ToastService : IToastService
 
         var manager = new WindowNotificationManager(window)
         {
-            Position = NotificationPosition.TopRight,
+            Position = NotificationPosition.BottomRight,
             MaxItems = 4,
             Margin = new Thickness(12)
         };

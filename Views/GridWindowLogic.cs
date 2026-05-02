@@ -56,18 +56,12 @@ public partial class GridWindow
         }
     }
 
-    public void OnSortHeaderClick(object? sender, RoutedEventArgs e)
-    {
-        if (sender is Button { Tag: string column })
-            _viewModel?.SortBy(column);
-    }
-
-    public async void OnGridRowPointerPressed(object? sender, PointerPressedEventArgs e)
+    public async void OnDataGridDoubleTapped(object? sender, TappedEventArgs e)
     {
         if (_viewModel is null || _repository is null)
             return;
 
-        if (sender is not Border { DataContext: Qso rowQso })
+        if (sender is not DataGrid { SelectedItem: Qso rowQso })
             return;
 
         var fullQso = await _repository.GetByIdAsync(rowQso.Id);

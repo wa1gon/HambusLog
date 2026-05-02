@@ -3,141 +3,421 @@
         xmlns:vm="using:HamBusLog.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="820"
         x:Class="HamBusLog.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Width="1200"
-        Height="760"
-        MinWidth="980"
-        MinHeight="620"
+        Width="1280"
+        Height="820"
+        MinWidth="1040"
+        MinHeight="680"
         Title="HamBusLog"
         Background="{DynamicResource AppWindowBackgroundBrush}"
         Foreground="{DynamicResource AppForegroundBrush}">
 
+    <Window.Styles>
+        <Style Selector="TextBlock.FieldLabel">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource AppMutedForegroundBrush}" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        <Style Selector="TextBlock.CardHeading">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,2" />
+        </Style>
+        <Style Selector="Button.QuickAction">
+            <Setter Property="Padding" Value="12,7" />
+            <Setter Property="MinWidth" Value="104" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.GhostButton">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource AppMutedForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,7" />
+        </Style>
+        <Style Selector="Button.ModePreset">
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="MinWidth" Value="62" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="5" />
+        </Style>
+        <Style Selector="Button.ModePreset.PhonePreset">
+            <Setter Property="Background" Value="{DynamicResource AppButtonNormalBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppButtonNormalForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppButtonNormalBrush}" />
+        </Style>
+        <Style Selector="Button.ModePreset.CwPreset">
+            <Setter Property="Background" Value="{DynamicResource AppButtonCautionBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppButtonCautionForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppButtonCautionBrush}" />
+        </Style>
+        <Style Selector="Button.ModePreset.DigitalPreset">
+            <Setter Property="Background" Value="{DynamicResource AppButtonNormalBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppButtonNormalForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppButtonNormalBrush}" />
+        </Style>
+        <Style Selector="TreeView">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="TreeViewItem">
+            <Setter Property="Padding" Value="2" />
+        </Style>
+        <Style Selector="TreeViewItem /template/ ContentPresenter">
+            <Setter Property="Margin" Value="0,2,0,2" />
+        </Style>
+    </Window.Styles>
+
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Grid ColumnDefinitions="220,*">
-        <Border Grid.Column="0" Background="{DynamicResource AppMenuBackgroundBrush}" Padding="12">
-            <StackPanel Spacing="10">
-                <TextBlock Text="Menu" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource AppMenuForegroundBrush}" Margin="4,2,4,8"/>
-                <TreeView ItemsSource="{Binding MenuItems}"
-                          SelectedItem="{Binding SelectedMenuItem, Mode=TwoWay}"
-                          Foreground="{DynamicResource AppMenuForegroundBrush}"
-                          Background="Transparent"
-                          BorderThickness="0"
-                          Name="MenuTreeView"
-                          SelectionChanged="OnMenuTreeViewSelectionChanged"
-                          >
-                    <TreeView.Styles>
-                        <Style Selector="TreeViewItem">
-                            <Setter Property="IsExpanded" Value="{ReflectionBinding DataContext.IsExpanded, RelativeSource={RelativeSource Self}, Mode=TwoWay}"/>
-                        </Style>
-                    </TreeView.Styles>
-                    <TreeView.ItemTemplate>
-                        <TreeDataTemplate x:DataType="vm:MenuNode" ItemsSource="{Binding Children}">
-                            <TextBlock Text="{Binding Title}" Foreground="{DynamicResource AppMenuForegroundBrush}"/>
-                        </TreeDataTemplate>
-                    </TreeView.ItemTemplate>
-                </TreeView>
+    <Grid Margin="16,14,16,12" ColumnDefinitions="260,*" ColumnSpacing="14">
 
-            </StackPanel>
+        <Border Grid.Column="0"
+                Padding="14"
+                CornerRadius="10"
+                Background="{DynamicResource AppMenuBackgroundBrush}"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1">
+            <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                <StackPanel Grid.Row="0" Spacing="4">
+                    <TextBlock Text="HamBusLog" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource AppMenuForegroundBrush}" />
+                    <TextBlock Text="Logging, rig control, and quick actions in one place."
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                               FontSize="12" />
+                </StackPanel>
+
+                <Border Grid.Row="1"
+                        Padding="10"
+                        CornerRadius="8"
+                        Background="#14000000"
+                        BorderBrush="{DynamicResource AppBorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Navigation" Classes="CardHeading" Foreground="{DynamicResource AppMenuForegroundBrush}" />
+                        <TreeView ItemsSource="{Binding MenuItems}"
+                                  SelectedItem="{Binding SelectedMenuItem, Mode=TwoWay}"
+                                  Foreground="{DynamicResource AppMenuForegroundBrush}"
+                                  Name="MenuTreeView"
+                                  SelectionChanged="OnMenuTreeViewSelectionChanged">
+                            <TreeView.Styles>
+                                <Style Selector="TreeViewItem">
+                                    <Setter Property="IsExpanded" Value="{ReflectionBinding DataContext.IsExpanded, RelativeSource={RelativeSource Self}, Mode=TwoWay}"/>
+                                </Style>
+                            </TreeView.Styles>
+                            <TreeView.ItemTemplate>
+                                <TreeDataTemplate x:DataType="vm:MenuNode" ItemsSource="{Binding Children}">
+                                    <TextBlock Text="{Binding Title}" Foreground="{DynamicResource AppMenuForegroundBrush}" />
+                                </TreeDataTemplate>
+                            </TreeView.ItemTemplate>
+                        </TreeView>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="2"
+                        Padding="10"
+                        CornerRadius="8"
+                        Background="#14000000"
+                        BorderBrush="{DynamicResource AppBorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Selected" Classes="FieldLabel" />
+                        <TextBlock Text="{Binding SelectedMenuTitle}" Foreground="{DynamicResource AppMenuForegroundBrush}" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Border>
 
-        <Border Grid.Column="1" Padding="20" Background="{DynamicResource AppWindowBackgroundBrush}">
-            <StackPanel Spacing="12">
-                <TextBlock Text="HamBusLog" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource AppForegroundBrush}"/>
-                <TextBlock Text="{Binding SelectedMenuTitle, StringFormat=Selected: {0}}" FontSize="16" Foreground="{DynamicResource AppForegroundBrush}"/>
+        <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
 
-                <Border Background="{DynamicResource AppPanelBackgroundBrush}" CornerRadius="6" Padding="10" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="Rigctld Radios" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="{Binding RadioStatusSummary}" TextWrapping="Wrap"/>
-                        <!-- Radio status table -->
-                        <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="4">
-                            <StackPanel>
-                                <!-- Header row -->
-                                <Grid ColumnDefinitions="40,150,70,70,100,70,*" Background="#1A1A2E">
-                                    <TextBlock Grid.Column="0" Text="#"      Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
-                                    <TextBlock Grid.Column="1" Text="Name"   Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
-                                    <TextBlock Grid.Column="2" Text="Model #" Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
-                                    <TextBlock Grid.Column="3" Text="Port"   Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
-                                    <TextBlock Grid.Column="4" Text="Freq"   Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
-                                    <TextBlock Grid.Column="5" Text="Mode"   Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
-                                    <TextBlock Grid.Column="6" Text="Status" Foreground="#AAAAAA" FontWeight="SemiBold" Margin="6,4"/>
-                                </Grid>
-                                <Rectangle Height="1" Fill="{DynamicResource AppBorderBrush}"/>
-                                <!-- Data rows -->
-                                <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Auto">
-                                    <ItemsControl ItemsSource="{Binding RadioStatuses}">
-                                        <ItemsControl.ItemTemplate>
+            <Border Grid.Row="0"
+                    Padding="14"
+                    CornerRadius="10"
+                    Background="{DynamicResource AppPanelBackgroundBrush}"
+                    BorderBrush="{DynamicResource AppBorderBrush}"
+                    BorderThickness="1">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Text="Operations Dashboard" FontSize="22" FontWeight="Bold" />
+                        <TextBlock Text="Monitor radio connections, steer the selected rig, and jump straight into the parts of the app you use most."
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                   FontSize="12" />
+                    </StackPanel>
+                    <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button Classes="QuickAction" Content="Open Grid"
+                                Click="OnOpenGridClicked"
+                                Background="{DynamicResource AppButtonNormalBrush}"
+                                Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
+                                Margin="0,0,8,0" />
+                        <Button Classes="QuickAction" Content="New Contact"
+                                Click="OnOpenNewContactClicked"
+                                Background="{DynamicResource AppButtonNormalBrush}"
+                                Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
+                                Margin="0,0,8,0" />
+                        <Button Classes="QuickAction" Content="Configuration"
+                                Click="OnOpenConfigurationClicked"
+                                Background="{DynamicResource AppButtonCautionBrush}"
+                                Foreground="{DynamicResource AppButtonCautionForegroundBrush}"
+                                Margin="0,0,8,0" />
+                        <Button Classes="GhostButton" Content="Import ADIF"
+                                Click="OnImportAdifClicked"
+                                Margin="0,0,0,0" />
+                    </WrapPanel>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                <Border Grid.Column="0" Padding="12" CornerRadius="8"
+                        Background="{DynamicResource AppPanelBackgroundBrush}"
+                        BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="FieldLabel" Text="CURRENT VIEW" />
+                        <TextBlock Text="{Binding SelectedMenuTitle}" FontSize="18" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Padding="12" CornerRadius="8"
+                        Background="{DynamicResource AppPanelBackgroundBrush}"
+                        BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="FieldLabel" Text="RIG SUMMARY" />
+                        <TextBlock Text="{Binding RadioStatusSummary}" TextWrapping="Wrap" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Padding="12" CornerRadius="8"
+                        Background="{DynamicResource AppPanelBackgroundBrush}"
+                        BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="FieldLabel" Text="CONFIGURED RADIOS" />
+                        <TextBlock Text="{Binding RadioStatuses.Count, StringFormat={}{0} radio(s)}" FontSize="18" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="2" ColumnDefinitions="1.7*,1*" ColumnSpacing="12">
+
+                <Border Grid.Column="0" Padding="14" CornerRadius="10"
+                        Background="{DynamicResource AppPanelBackgroundBrush}"
+                        BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1">
+                    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                        <StackPanel Grid.Row="0" Spacing="2">
+                            <TextBlock Text="Rigctld Radio Status" Classes="CardHeading" />
+                            <TextBlock Text="Live connection state, frequency, and mode for every configured radio. Click any row to control it from the panel on the right."
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       TextWrapping="Wrap"
+                                       FontSize="12" />
+                        </StackPanel>
+
+                        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                            <Border Grid.Column="0" Padding="8,4" CornerRadius="999"
+                                    Background="#2210B981"
+                                    BorderBrush="#4010B981"
+                                    BorderThickness="1">
+                                <TextBlock Text="Click row to select" Foreground="{DynamicResource AppForegroundBrush}" FontSize="11" />
+                            </Border>
+                            <TextBlock Grid.Column="1" Text="{Binding RadioStatusSummary}"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       FontSize="12" />
+                            <TextBlock Grid.Column="2" Text="{Binding RadioStatuses.Count, StringFormat={}{0} total}"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       FontSize="12" />
+                        </Grid>
+
+                        <Grid Grid.Row="2">
+                            <Border IsVisible="{Binding HasNoRadioStatuses}"
+                                    Padding="20"
+                                    CornerRadius="8"
+                                    BorderBrush="{DynamicResource AppBorderBrush}"
+                                    BorderThickness="1"
+                                    Background="{DynamicResource AppWindowBackgroundBrush}">
+                                <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="No radios available" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Add radios in Configuration → Rig Control to start monitoring rigctld connections here."
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                               TextWrapping="Wrap"
+                                               TextAlignment="Center"
+                                               MaxWidth="340" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border IsVisible="{Binding HasRadioStatuses}"
+                                    CornerRadius="8"
+                                    BorderBrush="{DynamicResource AppBorderBrush}"
+                                    BorderThickness="1"
+                                    Background="{DynamicResource AppWindowBackgroundBrush}">
+                                <Grid RowDefinitions="Auto,*">
+                                    <Grid ColumnDefinitions="44,160,88,84,118,86,*"
+                                          Background="{DynamicResource AppHeaderBackgroundBrush}">
+                                        <TextBlock Grid.Column="0" Text="#" Margin="8,7" Classes="FieldLabel" />
+                                        <TextBlock Grid.Column="1" Text="RADIO" Margin="8,7" Classes="FieldLabel" />
+                                        <TextBlock Grid.Column="2" Text="MODEL" Margin="8,7" Classes="FieldLabel" />
+                                        <TextBlock Grid.Column="3" Text="PORT" Margin="8,7" Classes="FieldLabel" />
+                                        <TextBlock Grid.Column="4" Text="FREQUENCY" Margin="8,7" Classes="FieldLabel" />
+                                        <TextBlock Grid.Column="5" Text="MODE" Margin="8,7" Classes="FieldLabel" />
+                                        <TextBlock Grid.Column="6" Text="STATUS" Margin="8,7" Classes="FieldLabel" />
+                                    </Grid>
+
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{Binding RadioStatuses}">
+                                            <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="vm:RadioConnectionStatusViewModel">
-                                                    <Border Padding="0" BorderThickness="0,0,0,1"
+                                                    <Border Padding="0"
+                                                            BorderThickness="0,0,0,1"
                                                             BorderBrush="{DynamicResource AppBorderBrush}"
                                                             Background="{Binding RowBackground}"
                                                             PointerPressed="OnRadioRowPointerPressed">
-                                                        <Grid ColumnDefinitions="40,150,70,70,100,70,*">
-                                                            <TextBlock Grid.Column="0" Text="{Binding RowNumber}" Foreground="{Binding RowForeground}" Margin="6,5"/>
-                                                            <TextBlock Grid.Column="1" Text="{Binding Label}"     Foreground="{Binding RowForeground}" Margin="6,5"/>
-                                                            <TextBlock Grid.Column="2" Text="{Binding RigModel}"  Foreground="{Binding RowForeground}" Margin="6,5"/>
-                                                            <TextBlock Grid.Column="3" Text="{Binding ListenPort}" Foreground="{Binding RowForeground}" Margin="6,5"/>
-                                                            <TextBlock Grid.Column="4" Text="{Binding Frequency}" Foreground="{Binding RowForeground}" Margin="6,5"/>
-                                                            <TextBlock Grid.Column="5" Text="{Binding Mode}"      Foreground="{Binding RowForeground}" Margin="6,5"/>
-                                                            <TextBlock Grid.Column="6" Text="{Binding Status}"    Foreground="{Binding RowForeground}" Margin="6,5" TextWrapping="NoWrap"/>
+                                                        <Grid ColumnDefinitions="44,160,88,84,118,86,*">
+                                                            <TextBlock Grid.Column="0" Text="{Binding RowNumber}" Foreground="{Binding RowForeground}" Margin="8,8" />
+                                                            <TextBlock Grid.Column="1" Text="{Binding Label}" Foreground="{Binding RowForeground}" Margin="8,8" FontWeight="SemiBold" />
+                                                            <TextBlock Grid.Column="2" Text="{Binding RigModel}" Foreground="{Binding RowForeground}" Margin="8,8" />
+                                                            <TextBlock Grid.Column="3" Text="{Binding ListenPort}" Foreground="{Binding RowForeground}" Margin="8,8" />
+                                                            <TextBlock Grid.Column="4" Text="{Binding Frequency}" Foreground="{Binding RowForeground}" Margin="8,8" />
+                                                            <TextBlock Grid.Column="5" Text="{Binding Mode}" Foreground="{Binding RowForeground}" Margin="8,8" />
+                                                            <TextBlock Grid.Column="6" Text="{Binding Status}" Foreground="{Binding RowForeground}" Margin="8,8" TextWrapping="Wrap" />
                                                         </Grid>
                                                     </Border>
                                                 </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </ScrollViewer>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Radio selector and controls -->
-                        <Grid ColumnDefinitions="Auto,*,Auto,160,Auto,140,Auto">
-                            <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Control Radio:" Margin="0,0,8,0"/>
-                            <ComboBox Grid.Column="1"
-                                      ItemsSource="{Binding RadioStatuses}"
-                                      SelectedItem="{Binding SelectedRadioStatus, Mode=TwoWay}"
-                                      HorizontalAlignment="Stretch"
-                                      Margin="0,0,16,0">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:RadioConnectionStatusViewModel">
-                                        <TextBlock Text="{Binding Label}"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                            <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="Freq MHz:" Margin="0,0,8,0"
-                                       IsEnabled="{Binding CanControlSelectedRadio}"/>
-                            <TextBox Grid.Column="3" Text="{Binding ControlFrequencyMhz, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     Watermark="14.074" IsEnabled="{Binding CanControlSelectedRadio}"/>
-                            <Button Grid.Column="4" Margin="8,0,12,0" Content="Apply"
-                                    IsEnabled="{Binding CanControlSelectedRadio}" Click="OnApplyRadioFrequencyClick"/>
-                            <TextBox Grid.Column="5" Text="{Binding ControlMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     Watermark="USB" IsEnabled="{Binding CanControlSelectedRadio}"/>
-                            <Button Grid.Column="6" HorizontalAlignment="Left" Margin="8,0,0,0" Content="Apply Mode"
-                                    IsEnabled="{Binding CanControlSelectedRadio}" Click="OnApplyRadioModeClick"/>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Border>
                         </Grid>
-
-                        <WrapPanel IsEnabled="{Binding CanControlSelectedRadio}" ItemHeight="30">
-                            <Button Content="USB"  Tag="USB"  MinWidth="58" Margin="0,0,4,4" Click="OnApplyPresetModeClick"/>
-                            <Button Content="LSB"  Tag="LSB"  MinWidth="58" Margin="0,0,4,4" Click="OnApplyPresetModeClick"/>
-                            <Button Content="CW"   Tag="CW"   MinWidth="58" Margin="0,0,4,4" Click="OnApplyPresetModeClick"/>
-                            <Button Content="AM"   Tag="AM"   MinWidth="58" Margin="0,0,4,4" Click="OnApplyPresetModeClick"/>
-                            <Button Content="FM"   Tag="FM"   MinWidth="58" Margin="0,0,4,4" Click="OnApplyPresetModeClick"/>
-                            <Button Content="DIGU" Tag="DIGU" MinWidth="64" Margin="0,0,4,4" Click="OnApplyPresetModeClick"/>
-                            <Button Content="DIGL" Tag="DIGL" MinWidth="64" Margin="0,0,4,4" Click="OnApplyPresetModeClick"/>
-                        </WrapPanel>
-
-                        <TextBlock Text="{Binding RadioControlMessage}" TextWrapping="Wrap"/>
-                    </StackPanel>
+                    </Grid>
                 </Border>
-            </StackPanel>
-        </Border>
+
+                <StackPanel Grid.Column="1" Spacing="12">
+                    <Border Padding="14" CornerRadius="10"
+                            Background="{DynamicResource AppPanelBackgroundBrush}"
+                            BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1">
+                        <StackPanel Spacing="10">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Radio Control" Classes="CardHeading" />
+                                <TextBlock Text="Pick a connected radio, set a frequency or mode, then apply it directly through rigctld."
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                           TextWrapping="Wrap"
+                                           FontSize="12" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Classes="FieldLabel" Text="CONTROL RADIO" />
+                                <ComboBox ItemsSource="{Binding RadioStatuses}"
+                                          SelectedItem="{Binding SelectedRadioStatus, Mode=TwoWay}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:RadioConnectionStatusViewModel">
+                                            <TextBlock Text="{Binding Label}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <StackPanel Grid.Column="0" Spacing="5">
+                                    <TextBlock Classes="FieldLabel" Text="FREQUENCY (MHZ)" />
+                                    <TextBox Text="{Binding ControlFrequencyMhz, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Watermark="14.074"
+                                             IsEnabled="{Binding CanControlSelectedRadio}" />
+                                </StackPanel>
+                                <Button Grid.Column="1"
+                                        VerticalAlignment="Bottom"
+                                        Content="Apply"
+                                        Click="OnApplyRadioFrequencyClick"
+                                        IsEnabled="{Binding CanControlSelectedRadio}"
+                                        Background="{DynamicResource AppButtonNormalBrush}"
+                                        Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
+                                        Padding="14,7" />
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <StackPanel Grid.Column="0" Spacing="5">
+                                    <TextBlock Classes="FieldLabel" Text="MODE" />
+                                    <TextBox Text="{Binding ControlMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Watermark="USB"
+                                             IsEnabled="{Binding CanControlSelectedRadio}" />
+                                </StackPanel>
+                                <Button Grid.Column="1"
+                                        VerticalAlignment="Bottom"
+                                        Content="Apply Mode"
+                                        Click="OnApplyRadioModeClick"
+                                        IsEnabled="{Binding CanControlSelectedRadio}"
+                                        Background="{DynamicResource AppButtonCautionBrush}"
+                                        Foreground="{DynamicResource AppButtonCautionForegroundBrush}"
+                                        Padding="14,7" />
+                            </Grid>
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Classes="FieldLabel" Text="PRESET MODES" />
+                                <TextBlock Text="Standard: phone + digital modes = primary, CW = caution."
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                           FontSize="12"
+                                           TextWrapping="Wrap" />
+                                <WrapPanel IsEnabled="{Binding CanControlSelectedRadio}" ItemSpacing="0" LineSpacing="0">
+                                    <Button Classes="ModePreset PhonePreset" Content="USB"  Tag="USB"  Margin="0,0,6,6" Click="OnApplyPresetModeClick" />
+                                    <Button Classes="ModePreset PhonePreset" Content="LSB"  Tag="LSB"  Margin="0,0,6,6" Click="OnApplyPresetModeClick" />
+                                    <Button Classes="ModePreset CwPreset"    Content="CW"   Tag="CW"   Margin="0,0,6,6" Click="OnApplyPresetModeClick" />
+                                    <Button Classes="ModePreset PhonePreset" Content="AM"   Tag="AM"   Margin="0,0,6,6" Click="OnApplyPresetModeClick" />
+                                    <Button Classes="ModePreset PhonePreset" Content="FM"   Tag="FM"   Margin="0,0,6,6" Click="OnApplyPresetModeClick" />
+                                    <Button Classes="ModePreset DigitalPreset" Content="DIGU" Tag="DIGU" Margin="0,0,6,6" Click="OnApplyPresetModeClick" />
+                                    <Button Classes="ModePreset DigitalPreset" Content="DIGL" Tag="DIGL" Margin="0,0,6,6" Click="OnApplyPresetModeClick" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="14" CornerRadius="10"
+                            Background="{DynamicResource AppPanelBackgroundBrush}"
+                            BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Quick Notes" Classes="CardHeading" />
+                            <TextBlock Text="• Open Grid keeps the log list handy while this dashboard stays open."
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       FontSize="12" />
+                            <TextBlock Text="• New Contact opens the log-entry window using the grid workflow."
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       FontSize="12" />
+                            <TextBlock Text="• Connection rows update automatically every second."
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       FontSize="12" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <Border Grid.Row="3"
+                    Padding="12,8"
+                    CornerRadius="8"
+                    Background="{DynamicResource AppPanelBackgroundBrush}"
+                    BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1">
+                <Grid ColumnDefinitions="Auto,*">
+                    <TextBlock Grid.Column="0" Text="CONTROL STATUS"
+                               Classes="FieldLabel"
+                               VerticalAlignment="Center"
+                               Margin="0,0,10,0" />
+                    <TextBlock Grid.Column="1" Text="{Binding RadioControlMessage}"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 
 </Window>

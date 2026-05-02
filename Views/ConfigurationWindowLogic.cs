@@ -1,3 +1,5 @@
+using Avalonia.Threading;
+
 namespace HamBusLog.Views;
 
 public partial class ConfigurationWindow
@@ -18,6 +20,7 @@ public partial class ConfigurationWindow
     private ColorPicker? _inputBorderPicker;
     private ColorPicker? _inputSelectionBgPicker;
     private ColorPicker? _inputSelectionFgPicker;
+    private ColorPicker? _mutedFgPicker;
     private TextBlock? _bgHex;
     private TextBlock? _fgHex;
     private TextBlock? _menuBgHex;
@@ -33,19 +36,30 @@ public partial class ConfigurationWindow
     private TextBlock? _inputBorderHex;
     private TextBlock? _inputSelectionBgHex;
     private TextBlock? _inputSelectionFgHex;
+    private TextBlock? _mutedFgHex;
     private TextBlock? _menuContrastLabel;
+    private TextBlock? _mutedContrastLabel;
     private TextBlock? _buttonNormalContrastLabel;
     private TextBlock? _buttonCautionContrastLabel;
     private TextBlock? _buttonDangerContrastLabel;
     private ListBox? _activeRadiosListBox;
     private bool _syncingActiveRadiosSelection;
+    private DispatcherTimer? _contrastWarnTimer;
 
     public ConfigurationWindow()
     {
         InitializeComponent();
         App.TrackWindowPlacement(this, nameof(ConfigurationWindow));
+        App.Toasts.RegisterWindow(this);
         _viewModel = new ConfigurationViewModel();
         DataContext = _viewModel;
+
+        _contrastWarnTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
+        _contrastWarnTimer.Tick += (_, _) =>
+        {
+            _contrastWarnTimer.Stop();
+            WarnOnContrastFailures();
+        };
     }
 
     protected override void OnLoaded(RoutedEventArgs e)
@@ -67,6 +81,7 @@ public partial class ConfigurationWindow
         _inputBorderPicker = this.FindControl<ColorPicker>("InputBorderColorPicker");
         _inputSelectionBgPicker = this.FindControl<ColorPicker>("InputSelectionBgColorPicker");
         _inputSelectionFgPicker = this.FindControl<ColorPicker>("InputSelectionFgColorPicker");
+        _mutedFgPicker = this.FindControl<ColorPicker>("MutedFgColorPicker");
         _bgHex    = this.FindControl<TextBlock>("BgColorHex");
         _fgHex    = this.FindControl<TextBlock>("FgColorHex");
         _menuBgHex = this.FindControl<TextBlock>("MenuBgColorHex");
@@ -82,7 +97,9 @@ public partial class ConfigurationWindow
         _inputBorderHex = this.FindControl<TextBlock>("InputBorderColorHex");
         _inputSelectionBgHex = this.FindControl<TextBlock>("InputSelectionBgColorHex");
         _inputSelectionFgHex = this.FindControl<TextBlock>("InputSelectionFgColorHex");
+        _mutedFgHex = this.FindControl<TextBlock>("MutedFgColorHex");
         _menuContrastLabel = this.FindControl<TextBlock>("MenuContrastLabel");
+        _mutedContrastLabel = this.FindControl<TextBlock>("MutedContrastLabel");
         _buttonNormalContrastLabel = this.FindControl<TextBlock>("ButtonNormalContrastLabel");
         _buttonCautionContrastLabel = this.FindControl<TextBlock>("ButtonCautionContrastLabel");
         _buttonDangerContrastLabel = this.FindControl<TextBlock>("ButtonDangerContrastLabel");
@@ -211,6 +228,13 @@ public partial class ConfigurationWindow
                 UpdateHex(_inputSelectionFgHex, ev.NewColor);
             };
 
+        if (_mutedFgPicker != null)
+            _mutedFgPicker.ColorChanged += (_, ev) =>
+            {
+                _viewModel.MutedForegroundColor = ev.NewColor;
+                UpdateHex(_mutedFgHex, ev.NewColor);
+            };
+
         UpdateContrastLabels();
     }
 
@@ -218,7 +242,10 @@ public partial class ConfigurationWindow
     {
         var needsContrastRefresh = false;
         if (e.PropertyName is nameof(ConfigurationViewModel.BackgroundColor))
+        {
             SyncPickerColor(_bgPicker, _bgHex, _viewModel.BackgroundColor);
+            needsContrastRefresh = true;
+        }
         if (e.PropertyName is nameof(ConfigurationViewModel.ForegroundColor))
         {
             SyncPickerColor(_fgPicker, _fgHex, _viewModel.ForegroundColor);
@@ -265,15 +292,32 @@ public partial class ConfigurationWindow
             needsContrastRefresh = true;
         }
         if (e.PropertyName is nameof(ConfigurationViewModel.InputBackgroundColor))
+        {
             SyncPickerColor(_inputBgPicker, _inputBgHex, _viewModel.InputBackgroundColor);
+            needsContrastRefresh = true;
+        }
         if (e.PropertyName is nameof(ConfigurationViewModel.InputForegroundColor))
+        {
             SyncPickerColor(_inputFgPicker, _inputFgHex, _viewModel.InputForegroundColor);
+            needsContrastRefresh = true;
+        }
         if (e.PropertyName is nameof(ConfigurationViewModel.InputBorderColor))
             SyncPickerColor(_inputBorderPicker, _inputBorderHex, _viewModel.InputBorderColor);
         if (e.PropertyName is nameof(ConfigurationViewModel.InputSelectionBackgroundColor))
+        {
             SyncPickerColor(_inputSelectionBgPicker, _inputSelectionBgHex, _viewModel.InputSelectionBackgroundColor);
+            needsContrastRefresh = true;
+        }
         if (e.PropertyName is nameof(ConfigurationViewModel.InputSelectionForegroundColor))
+        {
             SyncPickerColor(_inputSelectionFgPicker, _inputSelectionFgHex, _viewModel.InputSelectionForegroundColor);
+            needsContrastRefresh = true;
+        }
+        if (e.PropertyName is nameof(ConfigurationViewModel.MutedForegroundColor))
+        {
+            SyncPickerColor(_mutedFgPicker, _mutedFgHex, _viewModel.MutedForegroundColor);
+            needsContrastRefresh = true;
+        }
 
         if (needsContrastRefresh)
             UpdateContrastLabels();
@@ -299,15 +343,54 @@ public partial class ConfigurationWindow
         SyncPickerColor(_inputBorderPicker, _inputBorderHex, _viewModel.InputBorderColor);
         SyncPickerColor(_inputSelectionBgPicker, _inputSelectionBgHex, _viewModel.InputSelectionBackgroundColor);
         SyncPickerColor(_inputSelectionFgPicker, _inputSelectionFgHex, _viewModel.InputSelectionForegroundColor);
+        SyncPickerColor(_mutedFgPicker, _mutedFgHex, _viewModel.MutedForegroundColor);
         UpdateContrastLabels();
     }
 
     private void UpdateContrastLabels()
     {
         SetContrastLabel(_menuContrastLabel, "Menu contrast", _viewModel.MenuForegroundColor, _viewModel.MenuBackgroundColor);
+        SetContrastLabel(_mutedContrastLabel, "Muted labels", _viewModel.MutedForegroundColor, GetPanelBackgroundColor());
         SetContrastLabel(_buttonNormalContrastLabel, "Button normal", _viewModel.ButtonNormalForegroundColor, _viewModel.ButtonNormalColor);
         SetContrastLabel(_buttonCautionContrastLabel, "Button caution", _viewModel.ButtonCautionForegroundColor, _viewModel.ButtonCautionColor);
         SetContrastLabel(_buttonDangerContrastLabel, "Button danger", _viewModel.ButtonDangerForegroundColor, _viewModel.ButtonDangerColor);
+
+        // Debounce the toast so it doesn't fire on every drag tick
+        _contrastWarnTimer?.Stop();
+        _contrastWarnTimer?.Start();
+    }
+
+    private void WarnOnContrastFailures()
+    {
+        var pairs = new (string Name, Color Fg, Color Bg)[]
+        {
+            ("Background / Foreground", _viewModel.ForegroundColor, _viewModel.BackgroundColor),
+            ("Muted Labels (panel)", _viewModel.MutedForegroundColor, GetPanelBackgroundColor()),
+            ("Menu", _viewModel.MenuForegroundColor, _viewModel.MenuBackgroundColor),
+            ("Button Normal", _viewModel.ButtonNormalForegroundColor, _viewModel.ButtonNormalColor),
+            ("Button Caution", _viewModel.ButtonCautionForegroundColor, _viewModel.ButtonCautionColor),
+            ("Button Danger", _viewModel.ButtonDangerForegroundColor, _viewModel.ButtonDangerColor),
+            ("Input", _viewModel.InputForegroundColor, _viewModel.InputBackgroundColor),
+            ("Input Selection", _viewModel.InputSelectionForegroundColor, _viewModel.InputSelectionBackgroundColor),
+        };
+
+        var failures = pairs
+            .Select(p => (p.Name, Ratio: GetContrastRatio(p.Fg, p.Bg)))
+            .Where(x => x.Ratio < 4.5)
+            .ToList();
+
+        if (failures.Count == 0)
+            return;
+
+        var lines = failures.Select(f =>
+        {
+            var grade = f.Ratio >= 3.0 ? "large text only" : "fails";
+            return $"{f.Name}: {f.Ratio:0.00}:1 ({grade})";
+        });
+
+        App.Toasts.ShowWarning(
+            "Low contrast — ADA AA not met",
+            string.Join("\n", lines));
     }
 
     private static void SetContrastLabel(TextBlock? label, string title, Color foreground, Color background)
@@ -341,6 +424,14 @@ public partial class ConfigurationWindow
         var g = ToLinear(color.G);
         var b = ToLinear(color.B);
         return (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
+    }
+
+    private Color GetPanelBackgroundColor() => AdjustBrightness(_viewModel.BackgroundColor, 0.08);
+
+    private static Color AdjustBrightness(Color color, double delta)
+    {
+        byte Clamp(double value) => (byte)Math.Max(0, Math.Min(255, value));
+        return Color.FromArgb(color.A, Clamp(color.R + 255 * delta), Clamp(color.G + 255 * delta), Clamp(color.B + 255 * delta));
     }
 
     private static void SyncPickerColor(ColorPicker? picker, TextBlock? hex, Color color)

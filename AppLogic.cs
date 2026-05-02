@@ -153,6 +153,16 @@ public partial class App
         var buttonCautionForeground = ParseColor(profile.ButtonCautionForegroundColor, legacyButtonForeground);
         var buttonDanger = ParseColor(profile.ButtonDangerColor, Color.Parse("#DC2626"));
         var buttonDangerForeground = ParseColor(profile.ButtonDangerForegroundColor, legacyButtonForeground);
+        var inputBackground = ParseColor(profile.InputBackgroundColor, Color.Parse("#2C3E50"));
+        var inputForeground = ParseColor(profile.InputForegroundColor, Color.Parse("#FFFFFF"));
+        var inputBorder = ParseColor(profile.InputBorderColor, Color.Parse("#34495E"));
+        var inputSelectionBackground = ParseColor(profile.InputSelectionBackgroundColor, inputBackground);
+        var inputSelectionForeground = ParseColor(profile.InputSelectionForegroundColor, Color.Parse("#FFFFFF"));
+        var accent = Color.Parse("#3498DB");
+
+        var mutedForeground = string.IsNullOrWhiteSpace(profile.MutedForegroundColor)
+            ? AdjustBrightness(foreground, -0.35)
+            : ParseColor(profile.MutedForegroundColor, AdjustBrightness(foreground, -0.35));
 
         SetBrush(resources, "AppWindowBackgroundBrush", background);
         SetBrush(resources, "AppHeaderBackgroundBrush", background);
@@ -160,9 +170,10 @@ public partial class App
         SetBrush(resources, "AppMenuBackgroundBrush", menuBackground);
         SetBrush(resources, "AppMenuForegroundBrush", menuForeground);
         SetBrush(resources, "AppForegroundBrush", foreground);
-        SetBrush(resources, "AppMutedForegroundBrush", AdjustBrightness(foreground, -0.35));
+        SetBrush(resources, "AppMutedForegroundBrush", mutedForeground);
+        SetBrush(resources, "nBrush", mutedForeground);
         SetBrush(resources, "AppBorderBrush", AdjustBrightness(background, 0.16));
-        SetBrush(resources, "AppAccentBrush", Color.Parse("#3498DB"));
+        SetBrush(resources, "AppAccentBrush", accent);
         SetBrush(resources, "AppButtonNormalBrush", buttonNormal);
         SetBrush(resources, "AppButtonNormalForegroundBrush", buttonNormalForeground);
         SetBrush(resources, "AppButtonCautionBrush", buttonCaution);
@@ -172,6 +183,15 @@ public partial class App
         SetBrush(resources, "AppButtonForegroundBrush", buttonNormalForeground);
         SetBrush(resources, "AppErrorBrush", Color.Parse("#FF6B6B"));
         SetBrush(resources, "AppWarningBrush", Color.Parse("#FFD700"));
+        SetBrush(resources, "TextControlBackground", inputBackground);
+        SetBrush(resources, "TextControlBackgroundPointerOver", AdjustBrightness(inputBackground, 0.05));
+        SetBrush(resources, "TextControlBackgroundFocused", inputBackground);
+        SetBrush(resources, "TextControlForeground", inputForeground);
+        SetBrush(resources, "TextControlForegroundFocused", inputForeground);
+        SetBrush(resources, "TextControlBorderBrush", inputBorder);
+        SetBrush(resources, "TextControlBorderBrushFocused", accent);
+        SetColor(resources, "TextControlSelectionHighlightColor", inputSelectionBackground);
+        SetColor(resources, "TextControlSelectionHighlightColorWhenNotFocused", inputSelectionBackground);
     }
 
     private static void SetBrush(ResourceDictionary resources, string key, Color color)
@@ -183,6 +203,11 @@ public partial class App
         }
 
         resources[key] = new SolidColorBrush(color);
+    }
+
+    private static void SetColor(ResourceDictionary resources, string key, Color color)
+    {
+        resources[key] = color;
     }
 
     private static Color ParseColor(string? value, Color fallback)

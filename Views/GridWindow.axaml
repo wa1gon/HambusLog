@@ -8,47 +8,96 @@
         Width="1200"
         Height="800"
         WindowStartupLocation="CenterScreen">
-    <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*">
-        <Border Grid.Row="0" Background="{DynamicResource AppHeaderBackgroundBrush}" Padding="8,6" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1">
+    <Window.Styles>
+        <Style Selector="DataGrid">
+            <Setter Property="Background" Value="{DynamicResource AppPanelBackgroundBrush}" />
+            <Setter Property="RowBackground" Value="{DynamicResource AppPanelBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="GridLinesVisibility" Value="Horizontal" />
+            <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource AppBorderBrush}" />
+        </Style>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource AppHeaderBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="DataGridRow">
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
+        </Style>
+        <Style Selector="DataGridRow:pointerover /template/ Rectangle#BackgroundRectangle">
+            <Setter Property="Fill" Value="{DynamicResource AppButtonNormalBrush}" />
+            <Setter Property="Opacity" Value="0.25" />
+        </Style>
+        <Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+            <Setter Property="Fill" Value="{DynamicResource AppButtonNormalBrush}" />
+            <Setter Property="Opacity" Value="0.45" />
+        </Style>
+        <Style Selector="DataGridCell">
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
+            <Setter Property="Padding" Value="8,4" />
+        </Style>
+    </Window.Styles>
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Toolbar -->
+        <Border Grid.Row="0" Background="{DynamicResource AppHeaderBackgroundBrush}" Padding="8,6"
+                BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1">
             <Grid ColumnDefinitions="Auto,200,*,Auto" ColumnSpacing="8">
-                <TextBlock Grid.Column="0" Text="Search Call:" Foreground="{DynamicResource AppForegroundBrush}" VerticalAlignment="Center" />
-                <TextBox Grid.Column="1" Text="{Binding SearchCall}" Watermark="e.g. W5XYZ" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6,4" />
+                <TextBlock Grid.Column="0" Text="Search Call:" Foreground="{DynamicResource AppForegroundBrush}"
+                           VerticalAlignment="Center" />
+                <TextBox Grid.Column="1" Text="{Binding SearchCall}" Watermark="e.g. W5XYZ"
+                         Background="{DynamicResource AppPanelBackgroundBrush}"
+                         Foreground="{DynamicResource AppForegroundBrush}" Padding="6,4" />
                 <TextBlock Grid.Column="2" />
-                <Button Grid.Column="3" Content="+ New Entry" Background="{DynamicResource AppButtonNormalBrush}" Foreground="{DynamicResource AppButtonNormalForegroundBrush}" Padding="12,6" Click="OnNewEntryClicked" />
+                <Button Grid.Column="3" Content="+ New Entry"
+                        Background="{DynamicResource AppButtonNormalBrush}"
+                        Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
+                        Padding="12,6" Click="OnNewEntryClicked" />
             </Grid>
         </Border>
-        <Grid Grid.Row="1" RowDefinitions="Auto,*" ColumnDefinitions="*" Background="{DynamicResource AppPanelBackgroundBrush}">
-            <Border Grid.Row="0" Background="{DynamicResource AppHeaderBackgroundBrush}" Padding="4" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" IsVisible="{Binding !IsLoading}">
-                <Grid ColumnDefinitions="120,220,140,120,100" ColumnSpacing="8">
-                    <Button Grid.Column="0" Content="Call"      Tag="Call"    Click="OnSortHeaderClick" Background="{DynamicResource AppHeaderBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" BorderBrush="{DynamicResource AppBorderBrush}" />
-                    <Button Grid.Column="1" Content="Date/Time" Tag="QsoDate" Click="OnSortHeaderClick" Background="{DynamicResource AppHeaderBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" BorderBrush="{DynamicResource AppBorderBrush}" />
-                    <Button Grid.Column="2" Content="Frequency" Tag="Freq"    Click="OnSortHeaderClick" Background="{DynamicResource AppHeaderBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" BorderBrush="{DynamicResource AppBorderBrush}" Margin="0,0,4,0" />
-                    <Button Grid.Column="3" Content="Mode"      Tag="Mode"    Click="OnSortHeaderClick" Background="{DynamicResource AppHeaderBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" BorderBrush="{DynamicResource AppBorderBrush}" Margin="4,0,0,0" />
-                    <Button Grid.Column="4" Content="RST"       Tag="RstRcvd" Click="OnSortHeaderClick" Background="{DynamicResource AppHeaderBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" BorderBrush="{DynamicResource AppBorderBrush}" />
-                </Grid>
-            </Border>
-            <ListBox Grid.Row="1" ItemsSource="{Binding FilteredEntries}" Background="{DynamicResource AppPanelBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource AppForegroundBrush}" IsVisible="{Binding !IsLoading}">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Border Padding="3" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" PointerPressed="OnGridRowPointerPressed">
-                            <Grid ColumnDefinitions="120,220,140,120,100" ColumnSpacing="8">
-                                <TextBlock Grid.Column="0" Text="{Binding Call}" FontSize="12" Foreground="{DynamicResource AppForegroundBrush}" />
-                                <TextBlock Grid.Column="1" Text="{Binding QsoDate, StringFormat={}{0:yyyy-MM-dd HH:mm}}" FontSize="12" Foreground="{DynamicResource AppForegroundBrush}" />
-                                <TextBlock Grid.Column="2" Text="{Binding Freq, StringFormat={}{0:F3}}" FontSize="12" Foreground="{DynamicResource AppForegroundBrush}" TextAlignment="Right" HorizontalAlignment="Stretch" Margin="0,0,4,0" />
-                                <TextBlock Grid.Column="3" Text="{Binding Mode}" FontSize="12" Foreground="{DynamicResource AppForegroundBrush}" Margin="4,0,0,0" />
-                                <TextBlock Grid.Column="4" Text="{Binding RstRcvd}" FontSize="12" Foreground="{DynamicResource AppForegroundBrush}" />
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-            <!-- Show message when no data (after loading completes) -->
-            <TextBlock Grid.Row="1" Text="{Binding LoadingMessage}" IsVisible="{Binding FilteredEntries.Count, Converter={x:Static ObjectConverters.IsNull}}" 
-                       FontSize="14" Foreground="{DynamicResource AppMutedForegroundBrush}" 
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-        </Grid>
-        <Border Grid.Row="2" Background="{DynamicResource AppHeaderBackgroundBrush}" Padding="8,4" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
-            <TextBlock Text="{Binding FilteredEntries.Count, StringFormat={}{0} QSO(s)}" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+
+        <!-- DataGrid -->
+        <DataGrid Grid.Row="1"
+                  x:Name="QsoDataGrid"
+                  ItemsSource="{Binding FilteredEntries}"
+                  IsReadOnly="True"
+                  CanUserSortColumns="True"
+                  CanUserResizeColumns="True"
+                  CanUserReorderColumns="True"
+                  AutoGenerateColumns="False"
+                  SelectionMode="Single"
+                  IsVisible="{Binding !IsLoading}"
+                  DoubleTapped="OnDataGridDoubleTapped">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Call"       Binding="{Binding Call}"    Width="120" />
+                <DataGridTextColumn Header="Date / Time"
+                                    Binding="{Binding QsoDate, StringFormat={}{0:yyyy-MM-dd HH:mm}}"
+                                    Width="160" />
+                <DataGridTextColumn Header="Band"       Binding="{Binding Band}"    Width="80" />
+                <DataGridTextColumn Header="Freq (MHz)"
+                                    Binding="{Binding Freq, StringFormat={}{0:F3}}"
+                                    Width="110" />
+                <DataGridTextColumn Header="Mode"       Binding="{Binding Mode}"    Width="90" />
+                <DataGridTextColumn Header="RST Sent"   Binding="{Binding RstSent}" Width="90" />
+                <DataGridTextColumn Header="RST Rcvd"   Binding="{Binding RstRcvd}" Width="90" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Loading / empty state -->
+        <TextBlock Grid.Row="1" Text="{Binding LoadingMessage}"
+                   IsVisible="{Binding IsLoading}"
+                   FontSize="14" Foreground="{DynamicResource AppMutedForegroundBrush}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+        <!-- Status bar -->
+        <Border Grid.Row="2" Background="{DynamicResource AppHeaderBackgroundBrush}" Padding="8,4"
+                BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
+            <TextBlock Text="{Binding FilteredEntries.Count, StringFormat={}{0} QSO(s)}"
+                       Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
         </Border>
     </Grid>
 </Window>

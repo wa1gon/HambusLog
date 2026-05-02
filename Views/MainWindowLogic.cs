@@ -44,6 +44,14 @@ public partial class MainWindow
         }
     }
 
+    public void OnOpenGridClicked(object? sender, RoutedEventArgs e) => ToggleGridWindow();
+
+    public void OnOpenNewContactClicked(object? sender, RoutedEventArgs e) => OpenNewContactWindow();
+
+    public void OnOpenConfigurationClicked(object? sender, RoutedEventArgs e) => OpenConfigurationWindow();
+
+    public async void OnImportAdifClicked(object? sender, RoutedEventArgs e) => await ImportAdifAsync();
+
     private void ToggleGridWindow()
     {
         if (_gridWindow is { IsVisible: true })
