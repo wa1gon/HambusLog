@@ -35,7 +35,8 @@
         <Border Grid.Row="1" CornerRadius="8"
                 BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
                 Background="{DynamicResource AppPanelBackgroundBrush}">
-            <DataGrid ItemsSource="{Binding Spots}"
+            <DataGrid Name="SpotsGrid"
+                      ItemsSource="{Binding Spots}"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
                       GridLinesVisibility="All"
@@ -43,6 +44,7 @@
                       CanUserSortColumns="True"
                       HeadersVisibility="Column"
                       RowHeight="30"
+                      Tapped="OnSpotsGridTapped"
                       Margin="8">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Spotter" Binding="{Binding Spotter}" Width="140" />
