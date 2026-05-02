@@ -70,6 +70,32 @@ public sealed class AdifImportServiceTests : IDisposable
         Assert.Equal(storedQso.Id, storedQso.QslInfo.Single().QsoId);
     }
 
+    [Fact]
+    public async Task ImportFromFileAsync_SkipsDuplicatesOnReimport()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        var adifPath = Path.Combine(_tempDirectory, "dupe.adi");
+        var dbPath = Path.Combine(_tempDirectory, "dupe.sqlite");
+        await File.WriteAllTextAsync(adifPath, CreateSampleAdif());
+
+        var first = await AdifImportService.ImportFromFileAsync(
+            adifPath,
+            new AdifImportOptions(ConnectionString: $"Data Source={dbPath}"));
+
+        var second = await AdifImportService.ImportFromFileAsync(
+            adifPath,
+            new AdifImportOptions(ConnectionString: $"Data Source={dbPath}"));
+
+        Assert.Equal(1, first.ParsedCount);
+        Assert.True(first.SavedChanges >= 1);
+        Assert.Equal(1, second.ParsedCount);
+        Assert.Equal(0, second.SavedChanges);
+        Assert.Equal(1, second.DuplicateCount);
+
+        await using var db = HamBusLogDbContextFactory.Create(DatabaseProvider.Sqlite, $"Data Source={dbPath}");
+        Assert.Equal(1, await db.Qsos.CountAsync());
+    }
+
     public void Dispose()
     {
         try
@@ -84,7 +110,7 @@ public sealed class AdifImportServiceTests : IDisposable
     }
 
     private static string CreateSampleAdif() =>
-        "Sample Header <eoh>\n<CALL:4>W1AW <QSO_DATE:8>20260425 <TIME_ON:6>123000 <BAND:3>20M <MODE:3>SSB <RST_SENT:2>59 <RST_RCVD:2>59 <EOR>\n";
+        "Sample Header <eoh>\n<CALL:4>W1AW <MY_CALL:6>N0CALL <QSO_DATE:8>20260425 <TIME_ON:6>123000 <BAND:3>20M <MODE:3>SSB <RST_SENT:2>59 <RST_RCVD:2>59 <EOR>\n";
 }
 
 

@@ -149,6 +149,11 @@ public class AdifReader
             {
                 // Core fields
                 case "call": qso.Call = value; break;
+                case "my_call": qso.MyCall = value; break;
+                case "station_callsign":
+                    if (string.IsNullOrWhiteSpace(qso.MyCall))
+                        qso.MyCall = value;
+                    break;
                 case "band": qso.Band = value; break;
                 case "mode": qso.Mode = value; break;
                 case "country": qso.Country = value; break;
@@ -157,7 +162,11 @@ public class AdifReader
                 case "rst_sent": qso.RstSent = value; break;
                 case "rst_rcvd": qso.RstRcvd = value; break;
                 case "contest-id": qso.ContestId = value; break;
-                case "guid": qso.Id = Guid.Parse(value); break;
+                case "guid":
+                case "uuid":
+                    if (Guid.TryParse(value, out var parsedId))
+                        qso.Id = parsedId;
+                    break;
                 case "freq":
                     if (decimal.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var freq))
                         qso.Freq = freq;

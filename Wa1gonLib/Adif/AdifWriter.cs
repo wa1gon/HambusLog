@@ -43,9 +43,13 @@ public static class AdifWriter
             if (!string.IsNullOrWhiteSpace(qso.RstRcvd))
                 AppendField(sb, "RST_RCVD", qso.RstRcvd);
 
-            // GUID if available
-            if (!string.IsNullOrWhiteSpace(qso.Id.ToString()))
-                AppendField(sb, "GUID", qso.Id.ToString());
+            // UUID extension (plus legacy GUID for compatibility)
+            if (qso.Id != Guid.Empty)
+            {
+                var id = qso.Id.ToString();
+                AppendField(sb, "UUID", id);
+                AppendField(sb, "GUID", id);
+            }
 
             // Extra fields from QsoDetail
             foreach (var detail in qso.Details)
