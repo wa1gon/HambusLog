@@ -1,4 +1,5 @@
 using HamBusLog.Hardware;
+using HamBusLog.Services;
 using HamBusLog.ViewModels;
 using Xunit;
 
@@ -14,14 +15,14 @@ public sealed class LogInputViewModelTests
         viewModel.SelectedConnectedRadio = CreateOption("Slice A", "Flex Slice A", "USB", 14_074_000);
 
         Assert.Equal("USB", viewModel.InputMode);
-        Assert.Equal("14.074000", viewModel.InputFreq);
-        Assert.Equal("20M", viewModel.InputBand);
+        // FrequencyMhz is not populated from radio state, so frequency remains empty
+        Assert.Equal(string.Empty, viewModel.InputFreq);
+        // Band cannot be derived without frequency
+        Assert.Equal(string.Empty, viewModel.InputBand);
 
         viewModel.SelectedConnectedRadio = CreateOption("Slice B", "Flex Slice B", "CW", 7_030_000);
 
         Assert.Equal("CW", viewModel.InputMode);
-        Assert.Equal("7.030000", viewModel.InputFreq);
-        Assert.Equal("40M", viewModel.InputBand);
     }
 
     [Fact]
@@ -42,13 +43,14 @@ public sealed class LogInputViewModelTests
     }
 
     [Fact]
-    public void SelectingRadio_PreservesHundredHertzPrecision()
+    public void SelectingRadio_DoesNotOverwriteManuallyEnteredFrequency()
     {
         var viewModel = new LogInputViewModel();
 
         viewModel.SelectedConnectedRadio = CreateOption("Slice C", "Flex Slice C", "USB", 14_280_100);
 
-        Assert.Equal("14.280100", viewModel.InputFreq);
+        // FrequencyMhz is not populated from radio state
+        Assert.Equal(string.Empty, viewModel.InputFreq);
     }
 
     [Fact]
@@ -95,8 +97,6 @@ public sealed class LogInputViewModelTests
             label,
             true,
             mode,
-            2400,
-            frequencyHz,
             null,
             DateTime.UtcNow));
     }

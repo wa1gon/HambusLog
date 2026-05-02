@@ -29,7 +29,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private MenuNode? _selectedMenuItem;
     private readonly RigCatalogStore _rigCatalogStore;
-    private readonly HamBusLog.Hardware.RigctldConnectionManager _rigctldConnectionManager;
+    private readonly IRigctldConnectionManager _rigctldConnectionManager;
     private ObservableCollection<ActiveRadioOption> _availableRadios = [];
     private ActiveRadioOption? _selectedActiveRadio;
     private ObservableCollection<RadioConnectionStatusViewModel> _radioStatuses = [];

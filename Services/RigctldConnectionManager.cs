@@ -1,8 +1,8 @@
-namespace HamBusLog.Hardware;
+namespace HamBusLog.Services;
 
 using System.Collections.Concurrent;
 
-public sealed class RigctldConnectionManager : IDisposable
+public sealed class RigctldConnectionManager : IRigctldConnectionManager
 {
     private readonly object _gate = new();
     private readonly Dictionary<string, Worker> _workers = new(StringComparer.OrdinalIgnoreCase);

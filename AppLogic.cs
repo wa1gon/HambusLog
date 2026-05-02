@@ -3,8 +3,8 @@ namespace HamBusLog;
 public partial class App
 {
     public static RigCatalogStore RigCatalogStore { get; } = new();
-    public static HamBusLog.Hardware.RigctldConnectionManager RigctldConnectionManager { get; } = new();
-    public static HamBusLog.Services.IToastService Toasts { get; } = new HamBusLog.Services.ToastService();
+    public static IRigctldConnectionManager RigctldConnectionManager { get; } = new RigctldConnectionManager();
+    public static IToastService Toasts { get; } = new ToastService();
 
     private static HamBusLogDbContext? _dbContext;
     public static HamBusLogDbContext DbContext

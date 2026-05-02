@@ -27,6 +27,7 @@ global using Avalonia.Media;
 global using CommunityToolkit.Mvvm.ComponentModel;
 global using HamBusLog.Data;
 global using HamBusLog.Models;
+global using HamBusLog.Services;
 global using HamBusLog.Validation;
 global using HamBusLog.ViewModels;
 global using HamBusLog.Views;
