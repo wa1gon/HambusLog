@@ -16,8 +16,8 @@
         <SolidColorBrush x:Key="AppMenuBackgroundBrush" Color="#111827" />
         <SolidColorBrush x:Key="AppMenuForegroundBrush" Color="#FFFFFF" />
         <SolidColorBrush x:Key="AppForegroundBrush" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#9CA3AF" />
-        <SolidColorBrush x:Key="nBrush" Color="#9CA3AF" />
+        <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#6B7280" />
+        <SolidColorBrush x:Key="NBrush" Color="#9CA3AF" />
         <SolidColorBrush x:Key="AppBorderBrush" Color="#34495E" />
         <SolidColorBrush x:Key="AppAccentBrush" Color="#3498DB" />
         <SolidColorBrush x:Key="AppButtonNormalBrush" Color="#2563EB" />

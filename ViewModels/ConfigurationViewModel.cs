@@ -462,6 +462,14 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
     public RigCatalogViewModel RigCatalog { get; } = new();
 
+    private Color _hoverFontColor = Color.Parse("#FFFFFF");
+
+    public Color HoverFontColor
+    {
+        get => _hoverFontColor;
+        set => SetProperty(ref _hoverFontColor, value);
+    }
+
     public void Save()
     {
         try
