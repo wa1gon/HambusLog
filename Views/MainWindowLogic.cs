@@ -38,6 +38,31 @@ public partial class MainWindow
                 await ImportAdifAsync();
                 ResetTreeSelection(sender);
             }
+            else if (node.Title == "Import JADE")
+            {
+                await ImportJadeAsync();
+                ResetTreeSelection(sender);
+            }
+            else if (node.Title == "Export ADIF")
+            {
+                await ExportAdifAsync();
+                ResetTreeSelection(sender);
+            }
+            else if (node.Title == "Export JADE")
+            {
+                await ExportJadeAsync();
+                ResetTreeSelection(sender);
+            }
+            else if (node.Title == "Export JADE Schema")
+            {
+                await ExportJadeSchemaAsync();
+                ResetTreeSelection(sender);
+            }
+            else if (node.Title == "Export JADE Example")
+            {
+                await ExportJadeExampleAsync();
+                ResetTreeSelection(sender);
+            }
             else if (node.Title == "DX Spots" || node.Title == "DX Cluster")
             {
                 ToggleDxSpotsWindow();
@@ -208,7 +233,185 @@ public partial class MainWindow
 
             App.Toasts.ShowSuccess(
                 "ADIF import complete",
-                $"Imported {result.Value.ParsedCount} QSO record(s). Database changes: {result.Value.SavedChanges}.");
+                $"Imported {result.Value.ParsedCount} QSO record(s). Database changes: {result.Value.SavedChanges}."
+                + (result.Value.DuplicateCount > 0 ? $" Skipped duplicates: {result.Value.DuplicateCount}." : string.Empty));
+        }
+    }
+
+    private async Task ImportJadeAsync()
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        var suggestedStartLocation = await TryGetFolderFromPathAsync(profile.AdifDirectory);
+        var files = await StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = "Select JADE file to import",
+            AllowMultiple = false,
+            SuggestedStartLocation = suggestedStartLocation,
+            FileTypeFilter =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("JADE JSON files") { Patterns = ["*.json", "*.jade"] },
+                new Avalonia.Platform.Storage.FilePickerFileType("All files") { Patterns = ["*"] }
+            ]
+        });
+
+        if (files.Count == 0)
+            return;
+
+        var path = files[0].Path.LocalPath;
+        try
+        {
+            var imported = await HamBusLog.Wa1gonLib.Exchange.JadeTransferService.ImportFromFileAsync(path);
+            if (imported == 0)
+            {
+                App.Toasts.ShowWarning("JADE import complete", "No QSO records were found in the selected file.");
+                return;
+            }
+
+            RememberAdifDirectory(config, path);
+            App.Toasts.ShowSuccess("JADE import complete", $"Imported {imported} QSO record(s).");
+        }
+        catch (HamBusLog.Wa1gonLib.Exchange.JadeValidationException ex)
+        {
+            var topErrors = ex.Errors.Take(4).ToList();
+            var moreCount = Math.Max(0, ex.Errors.Count - topErrors.Count);
+            var details = string.Join("\n", topErrors);
+            if (moreCount > 0)
+                details += $"\n...and {moreCount} more issue(s).";
+
+            App.Toasts.ShowError("JADE import validation failed", details);
+        }
+        catch (Exception ex)
+        {
+            App.Toasts.ShowError("JADE import failed", ex.Message);
+        }
+    }
+
+    private async Task ExportAdifAsync()
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        var suggestedStartLocation = await TryGetFolderFromPathAsync(profile.AdifDirectory);
+        var file = await StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+        {
+            Title = "Export ADIF",
+            SuggestedFileName = $"hambuslog-{DateTime.UtcNow:yyyyMMdd-HHmmss}.adi",
+            SuggestedStartLocation = suggestedStartLocation,
+            FileTypeChoices =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("ADIF files") { Patterns = ["*.adi", "*.adif"] }
+            ]
+        });
+
+        if (file is null)
+            return;
+
+        var path = file.Path.LocalPath;
+        try
+        {
+            var exported = await AdifExportService.ExportToFileAsync(path);
+            RememberAdifDirectory(config, path);
+            App.Toasts.ShowSuccess("ADIF export complete", $"Exported {exported} QSO record(s).");
+        }
+        catch (Exception ex)
+        {
+            App.Toasts.ShowError("ADIF export failed", ex.Message);
+        }
+    }
+
+    private async Task ExportJadeAsync()
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        var suggestedStartLocation = await TryGetFolderFromPathAsync(profile.AdifDirectory);
+        var file = await StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+        {
+            Title = "Export JADE",
+            SuggestedFileName = $"hambuslog-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json",
+            SuggestedStartLocation = suggestedStartLocation,
+            FileTypeChoices =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("JADE JSON files") { Patterns = ["*.json", "*.jade"] }
+            ]
+        });
+
+        if (file is null)
+            return;
+
+        var path = file.Path.LocalPath;
+        try
+        {
+            var exported = await HamBusLog.Wa1gonLib.Exchange.JadeTransferService.ExportToFileAsync(path);
+            RememberAdifDirectory(config, path);
+            App.Toasts.ShowSuccess("JADE export complete", $"Exported {exported} QSO record(s).");
+        }
+        catch (Exception ex)
+        {
+            App.Toasts.ShowError("JADE export failed", ex.Message);
+        }
+    }
+
+    private async Task ExportJadeSchemaAsync()
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        var suggestedStartLocation = await TryGetFolderFromPathAsync(profile.AdifDirectory);
+        var file = await StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+        {
+            Title = "Export JADE Schema Only",
+            SuggestedFileName = "jade-schema-template.json",
+            SuggestedStartLocation = suggestedStartLocation,
+            FileTypeChoices =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("JADE JSON files") { Patterns = ["*.json", "*.jade"] }
+            ]
+        });
+
+        if (file is null)
+            return;
+
+        var path = file.Path.LocalPath;
+        try
+        {
+            await HamBusLog.Wa1gonLib.Exchange.JadeTransferService.ExportSchemaToFileAsync(path);
+            RememberAdifDirectory(config, path);
+            App.Toasts.ShowSuccess("JADE schema export complete", "Exported JADE schema/template with empty records array.");
+        }
+        catch (Exception ex)
+        {
+            App.Toasts.ShowError("JADE schema export failed", ex.Message);
+        }
+    }
+
+    private async Task ExportJadeExampleAsync()
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        var suggestedStartLocation = await TryGetFolderFromPathAsync(profile.AdifDirectory);
+        var file = await StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+        {
+            Title = "Export JADE Example Record",
+            SuggestedFileName = "jade-example-record.json",
+            SuggestedStartLocation = suggestedStartLocation,
+            FileTypeChoices =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("JADE JSON files") { Patterns = ["*.json", "*.jade"] }
+            ]
+        });
+
+        if (file is null)
+            return;
+
+        var path = file.Path.LocalPath;
+        try
+        {
+            await HamBusLog.Wa1gonLib.Exchange.JadeTransferService.ExportExampleToFileAsync(path);
+            RememberAdifDirectory(config, path);
+            App.Toasts.ShowSuccess("JADE example export complete", "Exported JADE template with one populated example record.");
+        }
+        catch (Exception ex)
+        {
+            App.Toasts.ShowError("JADE example export failed", ex.Message);
         }
     }
 

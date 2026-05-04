@@ -36,13 +36,19 @@ public static class AdifImportService
         await using var db = HamBusLogDbContextFactory.Create(importOptions.Provider, importOptions.ConnectionString);
         await db.Database.EnsureCreatedAsync(cancellationToken);
 
-        progress?.Report(AdifImportProgress.Saving(fullPath, parsed.Count));
-        await db.Qsos.AddRangeAsync(parsed, cancellationToken);
-        var saved = await db.SaveChangesAsync(cancellationToken);
+        var duplicateFilter = await QsoImportDuplicateDetector.FilterNewQsosAsync(db, parsed, cancellationToken);
+        var accepted = duplicateFilter.Accepted;
+
+        progress?.Report(AdifImportProgress.Saving(fullPath, accepted.Count));
+        if (accepted.Count > 0)
+            await db.Qsos.AddRangeAsync(accepted, cancellationToken);
+        var saved = accepted.Count > 0
+            ? await db.SaveChangesAsync(cancellationToken)
+            : 0;
 
         progress?.Report(AdifImportProgress.Completed(fullPath, parsed.Count, saved));
 
-        return new AdifImportResult(parsed.Count, saved, fullPath);
+        return new AdifImportResult(parsed.Count, saved, fullPath, duplicateFilter.DuplicateCount);
     }
 
     private static async Task<int> CountRecordsAsync(
@@ -145,7 +151,7 @@ public readonly record struct AdifImportOptions(DatabaseProvider Provider = Data
         : ConnectionString;
 }
 
-public readonly record struct AdifImportResult(int ParsedCount, int SavedChanges, string FilePath);
+public readonly record struct AdifImportResult(int ParsedCount, int SavedChanges, string FilePath, int DuplicateCount = 0);
 
 public enum AdifImportStage
 {

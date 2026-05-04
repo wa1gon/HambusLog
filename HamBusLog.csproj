@@ -23,6 +23,8 @@
     <Compile Include="Wa1gonLib/Configuration/DxClusterConf.cs" />
     <Compile Include="Wa1gonLib/Configuration/LogConfig.cs" />
     <Compile Include="Wa1gonLib/Configuration/RigCtlConf.cs" />
+    <Compile Include="Wa1gonLib/Exchange/JadeTransferService.cs" />
+    <Compile Include="Wa1gonLib/Exchange/JadeValidationException.cs" />
     <Compile Include="Wa1gonLib/IRegControlClient.cs" />
     <Compile Include="Wa1gonLib/Models/CallSign.cs" />
     <Compile Include="Wa1gonLib/Models/ClusterConfig.cs" />
