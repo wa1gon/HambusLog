@@ -75,6 +75,10 @@ public partial class MainWindow
         }
     }
 
+    public void OnMenuTreeViewPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+    }
+
     public void OnOpenGridClicked(object? sender, RoutedEventArgs e) => ToggleGridWindow();
 
     public void OnOpenNewContactClicked(object? sender, RoutedEventArgs e) => OpenNewContactWindow();
@@ -487,4 +491,3 @@ public partial class MainWindow
             vm.SelectedRadioStatus = row;
     }
 }
-

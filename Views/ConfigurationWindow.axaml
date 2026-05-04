@@ -110,6 +110,99 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- ── Station Tab ───────────────────────────────────── -->
+            <TabItem Header="Station">
+                <ScrollViewer Margin="12" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="10">
+
+                        <Border Padding="14" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="CardHeading" Text="Station Identity" />
+                                <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="10">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Callsign" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                    <TextBox Grid.Row="0" Grid.Column="1"
+                                             Text="{Binding MyCall, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Watermark="N0CALL"
+                                             Width="220"
+                                             HorizontalAlignment="Left"
+                                             Padding="8,7"
+                                             FontWeight="SemiBold" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Location" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                    <TextBox Grid.Row="1" Grid.Column="1"
+                                             Text="{Binding MyLocation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Watermark="Home, portable site, club station..."
+                                             Width="420"
+                                             HorizontalAlignment="Left"
+                                             Padding="8,7" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="14" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="CardHeading" Text="Station Location" />
+                                <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="10">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Latitude / Longitude" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                                        <TextBox Text="{Binding MyLatitude, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Watermark="42.3601" Width="150" Padding="8,7" />
+                                        <TextBox Text="{Binding MyLongitude, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Watermark="-71.0589" Width="150" Padding="8,7" />
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Grid Square" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                    <TextBox Grid.Row="1" Grid.Column="1"
+                                             Text="{Binding MyGridSquare, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Watermark="FN42"
+                                             Width="150"
+                                             HorizontalAlignment="Left"
+                                             Padding="8,7" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="ITU / CQ Zone" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                    <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                                        <TextBox Text="{Binding MyItuZone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Watermark="8" Width="90" Padding="8,7" />
+                                        <TextBox Text="{Binding MyCqZone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Watermark="5" Width="90" Padding="8,7" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="14" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="CardHeading" Text="Field Day Station" />
+                                <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="10">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Section" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                    <TextBox Grid.Row="0" Grid.Column="1"
+                                             Text="{Binding MyFieldDaySection, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Watermark="EMA"
+                                             Width="150"
+                                             HorizontalAlignment="Left"
+                                             Padding="8,7" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Class" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                    <TextBox Grid.Row="1" Grid.Column="1"
+                                             Text="{Binding MyFieldDayClass, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Watermark="1D"
+                                             Width="150"
+                                             HorizontalAlignment="Left"
+                                             Padding="8,7" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- ── Colors Tab ────────────────────────────────────── -->
             <TabItem Header="Colors">
                 <ScrollViewer Margin="12" VerticalScrollBarVisibility="Auto">

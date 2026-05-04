@@ -26,6 +26,15 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _databaseFolderPath = string.Empty;
     private string _databaseFileName = "hambuslog.db";
     private string _connectionString = "Data Source=hambuslog.db";
+    private string _myCall = string.Empty;
+    private string _myLocation = string.Empty;
+    private string _myGridSquare = string.Empty;
+    private string _myLatitude = string.Empty;
+    private string _myLongitude = string.Empty;
+    private string _myItuZone = string.Empty;
+    private string _myCqZone = string.Empty;
+    private string _myFieldDaySection = string.Empty;
+    private string _myFieldDayClass = string.Empty;
     private int? _selectedRigRadioId;
     private string _selectedRigRadioName = string.Empty;
     private string _rigctldRadioName = string.Empty;
@@ -220,6 +229,60 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     {
         get => _adifDirectory;
         set => SetProperty(ref _adifDirectory, value ?? string.Empty);
+    }
+
+    public string MyCall
+    {
+        get => _myCall;
+        set => SetProperty(ref _myCall, (value ?? string.Empty).ToUpperInvariant());
+    }
+
+    public string MyLocation
+    {
+        get => _myLocation;
+        set => SetProperty(ref _myLocation, value ?? string.Empty);
+    }
+
+    public string MyGridSquare
+    {
+        get => _myGridSquare;
+        set => SetProperty(ref _myGridSquare, (value ?? string.Empty).ToUpperInvariant());
+    }
+
+    public string MyLatitude
+    {
+        get => _myLatitude;
+        set => SetProperty(ref _myLatitude, value ?? string.Empty);
+    }
+
+    public string MyLongitude
+    {
+        get => _myLongitude;
+        set => SetProperty(ref _myLongitude, value ?? string.Empty);
+    }
+
+    public string MyItuZone
+    {
+        get => _myItuZone;
+        set => SetProperty(ref _myItuZone, value ?? string.Empty);
+    }
+
+    public string MyCqZone
+    {
+        get => _myCqZone;
+        set => SetProperty(ref _myCqZone, value ?? string.Empty);
+    }
+
+    public string MyFieldDaySection
+    {
+        get => _myFieldDaySection;
+        set => SetProperty(ref _myFieldDaySection, (value ?? string.Empty).ToUpperInvariant());
+    }
+
+    public string MyFieldDayClass
+    {
+        get => _myFieldDayClass;
+        set => SetProperty(ref _myFieldDayClass, (value ?? string.Empty).ToUpperInvariant());
     }
 
     public string SelectedRigRadioName
@@ -417,6 +480,15 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 BackgroundColor = ToHexRgb(BackgroundColor),
                 ForegroundColor = ToHexRgb(ForegroundColor),
                 AdifDirectory = AdifDirectory.Trim(),
+                MyCall = MyCall.Trim(),
+                MyLocation = MyLocation.Trim(),
+                MyGridSquare = MyGridSquare.Trim(),
+                MyLatitude = MyLatitude.Trim(),
+                MyLongitude = MyLongitude.Trim(),
+                MyItuZone = MyItuZone.Trim(),
+                MyCqZone = MyCqZone.Trim(),
+                MyFieldDaySection = MyFieldDaySection.Trim(),
+                MyFieldDayClass = MyFieldDayClass.Trim(),
                 DatabaseFolderPath = normalizedDatabaseFolderPath,
                 DatabaseFileName = normalizedDatabaseFileName,
                 DatabaseFilePath = normalizedDatabaseFilePath,
@@ -535,6 +607,15 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             BackgroundColor = ToHexRgb(BackgroundColor),
             ForegroundColor = ToHexRgb(ForegroundColor),
             AdifDirectory = src.AdifDirectory,
+            MyCall = src.MyCall,
+            MyLocation = src.MyLocation,
+            MyGridSquare = src.MyGridSquare,
+            MyLatitude = src.MyLatitude,
+            MyLongitude = src.MyLongitude,
+            MyItuZone = src.MyItuZone,
+            MyCqZone = src.MyCqZone,
+            MyFieldDaySection = src.MyFieldDaySection,
+            MyFieldDayClass = src.MyFieldDayClass,
             DatabaseFolderPath = src.DatabaseFolderPath,
             DatabaseFileName = src.DatabaseFileName,
             DatabaseFilePath = src.DatabaseFilePath,
@@ -642,6 +723,15 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             DatabaseFileName = "hambuslog.db";
 
         AdifDirectory = profile.AdifDirectory;
+        MyCall = profile.MyCall;
+        MyLocation = profile.MyLocation;
+        MyGridSquare = profile.MyGridSquare;
+        MyLatitude = profile.MyLatitude;
+        MyLongitude = profile.MyLongitude;
+        MyItuZone = profile.MyItuZone;
+        MyCqZone = profile.MyCqZone;
+        MyFieldDaySection = profile.MyFieldDaySection;
+        MyFieldDayClass = profile.MyFieldDayClass;
 
         var cluster = _appConfig.Cluster ?? new ClusterConfig();
         ClusterHostname = string.IsNullOrWhiteSpace(cluster.Hostname) ? "127.0.0.1" : cluster.Hostname;
@@ -1214,4 +1304,3 @@ public sealed class RigRadioOption : ObservableObject
 
     public override string ToString() => Display;
 }
-

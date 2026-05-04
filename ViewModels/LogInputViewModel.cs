@@ -65,9 +65,8 @@ public sealed class LogInputViewModel : ViewModelBase
         _appConfig = AppConfigurationStore.Load();
         ContestTypes    = [ContestType.Normal, ContestType.ArrlFieldDay];
         Details         = [];
-        AvailableProfiles = new ObservableCollection<string>();
         AvailableConnectedRadios = new ObservableCollection<ConnectedRadioOption>();
-        LoadProfiles();
+        SelectActiveProfile();
         LoadStationConfig();
         InputDate       = DateTime.UtcNow.ToString("yyyyMMdd");
         InputTimeOn     = DateTime.UtcNow.ToString("HHmm");
@@ -77,7 +76,6 @@ public sealed class LogInputViewModel : ViewModelBase
     // ── Properties ────────────────────────────────────────────────────
     public List<ContestType> ContestTypes { get; }
     public ObservableCollection<QsoDetailRow> Details { get; }
-    public ObservableCollection<string> AvailableProfiles { get; }
 
     public ObservableCollection<ConnectedRadioOption> AvailableConnectedRadios
     {
@@ -141,72 +139,12 @@ public sealed class LogInputViewModel : ViewModelBase
 
     public bool IsActiveRigDisconnected => !IsActiveRigConnected;
 
-    public string SelectedProfile
-    {
-        get => _selectedProfile;
-        set
-        {
-            if (!SetProperty(ref _selectedProfile, value ?? string.Empty))
-                return;
-
-            PersistSelectedProfile();
-        }
-    }
-
     public ContestType SelectedContestType
     {
         get => _selectedContestType;
         set { if (SetProperty(ref _selectedContestType, value)) OnPropertyChanged(nameof(IsFieldDay)); }
     }
     public bool IsFieldDay => SelectedContestType == ContestType.ArrlFieldDay;
-
-    // ── Station / Operator Config Properties ─────────────────────────
-    public string MyCall
-    {
-        get => _myCall;
-        set { if (SetProperty(ref _myCall, (value ?? string.Empty).ToUpperInvariant())) SaveStationConfig(); }
-    }
-    public string MyLocation
-    {
-        get => _myLocation;
-        set { if (SetProperty(ref _myLocation, value ?? string.Empty)) SaveStationConfig(); }
-    }
-    public string MyGridSquare
-    {
-        get => _myGridSquare;
-        set { if (SetProperty(ref _myGridSquare, value ?? string.Empty)) SaveStationConfig(); }
-    }
-    public string MyLatitude
-    {
-        get => _myLatitude;
-        set { if (SetProperty(ref _myLatitude, value ?? string.Empty)) SaveStationConfig(); }
-    }
-    public string MyLongitude
-    {
-        get => _myLongitude;
-        set { if (SetProperty(ref _myLongitude, value ?? string.Empty)) SaveStationConfig(); }
-    }
-    public string MyItuZone
-    {
-        get => _myItuZone;
-        set { if (SetProperty(ref _myItuZone, value ?? string.Empty)) SaveStationConfig(); }
-    }
-    public string MyCqZone
-    {
-        get => _myCqZone;
-        set { if (SetProperty(ref _myCqZone, value ?? string.Empty)) SaveStationConfig(); }
-    }
-    public string MyFieldDaySection
-    {
-        get => _myFieldDaySection;
-        set { if (SetProperty(ref _myFieldDaySection, (value ?? string.Empty).ToUpperInvariant())) SaveStationConfig(); }
-    }
-    public string MyFieldDayClass
-    {
-        get => _myFieldDayClass;
-        set { if (SetProperty(ref _myFieldDayClass, (value ?? string.Empty).ToUpperInvariant())) SaveStationConfig(); }
-    }
-
 
     public string InputCall
     {
@@ -324,6 +262,7 @@ public sealed class LogInputViewModel : ViewModelBase
         var qso = new Qso
         {
             Call    = InputCall.Trim().ToUpperInvariant(),
+            MyCall = _myCall.Trim().ToUpperInvariant(),
             QsoDate = qsoDate,
             Band    = band,
             Mode    = mode,
@@ -475,36 +414,13 @@ public sealed class LogInputViewModel : ViewModelBase
         ClassError = r.IsValid ? string.Empty : r.ErrorMessage;
     }
 
-    private void LoadProfiles()
+    private void SelectActiveProfile()
     {
-        AvailableProfiles.Clear();
-        foreach (var key in _appConfig.Profiles.Keys)
-            AvailableProfiles.Add(key);
-
-        if (AvailableProfiles.Count == 0)
-            AvailableProfiles.Add("default");
-
         var active = string.IsNullOrWhiteSpace(_appConfig.ActiveProfile)
             ? "default"
             : _appConfig.ActiveProfile;
 
-        if (!AvailableProfiles.Contains(active))
-            AvailableProfiles.Add(active);
-
         _selectedProfile = active;
-        OnPropertyChanged(nameof(SelectedProfile));
-    }
-
-    private void PersistSelectedProfile()
-    {
-        if (string.IsNullOrWhiteSpace(_selectedProfile))
-            return;
-
-        if (!_appConfig.Profiles.ContainsKey(_selectedProfile))
-            _appConfig.Profiles[_selectedProfile] = new ConfigProfile { Name = _selectedProfile };
-
-        _appConfig.ActiveProfile = _selectedProfile;
-        AppConfigurationStore.Save(_appConfig);
     }
 
     private void LoadStationConfig()
@@ -519,30 +435,6 @@ public sealed class LogInputViewModel : ViewModelBase
         _myCqZone           = p.MyCqZone;
         _myFieldDaySection  = p.MyFieldDaySection;
         _myFieldDayClass    = p.MyFieldDayClass;
-        OnPropertyChanged(nameof(MyCall));
-        OnPropertyChanged(nameof(MyLocation));
-        OnPropertyChanged(nameof(MyGridSquare));
-        OnPropertyChanged(nameof(MyLatitude));
-        OnPropertyChanged(nameof(MyLongitude));
-        OnPropertyChanged(nameof(MyItuZone));
-        OnPropertyChanged(nameof(MyCqZone));
-        OnPropertyChanged(nameof(MyFieldDaySection));
-        OnPropertyChanged(nameof(MyFieldDayClass));
-    }
-
-    private void SaveStationConfig()
-    {
-        var p = ActiveConfigProfile();
-        p.MyCall            = _myCall;
-        p.MyLocation        = _myLocation;
-        p.MyGridSquare      = _myGridSquare;
-        p.MyLatitude        = _myLatitude;
-        p.MyLongitude       = _myLongitude;
-        p.MyItuZone         = _myItuZone;
-        p.MyCqZone          = _myCqZone;
-        p.MyFieldDaySection = _myFieldDaySection;
-        p.MyFieldDayClass   = _myFieldDayClass;
-        AppConfigurationStore.Save(_appConfig);
     }
 
     private ConfigProfile ActiveConfigProfile()
@@ -750,4 +642,3 @@ public sealed class ConnectedRadioOption
 
     public override string ToString() => Display;
 }
-
