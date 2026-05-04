@@ -43,6 +43,7 @@ public partial class ConfigurationWindow
     private TextBlock? _buttonCautionContrastLabel;
     private TextBlock? _buttonDangerContrastLabel;
     private ListBox? _activeRadiosListBox;
+    private RigRadioEditorWindow? _rigRadioEditorWindow;
     private bool _syncingActiveRadiosSelection;
     private DispatcherTimer? _contrastWarnTimer;
 
@@ -457,15 +458,35 @@ public partial class ConfigurationWindow
     public async void OnAddRadioClicked(object? sender, RoutedEventArgs e)
     {
         _viewModel.AddRigRadio();
-        var editor = new RigRadioEditorWindow(_viewModel);
-        await editor.ShowDialog(this);
+        if (_rigRadioEditorWindow is { IsVisible: true })
+        {
+            _rigRadioEditorWindow.Activate();
+            return;
+        }
+
+        if (App.ActivateOpenWindow<RigRadioEditorWindow>())
+            return;
+
+        _rigRadioEditorWindow = new RigRadioEditorWindow(_viewModel);
+        _rigRadioEditorWindow.Closed += (_, _) => _rigRadioEditorWindow = null;
+        await _rigRadioEditorWindow.ShowDialog(this);
     }
     public void OnRemoveRadioClicked(object? sender, RoutedEventArgs e) => _viewModel.RemoveSelectedRigRadio();
     public async void OnEditSelectedRadioClicked(object? sender, RoutedEventArgs e)
     {
         _viewModel.RevertSelectedRigRadioEdits();
-        var editor = new RigRadioEditorWindow(_viewModel);
-        await editor.ShowDialog(this);
+        if (_rigRadioEditorWindow is { IsVisible: true })
+        {
+            _rigRadioEditorWindow.Activate();
+            return;
+        }
+
+        if (App.ActivateOpenWindow<RigRadioEditorWindow>())
+            return;
+
+        _rigRadioEditorWindow = new RigRadioEditorWindow(_viewModel);
+        _rigRadioEditorWindow.Closed += (_, _) => _rigRadioEditorWindow = null;
+        await _rigRadioEditorWindow.ShowDialog(this);
     }
     public void OnRefreshSerialPortsClicked(object? sender, RoutedEventArgs e) => _viewModel.RefreshSerialPorts();
     public void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();

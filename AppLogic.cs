@@ -144,6 +144,29 @@ public partial class App
         AppConfigurationStore.Save(config);
     }
 
+    public static TWindow? FindOpenWindow<TWindow>()
+        where TWindow : Window
+    {
+        if (Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+            return null;
+
+        return desktop.Windows.OfType<TWindow>().FirstOrDefault();
+    }
+
+    public static bool ActivateOpenWindow<TWindow>()
+        where TWindow : Window
+    {
+        var window = FindOpenWindow<TWindow>();
+        if (window is null)
+            return false;
+
+        if (!window.IsVisible)
+            window.Show();
+
+        window.Activate();
+        return true;
+    }
+
     public static void ApplyThemeFromProfile(ConfigProfile profile)
     {
         if (Current?.Resources is not ResourceDictionary resources)
@@ -161,11 +184,18 @@ public partial class App
         var buttonDanger = ParseColor(profile.ButtonDangerColor, Color.Parse("#DC2626"));
         var buttonDangerForeground = ParseColor(profile.ButtonDangerForegroundColor, legacyButtonForeground);
         var inputBackground = ParseColor(profile.InputBackgroundColor, Color.Parse("#2C3E50"));
-        var inputForeground = ParseColor(profile.InputForegroundColor, Color.Parse("#FFFFFF"));
+        var inputForeground = EnsureReadableForeground(
+            ParseColor(profile.InputForegroundColor, Color.Parse("#FFFFFF")),
+            inputBackground);
         var inputBorder = ParseColor(profile.InputBorderColor, Color.Parse("#34495E"));
-        var inputSelectionBackground = ParseColor(profile.InputSelectionBackgroundColor, inputBackground);
-        var inputSelectionForeground = ParseColor(profile.InputSelectionForegroundColor, Color.Parse("#FFFFFF"));
         var accent = Color.Parse("#3498DB");
+        var inputSelectionBackground = ParseColor(profile.InputSelectionBackgroundColor, buttonNormal);
+        if (IsVisuallyClose(inputSelectionBackground, inputBackground))
+            inputSelectionBackground = buttonNormal;
+
+        var inputSelectionForeground = EnsureReadableForeground(
+            ParseColor(profile.InputSelectionForegroundColor, buttonNormalForeground),
+            inputSelectionBackground);
 
         var mutedForeground = string.IsNullOrWhiteSpace(profile.MutedForegroundColor)
             ? AdjustBrightness(foreground, -0.35)
@@ -194,9 +224,13 @@ public partial class App
         SetBrush(resources, "TextControlBackgroundPointerOver", AdjustBrightness(inputBackground, 0.05));
         SetBrush(resources, "TextControlBackgroundFocused", inputBackground);
         SetBrush(resources, "TextControlForeground", inputForeground);
+        SetBrush(resources, "TextControlForegroundPointerOver", inputForeground);
         SetBrush(resources, "TextControlForegroundFocused", inputForeground);
         SetBrush(resources, "TextControlBorderBrush", inputBorder);
+        SetBrush(resources, "TextControlBorderBrushPointerOver", accent);
         SetBrush(resources, "TextControlBorderBrushFocused", accent);
+        SetBrush(resources, "TextControlSelectionBrush", inputSelectionBackground);
+        SetBrush(resources, "TextControlSelectionForegroundBrush", inputSelectionForeground);
         SetColor(resources, "TextControlSelectionHighlightColor", inputSelectionBackground);
         SetColor(resources, "TextControlSelectionHighlightColorWhenNotFocused", inputSelectionBackground);
     }
@@ -227,6 +261,46 @@ public partial class App
         {
             return fallback;
         }
+    }
+
+    private static Color EnsureReadableForeground(Color foreground, Color background)
+    {
+        if (ContrastRatio(foreground, background) >= 4.5)
+            return foreground;
+
+        var black = Color.Parse("#000000");
+        var white = Color.Parse("#FFFFFF");
+        return ContrastRatio(white, background) >= ContrastRatio(black, background) ? white : black;
+    }
+
+    private static bool IsVisuallyClose(Color first, Color second)
+    {
+        var distance = Math.Abs(first.R - second.R)
+            + Math.Abs(first.G - second.G)
+            + Math.Abs(first.B - second.B);
+        return distance < 72;
+    }
+
+    private static double ContrastRatio(Color first, Color second)
+    {
+        var lighter = Math.Max(RelativeLuminance(first), RelativeLuminance(second));
+        var darker = Math.Min(RelativeLuminance(first), RelativeLuminance(second));
+        return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    private static double RelativeLuminance(Color color)
+    {
+        static double Channel(byte value)
+        {
+            var normalized = value / 255.0;
+            return normalized <= 0.03928
+                ? normalized / 12.92
+                : Math.Pow((normalized + 0.055) / 1.055, 2.4);
+        }
+
+        return 0.2126 * Channel(color.R)
+            + 0.7152 * Channel(color.G)
+            + 0.0722 * Channel(color.B);
     }
 
     private static Color AdjustBrightness(Color color, double delta)

@@ -19,7 +19,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private Color _inputBackgroundColor = Color.Parse("#2C3E50");
     private Color _inputForegroundColor = Color.Parse("#FFFFFF");
     private Color _inputBorderColor = Color.Parse("#34495E");
-    private Color _inputSelectionBackgroundColor = Color.Parse("#2C3E50");
+    private Color _inputSelectionBackgroundColor = Color.Parse("#2563EB");
     private Color _inputSelectionForegroundColor = Color.Parse("#FFFFFF");
     private Color _mutedForegroundColor = Color.Parse("#9CA3AF");
     private string _adifDirectory = string.Empty;
@@ -691,7 +691,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         catch { InputBorderColor = Color.Parse("#34495E"); }
 
         try { InputSelectionBackgroundColor = Color.Parse(profile.InputSelectionBackgroundColor); }
-        catch { InputSelectionBackgroundColor = Color.Parse("#2C3E50"); }
+        catch { InputSelectionBackgroundColor = Color.Parse("#2563EB"); }
 
         try { InputSelectionForegroundColor = Color.Parse(profile.InputSelectionForegroundColor); }
         catch { InputSelectionForegroundColor = Color.Parse("#FFFFFF"); }
