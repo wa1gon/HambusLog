@@ -4,6 +4,7 @@ public partial class DxSpotsWindow
 {
     private readonly DxSpotsWindowViewModel _viewModel;
     private readonly SqliteQsoRepository _repository;
+    private LogInputWindow? _logInputWindow;
 
     public DxSpotsWindow()
     {
@@ -142,9 +143,19 @@ public partial class DxSpotsWindow
 
     private void OpenLogInputWindowForSpot(string? callsign, decimal frequencyMhz, string? spotInfo)
     {
-        var inputWindow = new LogInputWindow(callsign, frequencyMhz, spotInfo);
-        inputWindow.QsoLogged += async (_, qso) => await SaveQsoAsync(qso);
-        inputWindow.Show(this);
+        if (_logInputWindow is { IsVisible: true })
+        {
+            _logInputWindow.Activate();
+            return;
+        }
+
+        if (App.ActivateOpenWindow<LogInputWindow>())
+            return;
+
+        _logInputWindow = new LogInputWindow(callsign, frequencyMhz, spotInfo);
+        _logInputWindow.Closed += (_, _) => _logInputWindow = null;
+        _logInputWindow.QsoLogged += async (_, qso) => await SaveQsoAsync(qso);
+        _logInputWindow.Show(this);
     }
 
     private async Task SaveQsoAsync(Qso qso)
@@ -162,4 +173,3 @@ public partial class DxSpotsWindow
         }
     }
 }
-

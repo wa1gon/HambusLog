@@ -43,7 +43,7 @@ public sealed class ConfigProfile
     public string InputBackgroundColor { get; set; } = "#2C3E50";
     public string InputForegroundColor { get; set; } = "#FFFFFF";
     public string InputBorderColor { get; set; } = "#34495E";
-    public string InputSelectionBackgroundColor { get; set; } = "#2C3E50";
+    public string InputSelectionBackgroundColor { get; set; } = "#2563EB";
     public string InputSelectionForegroundColor { get; set; } = "#FFFFFF";
     public string MutedForegroundColor { get; set; } = string.Empty;
     public string ConnectionString { get; set; } = "Data Source=hambuslog.db";

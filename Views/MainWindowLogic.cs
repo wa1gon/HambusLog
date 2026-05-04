@@ -4,6 +4,7 @@ public partial class MainWindow
 {
     private MenuNode? _previousSelection;
     private GridWindow? _gridWindow;
+    private ConfigurationWindow? _configurationWindow;
     private DxSpotsWindow? _dxSpotsWindow;
     private bool _isImportingAdif;
 
@@ -75,6 +76,10 @@ public partial class MainWindow
         }
     }
 
+    public void OnMenuTreeViewPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+    }
+
     public void OnOpenGridClicked(object? sender, RoutedEventArgs e) => ToggleGridWindow();
 
     public void OnOpenNewContactClicked(object? sender, RoutedEventArgs e) => OpenNewContactWindow();
@@ -105,8 +110,19 @@ public partial class MainWindow
 
     private void OpenConfigurationWindow()
     {
-        var configurationWindow = new ConfigurationWindow();
-        ShowWithVisibleOwner(configurationWindow);
+        if (_configurationWindow is { IsVisible: true })
+        {
+            _configurationWindow.Activate();
+            return;
+        }
+
+        if (_configurationWindow is null)
+        {
+            _configurationWindow = App.FindOpenWindow<ConfigurationWindow>() ?? new ConfigurationWindow();
+            _configurationWindow.Closed += (_, _) => _configurationWindow = null;
+        }
+
+        ShowWithVisibleOwner(_configurationWindow);
     }
 
     private void ToggleDxSpotsWindow()
@@ -487,4 +503,3 @@ public partial class MainWindow
             vm.SelectedRadioStatus = row;
     }
 }
-

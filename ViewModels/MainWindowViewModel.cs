@@ -9,7 +9,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [
         new MenuNode("Grid"),
         new MenuNode("Add New Contact"),
-        new MenuNode("File", true,
+        new MenuNode("File", false, // Set default to collapsed
             new MenuNode("Open/Reopen Grid"),
             new MenuNode("Import ADIF"),
             new MenuNode("Import JADE"),
@@ -21,11 +21,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             new MenuNode("Remove Dups"),
             new MenuNode("Watch List")),
         new MenuNode("DX Cluster"),
-        new MenuNode("Edit"),
         new MenuNode("Configuration"),
         new MenuNode("Callbook"),
-        new MenuNode("List"),
-        new MenuNode("Search"),
         new MenuNode("Awards"),
         new MenuNode("eLogs"),
         new MenuNode("RecCall"),

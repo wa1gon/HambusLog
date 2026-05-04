@@ -6,6 +6,8 @@ public partial class GridWindow
 {
     private GridViewModel? _viewModel;
     private SqliteQsoRepository? _repository;
+    private LogInputWindow? _logInputWindow;
+    private QsoEditWindow? _qsoEditWindow;
 
     public GridWindow()
     {
@@ -27,14 +29,24 @@ public partial class GridWindow
         if (_viewModel is null || _repository is null)
             return;
 
-        var inputWindow = new LogInputWindow();
-        inputWindow.QsoLogged += async (_, qso) => 
+        if (_logInputWindow is { IsVisible: true })
+        {
+            _logInputWindow.Activate();
+            return;
+        }
+
+        if (App.ActivateOpenWindow<LogInputWindow>())
+            return;
+
+        _logInputWindow = new LogInputWindow();
+        _logInputWindow.Closed += (_, _) => _logInputWindow = null;
+        _logInputWindow.QsoLogged += async (_, qso) => 
         {
             _viewModel.LogEntries.Add(qso);
             // Save to database
             await SaveQsoAsync(qso);
         };
-        inputWindow.Show(this);
+        _logInputWindow.Show(this);
     }
     
     private async Task SaveQsoAsync(Qso qso)
@@ -68,9 +80,19 @@ public partial class GridWindow
         if (fullQso is null)
             return;
 
-        var editor = new QsoEditWindow(fullQso);
-        editor.QsoSaved += async (_, updated) => await SaveEditedQsoAsync(updated);
-        _ = editor.ShowDialog(this);
+        if (_qsoEditWindow is { IsVisible: true })
+        {
+            _qsoEditWindow.Activate();
+            return;
+        }
+
+        if (App.ActivateOpenWindow<QsoEditWindow>())
+            return;
+
+        _qsoEditWindow = new QsoEditWindow(fullQso);
+        _qsoEditWindow.Closed += (_, _) => _qsoEditWindow = null;
+        _qsoEditWindow.QsoSaved += async (_, updated) => await SaveEditedQsoAsync(updated);
+        _ = _qsoEditWindow.ShowDialog(this);
     }
 
     private async Task SaveEditedQsoAsync(Qso updated)

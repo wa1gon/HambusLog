@@ -35,11 +35,15 @@
         <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#34495E" />
         <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#2C3E50" />
         <SolidColorBrush x:Key="TextControlForeground" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#FFFFFF" />
         <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#FFFFFF" />
         <SolidColorBrush x:Key="TextControlBorderBrush" Color="#34495E" />
+        <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#3498DB" />
         <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#3498DB" />
-        <Color x:Key="TextControlSelectionHighlightColor">#2C3E50</Color>
-        <Color x:Key="TextControlSelectionHighlightColorWhenNotFocused">#2C3E50</Color>
+        <SolidColorBrush x:Key="TextControlSelectionBrush" Color="#2563EB" />
+        <SolidColorBrush x:Key="TextControlSelectionForegroundBrush" Color="#FFFFFF" />
+        <Color x:Key="TextControlSelectionHighlightColor">#2563EB</Color>
+        <Color x:Key="TextControlSelectionHighlightColorWhenNotFocused">#2563EB</Color>
     </Application.Resources>
   
     <Application.Styles>
@@ -55,9 +59,9 @@
             <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
         </Style>
         <Style Selector="ComboBox /template/ TextBox">
-            <Setter Property="Background" Value="{DynamicResource AppPanelBackgroundBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+            <Setter Property="Background" Value="{DynamicResource TextControlBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextControlForeground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrush}" />
         </Style>
         <Style Selector="ComboBoxItem">
             <Setter Property="Background" Value="{DynamicResource AppPanelBackgroundBrush}" />
@@ -78,27 +82,40 @@
             <Setter Property="TextElement.Foreground" Value="{DynamicResource AppButtonNormalForegroundBrush}" />
         </Style>
         <Style Selector="TextBox">
-            <Setter Property="Background" Value="{DynamicResource AppPanelBackgroundBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
-            <Setter Property="CaretBrush" Value="{DynamicResource AppForegroundBrush}" />
-            <Setter Property="SelectionBrush" Value="{DynamicResource AppPanelBackgroundBrush}" />
-            <Setter Property="SelectionForegroundBrush" Value="{DynamicResource AppForegroundBrush}" />
+            <Setter Property="Background" Value="{DynamicResource TextControlBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextControlForeground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrush}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource TextControlForeground}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource TextControlSelectionBrush}" />
+            <Setter Property="SelectionForegroundBrush" Value="{DynamicResource TextControlSelectionForegroundBrush}" />
+        </Style>
+        <Style Selector="TextBox:pointerover">
+            <Setter Property="Background" Value="{DynamicResource TextControlBackgroundPointerOver}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextControlForegroundPointerOver}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrushPointerOver}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource TextControlForegroundPointerOver}" />
         </Style>
         <Style Selector="TextBox:focus">
-            <Setter Property="Background" Value="{DynamicResource AppPanelBackgroundBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
-            <Setter Property="CaretBrush" Value="{DynamicResource AppForegroundBrush}" />
+            <Setter Property="Background" Value="{DynamicResource TextControlBackgroundFocused}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextControlForegroundFocused}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrushFocused}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource TextControlForegroundFocused}" />
         </Style>
         <Style Selector="TextBox:focus-within">
-            <Setter Property="Background" Value="{DynamicResource AppPanelBackgroundBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
-            <Setter Property="CaretBrush" Value="{DynamicResource AppForegroundBrush}" />
+            <Setter Property="Background" Value="{DynamicResource TextControlBackgroundFocused}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextControlForegroundFocused}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrushFocused}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource TextControlForegroundFocused}" />
         </Style>
         <Style Selector="TextBox /template/ TextPresenter">
-            <Setter Property="TextElement.Foreground" Value="{DynamicResource AppForegroundBrush}" />
-            <Setter Property="SelectionBrush" Value="{DynamicResource AppPanelBackgroundBrush}" />
-            <Setter Property="SelectionForegroundBrush" Value="{DynamicResource AppForegroundBrush}" />
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource TextControlForeground}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource TextControlSelectionBrush}" />
+            <Setter Property="SelectionForegroundBrush" Value="{DynamicResource TextControlSelectionForegroundBrush}" />
+        </Style>
+        <Style Selector="TextBox:focus-within /template/ TextPresenter">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource TextControlForegroundFocused}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource TextControlSelectionBrush}" />
+            <Setter Property="SelectionForegroundBrush" Value="{DynamicResource TextControlSelectionForegroundBrush}" />
         </Style>
         <Style Selector="TabItem">
             <Setter Property="Background" Value="{DynamicResource AppHeaderBackgroundBrush}" />
