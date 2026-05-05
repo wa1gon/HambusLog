@@ -71,6 +71,47 @@ public sealed class ConfigurationViewModelRigRadioTests : IDisposable
         Assert.Contains(viewModel.RigCatalog.FilteredEntries, x => x.RigNum == 3070 && x.Model == "FT-710");
     }
 
+    [Fact]
+    public void Constructor_NormalizesDatabaseFolderPathWhenItContainsFileName()
+    {
+        var mistakenFolderValue = Path.Combine(_tempDirectory, "station.db");
+        var config = CreateConfiguration();
+        config.Profiles["default"].DatabaseFolderPath = mistakenFolderValue;
+        config.Profiles["default"].DatabaseFileName = "hambuslog.db";
+        config.Profiles["default"].DatabaseFilePath = string.Empty;
+        SaveConfiguration(config);
+
+        using var viewModel = new ConfigurationViewModel();
+
+        var expectedFolder = Path.GetFullPath(_tempDirectory);
+        var expectedPath = Path.Combine(expectedFolder, "station.db");
+        Assert.Equal(expectedFolder, viewModel.DatabaseFolderPath);
+        Assert.Equal("station.db", viewModel.DatabaseFileName);
+        Assert.Equal(expectedPath, viewModel.DatabaseFilePath);
+    }
+
+    [Fact]
+    public void Save_NormalizesDatabaseFolderPathWhenItContainsFileName()
+    {
+        SaveConfiguration(CreateConfiguration());
+
+        using var viewModel = new ConfigurationViewModel();
+        viewModel.DatabaseFolderPath = Path.Combine(_tempDirectory, "portable.sqlite3");
+        viewModel.DatabaseFileName = "hambuslog.db";
+        viewModel.ConnectionString = "Data Source=hambuslog.db";
+
+        viewModel.Save();
+
+        var saved = AppConfigurationStore.Load();
+        var profile = saved.Profiles["default"];
+        var expectedFolder = Path.GetFullPath(_tempDirectory);
+        var expectedPath = Path.Combine(expectedFolder, "portable.sqlite3");
+        Assert.Equal(expectedFolder, profile.DatabaseFolderPath);
+        Assert.Equal("portable.sqlite3", profile.DatabaseFileName);
+        Assert.Equal(expectedPath, profile.DatabaseFilePath);
+        Assert.Equal($"Data Source={expectedPath}", profile.ConnectionString);
+    }
+
     public void Dispose()
     {
         try

@@ -477,8 +477,9 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             // Ensure the currently edited radio fields are written back before profile serialization.
             PersistRigRadioSettings(_selectedRigRadioId, SelectedRigRadioName);
 
-            var normalizedDatabaseFolderPath = NormalizeDatabaseFolderPath(DatabaseFolderPath);
-            var normalizedDatabaseFileName = NormalizeDatabaseFileName(DatabaseFileName);
+            var normalizedLocation = NormalizeDatabaseLocation(DatabaseFolderPath, DatabaseFileName, DatabaseFilePath);
+            var normalizedDatabaseFolderPath = normalizedLocation.FolderPath;
+            var normalizedDatabaseFileName = normalizedLocation.FileName;
             var normalizedDatabaseFilePath = BuildDatabasePath(normalizedDatabaseFolderPath, normalizedDatabaseFileName);
             var resolvedConnectionString = BuildConnectionString(ConnectionString, normalizedDatabaseFilePath);
 
@@ -719,16 +720,13 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             ? profile.DatabaseFilePath
             : ExtractDatabaseFilePathFromConnectionString(profile.ConnectionString);
 
-        DatabaseFolderPath = !string.IsNullOrWhiteSpace(profile.DatabaseFolderPath)
-            ? profile.DatabaseFolderPath
-            : ExtractDatabaseFolderFromPath(configuredDatabasePath);
+        var normalizedLocation = NormalizeDatabaseLocation(
+            profile.DatabaseFolderPath,
+            profile.DatabaseFileName,
+            configuredDatabasePath);
 
-        DatabaseFileName = !string.IsNullOrWhiteSpace(profile.DatabaseFileName)
-            ? profile.DatabaseFileName
-            : ExtractDatabaseFileNameFromPath(configuredDatabasePath);
-
-        if (string.IsNullOrWhiteSpace(DatabaseFileName))
-            DatabaseFileName = "hambuslog.db";
+        DatabaseFolderPath = normalizedLocation.FolderPath;
+        DatabaseFileName = normalizedLocation.FileName;
 
         AdifDirectory = profile.AdifDirectory;
         MyCall = profile.MyCall;
@@ -976,7 +974,17 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         if (string.IsNullOrWhiteSpace(path))
             return string.Empty;
 
-        return Path.GetFullPath(path.Trim());
+        var trimmed = path.Trim();
+        if (IsLikelyDatabaseFilePath(trimmed))
+        {
+            var fileDirectory = Path.GetDirectoryName(trimmed);
+            if (string.IsNullOrWhiteSpace(fileDirectory))
+                return string.Empty;
+
+            return Path.GetFullPath(fileDirectory);
+        }
+
+        return Path.GetFullPath(trimmed);
     }
 
     private static string NormalizeDatabaseFileName(string? fileName)
@@ -1050,6 +1058,59 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             return string.Empty;
 
         return Path.GetFileName(path);
+    }
+
+    private static (string FolderPath, string FileName) NormalizeDatabaseLocation(string? folderPath, string? fileName, string? fallbackPath)
+    {
+        var trimmedFolder = folderPath?.Trim() ?? string.Empty;
+        var trimmedFile = fileName?.Trim() ?? string.Empty;
+
+        if (IsLikelyDatabaseFilePath(trimmedFolder))
+        {
+            var extractedFile = Path.GetFileName(trimmedFolder);
+            var extractedFolder = Path.GetDirectoryName(trimmedFolder);
+
+            if (!string.IsNullOrWhiteSpace(extractedFolder))
+                trimmedFolder = extractedFolder;
+
+            if (string.IsNullOrWhiteSpace(trimmedFile)
+                || string.Equals(trimmedFile, "hambuslog.db", StringComparison.OrdinalIgnoreCase)
+                || trimmedFile.Contains(Path.DirectorySeparatorChar)
+                || trimmedFile.Contains(Path.AltDirectorySeparatorChar))
+            {
+                trimmedFile = extractedFile;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(trimmedFolder) || string.IsNullOrWhiteSpace(trimmedFile))
+        {
+            var fallback = fallbackPath?.Trim() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(fallback))
+            {
+                if (string.IsNullOrWhiteSpace(trimmedFolder))
+                    trimmedFolder = ExtractDatabaseFolderFromPath(fallback);
+
+                if (string.IsNullOrWhiteSpace(trimmedFile) || string.Equals(trimmedFile, "hambuslog.db", StringComparison.OrdinalIgnoreCase))
+                    trimmedFile = ExtractDatabaseFileNameFromPath(fallback);
+            }
+        }
+
+        return (NormalizeDatabaseFolderPath(trimmedFolder), NormalizeDatabaseFileName(trimmedFile));
+    }
+
+    private static bool IsLikelyDatabaseFilePath(string? candidate)
+    {
+        if (string.IsNullOrWhiteSpace(candidate))
+            return false;
+
+        var trimmed = candidate.Trim();
+        var extension = Path.GetExtension(trimmed);
+        if (string.IsNullOrWhiteSpace(extension))
+            return false;
+
+        return extension.Equals(".db", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".sqlite", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".sqlite3", StringComparison.OrdinalIgnoreCase);
     }
 
     private void PersistRigRadioSettings(int? radioId, string? radioName)

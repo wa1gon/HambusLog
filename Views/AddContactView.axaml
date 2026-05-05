@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HamBusLog.ViewModels"
+             x:Class="HamBusLog.Views.AddContactView"
+             x:DataType="vm:AddContactViewModel"
+             Background="{DynamicResource AppWindowBackgroundBrush}"
+             Foreground="{DynamicResource AppForegroundBrush}">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <Border Margin="12"
+                Padding="16"
+                CornerRadius="8"
+                Background="{DynamicResource AppPanelBackgroundBrush}"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1">
+            <Grid ColumnDefinitions="Auto,*"
+                  RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                  ColumnSpacing="12"
+                  RowSpacing="10">
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="2"
+                           Text="Add Contact"
+                           FontSize="16"
+                           FontWeight="SemiBold" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Call" />
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding InputCall, Mode=TwoWay}" Watermark="K1ABC" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Date (YYYYMMDD)" />
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding InputDate, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Time On (HHMM)" />
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding InputTimeOn, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Band" />
+                <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding InputBand, Mode=TwoWay}" Watermark="20M" />
+
+                <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Mode" />
+                <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding InputMode, Mode=TwoWay}" Watermark="SSB" />
+
+                <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Frequency" />
+                <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding InputFreq, Mode=TwoWay}" Watermark="14.250" />
+
+                <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Text="Sent" />
+                <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding InputSent, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="8" Grid.Column="0" VerticalAlignment="Center" Text="Received" />
+                <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding InputRec, Mode=TwoWay}" />
+
+                <TextBlock Grid.Row="9" Grid.Column="0" VerticalAlignment="Center" Text="Field Day Section" />
+                <TextBox Grid.Row="9" Grid.Column="1" Text="{Binding InputFieldDaySection, Mode=TwoWay}" Watermark="EMA" />
+
+                <TextBlock Grid.Row="10" Grid.Column="0" VerticalAlignment="Center" Text="Field Day Class" />
+                <TextBox Grid.Row="10" Grid.Column="1" Text="{Binding InputFieldDayClass, Mode=TwoWay}" Watermark="1D" />
+            </Grid>
+        </Border>
+    </ScrollViewer>
+</UserControl>
+
