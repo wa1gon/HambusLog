@@ -90,6 +90,66 @@ public sealed class LogInputViewModelTests
         Assert.Equal("14.280100", viewModel.InputFreq);
     }
 
+    [Fact]
+    public void TryBuildQso_NormalContest_RequiresExtendedExchange()
+    {
+        var viewModel = new LogInputViewModel
+        {
+            SelectedContestType = ContestType.Normal,
+            InputCall = "K1ABC",
+            InputDate = "20260505",
+            InputTimeOn = "1930",
+            InputBand = "20M",
+            InputMode = "SSB"
+        };
+
+        var qso = viewModel.TryBuildQso(out var error);
+
+        Assert.Null(qso);
+        Assert.Contains("RST Sent", error, StringComparison.OrdinalIgnoreCase);
+
+        viewModel.InputSent = "59";
+        viewModel.InputRec = "59";
+        viewModel.InputCountry = "USA";
+        viewModel.InputName = "Pat";
+        viewModel.InputState = "MA";
+        viewModel.InputCounty = "MIDDLESEX";
+
+        qso = viewModel.TryBuildQso(out error);
+
+        Assert.NotNull(qso);
+        Assert.Equal(string.Empty, error);
+        Assert.Equal("USA", qso!.Country);
+        Assert.Equal("MA", qso.State);
+        Assert.Contains(qso.Details, d => d.FieldName == "Name" && d.FieldValue == "Pat");
+        Assert.Contains(qso.Details, d => d.FieldName == "County" && d.FieldValue == "MIDDLESEX");
+    }
+
+    [Fact]
+    public void TryBuildQso_FieldDay_RequiresSectionAndClassOnly()
+    {
+        var viewModel = new LogInputViewModel
+        {
+            SelectedContestType = ContestType.ArrlFieldDay,
+            InputCall = "K1ABC",
+            InputDate = "20260505",
+            InputTimeOn = "1930",
+            InputBand = "20M",
+            InputMode = "CW",
+            InputFieldDaySection = "EMA",
+            InputFieldDayClass = "1D"
+        };
+
+        var qso = viewModel.TryBuildQso(out var error);
+
+        Assert.NotNull(qso);
+        Assert.Equal(string.Empty, error);
+        Assert.Equal(string.Empty, qso!.RstSent);
+        Assert.Equal(string.Empty, qso.RstRcvd);
+        Assert.Contains(qso.Details, d => d.FieldName == "Section" && d.FieldValue == "EMA");
+        Assert.Contains(qso.Details, d => d.FieldName == "Class" && d.FieldValue == "1D");
+    }
+
     private static ConnectedRadioOption CreateOption(string radioName, string label, string mode, long frequencyHz)
     {
         return new ConnectedRadioOption(new RadioRuntimeState(

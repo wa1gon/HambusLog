@@ -19,6 +19,10 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _inputFreq    = string.Empty;
     private string _inputSent    = string.Empty;
     private string _inputRec     = string.Empty;
+    private string _inputCountry = string.Empty;
+    private string _inputName    = string.Empty;
+    private string _inputState   = string.Empty;
+    private string _inputCounty  = string.Empty;
     private ContestType _selectedContestType = ContestType.Normal;
 
     // ----- field day fields -----
@@ -142,9 +146,17 @@ public sealed class LogInputViewModel : ViewModelBase
     public ContestType SelectedContestType
     {
         get => _selectedContestType;
-        set { if (SetProperty(ref _selectedContestType, value)) OnPropertyChanged(nameof(IsFieldDay)); }
+        set
+        {
+            if (!SetProperty(ref _selectedContestType, value))
+                return;
+
+            OnPropertyChanged(nameof(IsFieldDay));
+            OnPropertyChanged(nameof(IsNormalContest));
+        }
     }
     public bool IsFieldDay => SelectedContestType == ContestType.ArrlFieldDay;
+    public bool IsNormalContest => !IsFieldDay;
 
     public string InputCall
     {
@@ -158,6 +170,10 @@ public sealed class LogInputViewModel : ViewModelBase
     public string InputFreq    { get => _inputFreq;    set => SetProperty(ref _inputFreq,    value); }
     public string InputSent    { get => _inputSent;    set => SetProperty(ref _inputSent,    value); }
     public string InputRec     { get => _inputRec;     set => SetProperty(ref _inputRec,     value); }
+    public string InputCountry { get => _inputCountry; set => SetProperty(ref _inputCountry, (value ?? string.Empty).ToUpperInvariant()); }
+    public string InputName    { get => _inputName;    set => SetProperty(ref _inputName,    value ?? string.Empty); }
+    public string InputState   { get => _inputState;   set => SetProperty(ref _inputState,   (value ?? string.Empty).ToUpperInvariant()); }
+    public string InputCounty  { get => _inputCounty;  set => SetProperty(ref _inputCounty,  (value ?? string.Empty).ToUpperInvariant()); }
     public string InputFieldDaySection
     {
         get => _inputFieldDaySection;
@@ -250,6 +266,44 @@ public sealed class LogInputViewModel : ViewModelBase
             var cr    = _classValidator.Validate(cls);
             if (!cr.IsValid)  { ClassError   = cr.ErrorMessage; errorMessage = ClassError;   return null; }
         }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(InputSent))
+            {
+                errorMessage = "RST Sent is required for Normal contest.";
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(InputRec))
+            {
+                errorMessage = "RST Rec is required for Normal contest.";
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(InputCountry))
+            {
+                errorMessage = "Country is required for Normal contest.";
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(InputName))
+            {
+                errorMessage = "Name is required for Normal contest.";
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(InputState))
+            {
+                errorMessage = "State is required for Normal contest.";
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(InputCounty))
+            {
+                errorMessage = "County is required for Normal contest.";
+                return null;
+            }
+        }
 
         var qsoDate = DateTime.TryParseExact(InputDate + " " + InputTimeOn, "yyyyMMdd HHmm",
                           null, System.Globalization.DateTimeStyles.None, out var dt)
@@ -267,6 +321,8 @@ public sealed class LogInputViewModel : ViewModelBase
             Band    = band,
             Mode    = mode,
             Freq    = freq,
+            Country = InputCountry.Trim().ToUpperInvariant(),
+            State   = InputState.Trim().ToUpperInvariant(),
             RstSent = IsFieldDay ? string.Empty : InputSent.Trim(),
             RstRcvd = IsFieldDay ? string.Empty : InputRec.Trim(),
             Details = new List<QsoDetail>()
@@ -281,6 +337,11 @@ public sealed class LogInputViewModel : ViewModelBase
         {
             qso.Details.Add(new QsoDetail { FieldName = "Section", FieldValue = InputFieldDaySection.Trim().ToUpperInvariant() });
             qso.Details.Add(new QsoDetail { FieldName = "Class",   FieldValue = InputFieldDayClass.Trim().ToUpperInvariant()   });
+        }
+        else
+        {
+            qso.Details.Add(new QsoDetail { FieldName = "Name", FieldValue = InputName.Trim() });
+            qso.Details.Add(new QsoDetail { FieldName = "County", FieldValue = InputCounty.Trim().ToUpperInvariant() });
         }
 
         // Attach selected connected rig metadata when available.
@@ -343,6 +404,12 @@ public sealed class LogInputViewModel : ViewModelBase
     public void PrepareForNextLogEntry()
     {
         InputCall = string.Empty;
+        InputSent = string.Empty;
+        InputRec = string.Empty;
+        InputCountry = string.Empty;
+        InputName = string.Empty;
+        InputState = string.Empty;
+        InputCounty = string.Empty;
         InputFieldDaySection = string.Empty;
         InputFieldDayClass = string.Empty;
     }
@@ -475,9 +542,20 @@ public sealed class LogInputViewModel : ViewModelBase
     {
         var snapshot = App.RigctldConnectionManager.GetSnapshot();
         var selectedName = SelectedConnectedRadio?.RadioName;
+        var config = AppConfigurationStore.Load();
+        var rigctld = AppConfigurationStore.GetRigctld(config);
+
+        var activeRadioNames = rigctld.ActiveRadioNames
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var radio in rigctld.Radios.Where(x => x.IsActive && !string.IsNullOrWhiteSpace(x.RadioName)))
+            activeRadioNames.Add(radio.RadioName);
+
+        var hasActiveFilter = activeRadioNames.Count > 0;
 
         var connected = snapshot
-            .Where(x => x.IsConnected)
+            .Where(x => x.IsConnected && (!hasActiveFilter || activeRadioNames.Contains(x.RadioName)))
             .OrderBy(x => x.RadioName, StringComparer.OrdinalIgnoreCase)
             .Select(x => new ConnectedRadioOption(x))
             .ToList();

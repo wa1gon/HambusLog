@@ -69,6 +69,46 @@ public partial class MainWindow
                 ToggleDxSpotsWindow();
                 ResetTreeSelection(sender);
             }
+            else if (node.Title == "Callbook")
+            {
+                ShowNotImplemented("Callbook");
+                ResetTreeSelection(sender);
+            }
+            else if (node.Title == "Awards")
+            {
+                ShowNotImplemented("Awards");
+                ResetTreeSelection(sender);
+            }
+            else if (node.Title == "eLogs")
+            {
+                ShowNotImplemented("eLogs");
+                ResetTreeSelection(sender);
+            }
+            else if (node.Title == "RecCall")
+            {
+                ShowNotImplemented("RecCall");
+                ResetTreeSelection(sender);
+            }
+            else if (node.Title == "Net View")
+            {
+                ShowNotImplemented("Net View");
+                ResetTreeSelection(sender);
+            }
+            else if (node.Title == "Watch List")
+            {
+                ShowNotImplemented("Watch List");
+                ResetTreeSelection(sender);
+            }
+            else if (node.Title == "Remove Dups")
+            {
+                ShowNotImplemented("Remove Dups");
+                ResetTreeSelection(sender);
+            }
+            else if (node.Title == "Help")
+            {
+                ShowNotImplemented("Help");
+                ResetTreeSelection(sender);
+            }
             else
             {
                 _previousSelection = node;
@@ -176,6 +216,11 @@ public partial class MainWindow
     {
         if (_previousSelection != null && sender is TreeView tv)
             tv.SelectedItem = _previousSelection;
+    }
+
+    private static void ShowNotImplemented(string featureName)
+    {
+        App.Toasts.ShowInfo(featureName, $"{featureName} is not wired yet. The menu flow is connected and ready for implementation.");
     }
 
     private async Task ImportAdifAsync()

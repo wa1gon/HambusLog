@@ -21,6 +21,7 @@ public partial class ConfigurationWindow
     private ColorPicker? _inputSelectionBgPicker;
     private ColorPicker? _inputSelectionFgPicker;
     private ColorPicker? _mutedFgPicker;
+    private ColorPicker? _hoverFontColorPicker;
     private TextBlock? _bgHex;
     private TextBlock? _fgHex;
     private TextBlock? _menuBgHex;
@@ -46,6 +47,7 @@ public partial class ConfigurationWindow
     private RigRadioEditorWindow? _rigRadioEditorWindow;
     private bool _syncingActiveRadiosSelection;
     private DispatcherTimer? _contrastWarnTimer;
+    private TextBlock? _hoverFontColorHex; // Add missing field declaration
 
     public ConfigurationWindow()
     {
@@ -83,6 +85,7 @@ public partial class ConfigurationWindow
         _inputSelectionBgPicker = this.FindControl<ColorPicker>("InputSelectionBgColorPicker");
         _inputSelectionFgPicker = this.FindControl<ColorPicker>("InputSelectionFgColorPicker");
         _mutedFgPicker = this.FindControl<ColorPicker>("MutedFgColorPicker");
+        _hoverFontColorPicker = this.FindControl<ColorPicker>("HoverFontColorPicker");
         _bgHex    = this.FindControl<TextBlock>("BgColorHex");
         _fgHex    = this.FindControl<TextBlock>("FgColorHex");
         _menuBgHex = this.FindControl<TextBlock>("MenuBgColorHex");
@@ -236,6 +239,13 @@ public partial class ConfigurationWindow
                 UpdateHex(_mutedFgHex, ev.NewColor);
             };
 
+        if (_hoverFontColorPicker != null)
+            _hoverFontColorPicker.ColorChanged += (_, ev) =>
+            {
+                _viewModel.HoverFontColor = ev.NewColor;
+                UpdateHex(_hoverFontColorHex, ev.NewColor);
+            };
+
         UpdateContrastLabels();
     }
 
@@ -319,6 +329,11 @@ public partial class ConfigurationWindow
             SyncPickerColor(_mutedFgPicker, _mutedFgHex, _viewModel.MutedForegroundColor);
             needsContrastRefresh = true;
         }
+        if (e.PropertyName is nameof(ConfigurationViewModel.HoverFontColor))
+        {
+            SyncPickerColor(_hoverFontColorPicker, _hoverFontColorHex, _viewModel.HoverFontColor);
+            needsContrastRefresh = true;
+        }
 
         if (needsContrastRefresh)
             UpdateContrastLabels();
@@ -345,6 +360,7 @@ public partial class ConfigurationWindow
         SyncPickerColor(_inputSelectionBgPicker, _inputSelectionBgHex, _viewModel.InputSelectionBackgroundColor);
         SyncPickerColor(_inputSelectionFgPicker, _inputSelectionFgHex, _viewModel.InputSelectionForegroundColor);
         SyncPickerColor(_mutedFgPicker, _mutedFgHex, _viewModel.MutedForegroundColor);
+        SyncPickerColor(_hoverFontColorPicker, _hoverFontColorHex, _viewModel.HoverFontColor);
         UpdateContrastLabels();
     }
 
