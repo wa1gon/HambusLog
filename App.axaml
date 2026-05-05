@@ -10,43 +10,44 @@
     </Application.DataTemplates>
 
     <Application.Resources>
-        <SolidColorBrush x:Key="AppWindowBackgroundBrush" Color="#1F2937" />
-        <SolidColorBrush x:Key="AppPanelBackgroundBrush" Color="#2C3E50" />
-        <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#1F2937" />
+        <SolidColorBrush x:Key="AppWindowBackgroundBrush" Color="#0F172A" />
+        <SolidColorBrush x:Key="AppPanelBackgroundBrush" Color="#1F2937" />
+        <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#0F172A" />
         <SolidColorBrush x:Key="AppMenuBackgroundBrush" Color="#111827" />
-        <SolidColorBrush x:Key="AppMenuForegroundBrush" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="AppForegroundBrush" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#6B7280" />
-        <SolidColorBrush x:Key="NBrush" Color="#9CA3AF" />
-        <SolidColorBrush x:Key="AppBorderBrush" Color="#34495E" />
+        <SolidColorBrush x:Key="AppMenuForegroundBrush" Color="#F9FAFB" />
+        <SolidColorBrush x:Key="AppForegroundBrush" Color="#E5E7EB" />
+        <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#94A3B8" />
+        <SolidColorBrush x:Key="NBrush" Color="#94A3B8" />
+        <SolidColorBrush x:Key="AppBorderBrush" Color="#334155" />
         <SolidColorBrush x:Key="AppAccentBrush" Color="#3498DB" />
         <SolidColorBrush x:Key="AppButtonNormalBrush" Color="#2563EB" />
         <SolidColorBrush x:Key="AppButtonNormalForegroundBrush" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="AppButtonCautionBrush" Color="#D97706" />
+        <SolidColorBrush x:Key="AppButtonCautionBrush" Color="#B45309" />
         <SolidColorBrush x:Key="AppButtonCautionForegroundBrush" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="AppButtonDangerBrush" Color="#DC2626" />
+        <SolidColorBrush x:Key="AppButtonDangerBrush" Color="#B91C1C" />
         <SolidColorBrush x:Key="AppButtonDangerForegroundBrush" Color="#FFFFFF" />
         <SolidColorBrush x:Key="AppButtonForegroundBrush" Color="#FFFFFF" />
         <SolidColorBrush x:Key="AppErrorBrush" Color="#FF6B6B" />
         <SolidColorBrush x:Key="AppWarningBrush" Color="#FFD700" />
 
         <!-- Fluent text-input palette overrides for high contrast across normal/focus/selection states -->
-        <SolidColorBrush x:Key="TextControlBackground" Color="#2C3E50" />
-        <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#34495E" />
-        <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#2C3E50" />
-        <SolidColorBrush x:Key="TextControlForeground" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="TextControlBorderBrush" Color="#34495E" />
+        <SolidColorBrush x:Key="TextControlBackground" Color="#1F2937" />
+        <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#334155" />
+        <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#1F2937" />
+        <SolidColorBrush x:Key="TextControlForeground" Color="#F9FAFB" />
+        <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#F9FAFB" />
+        <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#F9FAFB" />
+        <SolidColorBrush x:Key="TextControlBorderBrush" Color="#334155" />
         <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#3498DB" />
         <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#3498DB" />
-        <SolidColorBrush x:Key="TextControlSelectionBrush" Color="#2563EB" />
+        <SolidColorBrush x:Key="TextControlSelectionBrush" Color="#1D4ED8" />
         <SolidColorBrush x:Key="TextControlSelectionForegroundBrush" Color="#FFFFFF" />
-        <Color x:Key="TextControlSelectionHighlightColor">#2563EB</Color>
-        <Color x:Key="TextControlSelectionHighlightColorWhenNotFocused">#2563EB</Color>
+        <Color x:Key="TextControlSelectionHighlightColor">#1D4ED8</Color>
+        <Color x:Key="TextControlSelectionHighlightColorWhenNotFocused">#1D4ED8</Color>
         <SolidColorBrush x:Key="ActiveControlBackgroundBrush" Color="#4A90E2" />
         <SolidColorBrush x:Key="ActiveControlForegroundBrush" Color="#FFFFFF" />
         <SolidColorBrush x:Key="ActiveControlBorderBrush" Color="#007AFF" />
+        <x:Double x:Key="AppBaseFontSize">12</x:Double>
 
     </Application.Resources>
   
@@ -54,6 +55,12 @@
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml"/>
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+        <Style Selector="TemplatedControl">
+            <Setter Property="FontSize" Value="{DynamicResource AppBaseFontSize}" />
+        </Style>
+        <Style Selector="TextBlock">
+            <Setter Property="FontSize" Value="{DynamicResource AppBaseFontSize}" />
+        </Style>
         <Style Selector="ComboBox">
             <Setter Property="Background" Value="{DynamicResource AppPanelBackgroundBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />

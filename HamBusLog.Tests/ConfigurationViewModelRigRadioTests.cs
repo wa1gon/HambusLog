@@ -112,6 +112,57 @@ public sealed class ConfigurationViewModelRigRadioTests : IDisposable
         Assert.Equal($"Data Source={expectedPath}", profile.ConnectionString);
     }
 
+    [Fact]
+    public void Save_ClampsAndPersistsAppFontSize()
+    {
+        SaveConfiguration(CreateConfiguration());
+
+        using var viewModel = new ConfigurationViewModel();
+        viewModel.AppFontSize = 42;
+
+        viewModel.Save();
+
+        var saved = AppConfigurationStore.Load();
+        var profile = saved.Profiles["default"];
+        Assert.Equal(24, profile.AppFontSize);
+
+        using var reloaded = new ConfigurationViewModel();
+        Assert.Equal(24, reloaded.AppFontSize);
+    }
+
+    [Fact]
+    public void FontSizePreset_UpdatesSize_AndCustomValueSetsCustomPreset()
+    {
+        SaveConfiguration(CreateConfiguration());
+
+        using var viewModel = new ConfigurationViewModel();
+        viewModel.SelectedFontSizePreset = "Large (14 pt)";
+
+        Assert.Equal(14, viewModel.AppFontSize);
+
+        viewModel.AppFontSize = 13;
+
+        Assert.Equal("Custom", viewModel.SelectedFontSizePreset);
+    }
+
+    [Fact]
+    public void ResetColorsToDefaults_RestoresReadablePalette()
+    {
+        SaveConfiguration(CreateConfiguration());
+
+        using var viewModel = new ConfigurationViewModel();
+        viewModel.BackgroundColor = Avalonia.Media.Color.Parse("#FFFFFF");
+        viewModel.ForegroundColor = Avalonia.Media.Color.Parse("#000000");
+        viewModel.ButtonDangerColor = Avalonia.Media.Color.Parse("#FF00FF");
+
+        viewModel.ResetColorsToDefaults();
+
+        Assert.Equal(Avalonia.Media.Color.Parse("#0F172A"), viewModel.BackgroundColor);
+        Assert.Equal(Avalonia.Media.Color.Parse("#E5E7EB"), viewModel.ForegroundColor);
+        Assert.Equal(Avalonia.Media.Color.Parse("#B91C1C"), viewModel.ButtonDangerColor);
+    }
+
+
     public void Dispose()
     {
         try

@@ -10,4 +10,8 @@
     <None Include="JADE.md" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../HamBusLog.csproj" />
+  </ItemGroup>
+
 </Project>
