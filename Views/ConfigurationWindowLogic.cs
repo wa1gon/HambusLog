@@ -480,15 +480,17 @@ public partial class ConfigurationWindow
         if (label is null)
             return;
 
+        label.FontWeight = FontWeight.SemiBold;
+
         if (failures.Count == 0)
         {
             label.Text = "All monitored pairs meet AA";
-            label.Foreground = new SolidColorBrush(Color.Parse("#166534"));
+            label.Foreground = new SolidColorBrush(Color.Parse("#4ADE80"));
             return;
         }
 
         label.Text = $"Needs adjustment: {string.Join(", ", failures)}";
-        label.Foreground = new SolidColorBrush(Color.Parse("#92400E"));
+        label.Foreground = new SolidColorBrush(Color.Parse("#FBBF24"));
     }
 
     private static void SetCardAaState(Border? cardBorder, bool isAa)
@@ -527,7 +529,7 @@ public partial class ConfigurationWindow
 
         if (failsAa)
         {
-            label.Foreground = new SolidColorBrush(Color.Parse("#92400E"));
+            label.Foreground = new SolidColorBrush(Color.Parse("#FBBF24"));
             label.FontWeight = FontWeight.SemiBold;
             return;
         }
@@ -591,7 +593,8 @@ public partial class ConfigurationWindow
             return;
 
         label.Text = isAa ? "AA OK" : "Below AA";
-        label.Foreground = new SolidColorBrush(isAa ? Color.Parse("#166534") : Color.Parse("#92400E"));
+        label.Foreground = new SolidColorBrush(isAa ? Color.Parse("#4ADE80") : Color.Parse("#FBBF24"));
+        label.FontWeight = FontWeight.SemiBold;
     }
 
     private static double GetContrastRatio(Color a, Color b)
@@ -673,6 +676,11 @@ public partial class ConfigurationWindow
         await _rigRadioEditorWindow.ShowDialog(this);
     }
     public void OnRefreshSerialPortsClicked(object? sender, RoutedEventArgs e) => _viewModel.RefreshSerialPorts();
+    public void OnResetColorsClicked(object? sender, RoutedEventArgs e)
+    {
+        _viewModel.ResetColorsToDefaults();
+        UpdateContrastLabels();
+    }
     public void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
 
     public async void OnCatalogBrowseClicked(object? sender, RoutedEventArgs e)

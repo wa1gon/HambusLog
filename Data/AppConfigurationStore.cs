@@ -230,6 +230,8 @@ public static class AppConfigurationStore
         if (config.Contests.Count == 0)
             config.Contests = BuildDefaultContests();
 
+        var legacyLicenseKey = config.LicenseKey?.Trim() ?? string.Empty;
+
         var normalized = new List<ContestDefinitionConfig>();
         var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -253,6 +255,9 @@ public static class AppConfigurationStore
             var adifId = string.IsNullOrWhiteSpace(contest.AdifContestId)
                 ? key
                 : contest.AdifContestId.Trim();
+            var licenseKey = string.IsNullOrWhiteSpace(contest.LicenseKey)
+                ? legacyLicenseKey
+                : contest.LicenseKey.Trim();
             var exchangeType = string.IsNullOrWhiteSpace(contest.ExchangeType)
                 ? "normal"
                 : contest.ExchangeType.Trim().ToLowerInvariant();
@@ -276,6 +281,7 @@ public static class AppConfigurationStore
                 Key = key,
                 DisplayName = displayName,
                 AdifContestId = adifId,
+                LicenseKey = licenseKey,
                 ExchangeType = exchangeType,
                 RequiredFields = fields
             });
@@ -296,6 +302,7 @@ public static class AppConfigurationStore
                 Key = "NORMAL",
                 DisplayName = "Normal",
                 AdifContestId = "NORMAL",
+                LicenseKey = string.Empty,
                 ExchangeType = "normal",
                 RequiredFields =
                 [
@@ -312,6 +319,7 @@ public static class AppConfigurationStore
                 Key = "ARRL-FD",
                 DisplayName = "ARRL Field Day",
                 AdifContestId = "ARRL-FD",
+                LicenseKey = string.Empty,
                 ExchangeType = "fieldday",
                 RequiredFields =
                 [

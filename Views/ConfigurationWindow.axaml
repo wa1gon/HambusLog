@@ -79,13 +79,13 @@
                                 BorderBrush="{DynamicResource AppBorderBrush}"
                                 Background="{DynamicResource AppPanelBackgroundBrush}">
                             <StackPanel Spacing="8">
-                                <TextBlock Classes="CardHeading" Text="License" />
-                                <TextBlock Text="Optional product/license key stored in the app config file."
+                                <TextBlock Classes="CardHeading" Text="Contest Licensing" />
+                                <TextBlock Text="Licenses are configured per contest in the Contests tab using each definition's LicenseKey field."
                                            Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
-                                <TextBox Text="{Binding LicenseKey}"
-                                         Watermark="Enter license key"
-                                         Padding="8,7"
-                                         FontFamily="Monospace" />
+                                <TextBlock Text="Example JSON field: LicenseKey = your-key"
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                           FontFamily="Monospace"
+                                           FontSize="11" />
                                 <Grid ColumnDefinitions="160,220,220,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="6">
                                     <TextBlock Grid.Row="0" Grid.Column="0"
                                                Text="Application font size"
@@ -257,6 +257,21 @@
                 <ScrollViewer Margin="12" VerticalScrollBarVisibility="Auto">
                     <StackPanel Name="ColorsTabContent" Spacing="10">
 
+                        <Border Padding="10" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Button Content="Reset to Default Colors"
+                                        Click="OnResetColorsClicked"
+                                        Padding="14,7"
+                                        Background="{DynamicResource AppButtonCautionBrush}"
+                                        Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+                                <TextBlock Text="Restores a readable default palette. Save to apply across the app."
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                            </StackPanel>
+                        </Border>
+
                         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
                         <Border Name="ThemeColorCardBorder" Grid.Row="0" Grid.Column="0" Padding="14" CornerRadius="8" BorderThickness="1"
                                 BorderBrush="{DynamicResource AppBorderBrush}"
@@ -264,9 +279,9 @@
                             <StackPanel Spacing="10">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                     <TextBlock Grid.Column="0" Classes="CardHeading" Text="Theme Colors" />
-                                    <TextBlock Grid.Column="1" Name="ThemeAaFlagLabel" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Name="ThemeAaFlagLabel" FontSize="12" VerticalAlignment="Center" />
                                 </Grid>
-                                <TextBlock Name="ThemeAaFailuresLabel" FontSize="11" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                                <TextBlock Name="ThemeAaFailuresLabel" FontSize="12" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                                 <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Classes="FieldLabel" Text="BACKGROUND" VerticalAlignment="Center" />
                                     <Border Grid.Row="0" Grid.Column="1" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="5" CornerRadius="4" Background="{DynamicResource AppWindowBackgroundBrush}">
@@ -295,9 +310,9 @@
                             <StackPanel Spacing="10">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                     <TextBlock Grid.Column="0" Classes="CardHeading" Text="Menu Colors" />
-                                    <TextBlock Grid.Column="1" Name="MenuAaFlagLabel" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Name="MenuAaFlagLabel" FontSize="12" VerticalAlignment="Center" />
                                 </Grid>
-                                <TextBlock Name="MenuAaFailuresLabel" FontSize="11" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                                <TextBlock Name="MenuAaFailuresLabel" FontSize="12" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                                 <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="8">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Classes="FieldLabel" Text="MENU BACKGROUND" VerticalAlignment="Center" />
                                     <Border Grid.Row="0" Grid.Column="1" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="5" CornerRadius="4" Background="{DynamicResource AppWindowBackgroundBrush}">
@@ -320,9 +335,9 @@
                             <StackPanel Spacing="10">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                     <TextBlock Grid.Column="0" Classes="CardHeading" Text="Button Colors" />
-                                    <TextBlock Grid.Column="1" Name="ButtonAaFlagLabel" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Name="ButtonAaFlagLabel" FontSize="12" VerticalAlignment="Center" />
                                 </Grid>
-                                <TextBlock Name="ButtonAaFailuresLabel" FontSize="11" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                                <TextBlock Name="ButtonAaFailuresLabel" FontSize="12" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                                 <Grid ColumnDefinitions="70,Auto,Auto" ColumnSpacing="8" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Normal Bg" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                                     <Border Grid.Row="0" Grid.Column="1" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="5" CornerRadius="4" Background="{DynamicResource AppWindowBackgroundBrush}">
@@ -381,9 +396,9 @@
                             <StackPanel Spacing="10">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                     <TextBlock Grid.Column="0" Classes="CardHeading" Text="Input Colors" />
-                                    <TextBlock Grid.Column="1" Name="InputAaFlagLabel" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Name="InputAaFlagLabel" FontSize="12" VerticalAlignment="Center" />
                                 </Grid>
-                                <TextBlock Name="InputAaFailuresLabel" FontSize="11" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                                <TextBlock Name="InputAaFailuresLabel" FontSize="12" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                                 <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="8">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Classes="FieldLabel" Text="INPUT BACKGROUND" VerticalAlignment="Center" />
                                     <Border Grid.Row="0" Grid.Column="1" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Padding="5" CornerRadius="4" Background="{DynamicResource AppWindowBackgroundBrush}">
@@ -621,7 +636,7 @@
                                 Background="{DynamicResource AppPanelBackgroundBrush}">
                             <StackPanel Spacing="8">
                                 <TextBlock Classes="CardHeading" Text="Contest Definitions (JSON)" />
-                                <TextBlock Text="Define contest exchanges and ADIF IDs here. This supports a large contest catalog without code changes."
+                                <TextBlock Text="Define contest exchanges, ADIF IDs, and per-contest LicenseKey values here."
                                            Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
                                 <TextBox Text="{Binding ContestDefinitionsJson, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                          AcceptsReturn="True"

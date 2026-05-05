@@ -5,23 +5,23 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private readonly HamBusLog.Hardware.ISerialPortCatalogService _serialPortCatalogService;
     private AppConfiguration _appConfig = new();
     private string _selectedProfile = "default";
-    private Color _backgroundColor = Color.Parse("#1F2937");
-    private Color _foregroundColor = Color.Parse("#FFFFFF");
-    private Color _menuBackgroundColor = Color.Parse("#111827");
-    private Color _menuForegroundColor = Color.Parse("#FFFFFF");
-    private Color _buttonNormalColor = Color.Parse("#2563EB");
-    private Color _buttonNormalForegroundColor = Color.Parse("#FFFFFF");
-    private Color _buttonCautionColor = Color.Parse("#D97706");
-    private Color _buttonCautionForegroundColor = Color.Parse("#FFFFFF");
-    private Color _buttonDangerColor = Color.Parse("#DC2626");
-    private Color _buttonDangerForegroundColor = Color.Parse("#FFFFFF");
-    private Color _buttonForegroundColor = Color.Parse("#FFFFFF");
-    private Color _inputBackgroundColor = Color.Parse("#2C3E50");
-    private Color _inputForegroundColor = Color.Parse("#FFFFFF");
-    private Color _inputBorderColor = Color.Parse("#34495E");
-    private Color _inputSelectionBackgroundColor = Color.Parse("#2563EB");
-    private Color _inputSelectionForegroundColor = Color.Parse("#FFFFFF");
-    private Color _mutedForegroundColor = Color.Parse("#9CA3AF");
+    private Color _backgroundColor = DefaultBackgroundColor;
+    private Color _foregroundColor = DefaultForegroundColor;
+    private Color _menuBackgroundColor = DefaultMenuBackgroundColor;
+    private Color _menuForegroundColor = DefaultMenuForegroundColor;
+    private Color _buttonNormalColor = DefaultButtonNormalColor;
+    private Color _buttonNormalForegroundColor = DefaultButtonNormalForegroundColor;
+    private Color _buttonCautionColor = DefaultButtonCautionColor;
+    private Color _buttonCautionForegroundColor = DefaultButtonCautionForegroundColor;
+    private Color _buttonDangerColor = DefaultButtonDangerColor;
+    private Color _buttonDangerForegroundColor = DefaultButtonDangerForegroundColor;
+    private Color _buttonForegroundColor = DefaultButtonNormalForegroundColor;
+    private Color _inputBackgroundColor = DefaultInputBackgroundColor;
+    private Color _inputForegroundColor = DefaultInputForegroundColor;
+    private Color _inputBorderColor = DefaultInputBorderColor;
+    private Color _inputSelectionBackgroundColor = DefaultInputSelectionBackgroundColor;
+    private Color _inputSelectionForegroundColor = DefaultInputSelectionForegroundColor;
+    private Color _mutedForegroundColor = DefaultMutedForegroundColor;
     private string _adifDirectory = string.Empty;
     private string _databaseFolderPath = string.Empty;
     private string _databaseFileName = "hambuslog.db";
@@ -49,7 +49,6 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _statusMessage = string.Empty;
     private string _configFilePath = string.Empty;
     private string _newProfileName = string.Empty;
-    private string _licenseKey = string.Empty;
     private string _contestDefinitionsJson = "[]";
     private string _clusterHostname = "127.0.0.1";
     private int _clusterTcpPort = 7300;
@@ -69,6 +68,24 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private const string PresetMedium = "Medium (12 pt)";
     private const string PresetLarge = "Large (14 pt)";
     private const string PresetCustom = "Custom";
+
+    private static readonly Color DefaultBackgroundColor = Color.Parse("#0F172A");
+    private static readonly Color DefaultForegroundColor = Color.Parse("#E5E7EB");
+    private static readonly Color DefaultMenuBackgroundColor = Color.Parse("#111827");
+    private static readonly Color DefaultMenuForegroundColor = Color.Parse("#F9FAFB");
+    private static readonly Color DefaultButtonNormalColor = Color.Parse("#2563EB");
+    private static readonly Color DefaultButtonNormalForegroundColor = Color.Parse("#FFFFFF");
+    private static readonly Color DefaultButtonCautionColor = Color.Parse("#B45309");
+    private static readonly Color DefaultButtonCautionForegroundColor = Color.Parse("#FFFFFF");
+    private static readonly Color DefaultButtonDangerColor = Color.Parse("#B91C1C");
+    private static readonly Color DefaultButtonDangerForegroundColor = Color.Parse("#FFFFFF");
+    private static readonly Color DefaultInputBackgroundColor = Color.Parse("#1F2937");
+    private static readonly Color DefaultInputForegroundColor = Color.Parse("#F9FAFB");
+    private static readonly Color DefaultInputBorderColor = Color.Parse("#334155");
+    private static readonly Color DefaultInputSelectionBackgroundColor = Color.Parse("#1D4ED8");
+    private static readonly Color DefaultInputSelectionForegroundColor = Color.Parse("#FFFFFF");
+    private static readonly Color DefaultMutedForegroundColor = Color.Parse("#94A3B8");
+    private static readonly Color DefaultHoverFontColor = Color.Parse("#FFFFFF");
 
     public ConfigurationViewModel()
         : this(new HamBusLog.Hardware.SerialPortCatalogService())
@@ -436,12 +453,6 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _newProfileName, value);
     }
 
-    public string LicenseKey
-    {
-        get => _licenseKey;
-        set => SetProperty(ref _licenseKey, value ?? string.Empty);
-    }
-
     public string ContestDefinitionsJson
     {
         get => _contestDefinitionsJson;
@@ -580,7 +591,6 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
             _appConfig.Profiles[_selectedProfile] = profile;
             _appConfig.ActiveProfile = _selectedProfile;
-            _appConfig.LicenseKey = LicenseKey.Trim();
             _appConfig.Contests = parsedContests;
             var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
             rigctld.ReconnectIntervalSeconds = RigctldReconnectIntervalSeconds <= 0 ? 3 : Math.Min(RigctldReconnectIntervalSeconds, 300);
@@ -723,61 +733,61 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         AppFontSize = NormalizeFontSize(profile.AppFontSize);
 
         try { BackgroundColor = Color.Parse(profile.BackgroundColor); }
-        catch { BackgroundColor = Color.Parse("#1F2937"); }
+        catch { BackgroundColor = DefaultBackgroundColor; }
 
         try { ForegroundColor = Color.Parse(profile.ForegroundColor); }
-        catch { ForegroundColor = Color.Parse("#FFFFFF"); }
+        catch { ForegroundColor = DefaultForegroundColor; }
 
         try { MenuBackgroundColor = Color.Parse(profile.MenuBackgroundColor); }
-        catch { MenuBackgroundColor = Color.Parse("#111827"); }
+        catch { MenuBackgroundColor = DefaultMenuBackgroundColor; }
 
         try { MenuForegroundColor = Color.Parse(profile.MenuForegroundColor); }
-        catch { MenuForegroundColor = Color.Parse("#FFFFFF"); }
+        catch { MenuForegroundColor = DefaultMenuForegroundColor; }
 
         try { ButtonNormalColor = Color.Parse(profile.ButtonNormalColor); }
-        catch { ButtonNormalColor = Color.Parse("#2563EB"); }
+        catch { ButtonNormalColor = DefaultButtonNormalColor; }
 
         try { ButtonNormalForegroundColor = Color.Parse(string.IsNullOrWhiteSpace(profile.ButtonNormalForegroundColor) ? profile.ButtonForegroundColor : profile.ButtonNormalForegroundColor); }
-        catch { ButtonNormalForegroundColor = Color.Parse("#FFFFFF"); }
+        catch { ButtonNormalForegroundColor = DefaultButtonNormalForegroundColor; }
 
         try { ButtonCautionColor = Color.Parse(profile.ButtonCautionColor); }
-        catch { ButtonCautionColor = Color.Parse("#D97706"); }
+        catch { ButtonCautionColor = DefaultButtonCautionColor; }
 
         try { ButtonCautionForegroundColor = Color.Parse(string.IsNullOrWhiteSpace(profile.ButtonCautionForegroundColor) ? profile.ButtonForegroundColor : profile.ButtonCautionForegroundColor); }
-        catch { ButtonCautionForegroundColor = Color.Parse("#FFFFFF"); }
+        catch { ButtonCautionForegroundColor = DefaultButtonCautionForegroundColor; }
 
         try { ButtonDangerColor = Color.Parse(profile.ButtonDangerColor); }
-        catch { ButtonDangerColor = Color.Parse("#DC2626"); }
+        catch { ButtonDangerColor = DefaultButtonDangerColor; }
 
         try { ButtonDangerForegroundColor = Color.Parse(string.IsNullOrWhiteSpace(profile.ButtonDangerForegroundColor) ? profile.ButtonForegroundColor : profile.ButtonDangerForegroundColor); }
-        catch { ButtonDangerForegroundColor = Color.Parse("#FFFFFF"); }
+        catch { ButtonDangerForegroundColor = DefaultButtonDangerForegroundColor; }
 
         try { ButtonForegroundColor = Color.Parse(string.IsNullOrWhiteSpace(profile.ButtonForegroundColor) ? profile.ButtonNormalForegroundColor : profile.ButtonForegroundColor); }
         catch { ButtonForegroundColor = ButtonNormalForegroundColor; }
 
         try { InputBackgroundColor = Color.Parse(profile.InputBackgroundColor); }
-        catch { InputBackgroundColor = Color.Parse("#2C3E50"); }
+        catch { InputBackgroundColor = DefaultInputBackgroundColor; }
 
         try { InputForegroundColor = Color.Parse(profile.InputForegroundColor); }
-        catch { InputForegroundColor = Color.Parse("#FFFFFF"); }
+        catch { InputForegroundColor = DefaultInputForegroundColor; }
 
         try { InputBorderColor = Color.Parse(profile.InputBorderColor); }
-        catch { InputBorderColor = Color.Parse("#34495E"); }
+        catch { InputBorderColor = DefaultInputBorderColor; }
 
         try { InputSelectionBackgroundColor = Color.Parse(profile.InputSelectionBackgroundColor); }
-        catch { InputSelectionBackgroundColor = Color.Parse("#2563EB"); }
+        catch { InputSelectionBackgroundColor = DefaultInputSelectionBackgroundColor; }
 
         try { InputSelectionForegroundColor = Color.Parse(profile.InputSelectionForegroundColor); }
-        catch { InputSelectionForegroundColor = Color.Parse("#FFFFFF"); }
+        catch { InputSelectionForegroundColor = DefaultInputSelectionForegroundColor; }
 
         if (!string.IsNullOrWhiteSpace(profile.MutedForegroundColor))
         {
             try { MutedForegroundColor = Color.Parse(profile.MutedForegroundColor); }
-            catch { MutedForegroundColor = AdjustBrightness(ForegroundColor, -0.35); }
+            catch { MutedForegroundColor = DefaultMutedForegroundColor; }
         }
         else
         {
-            MutedForegroundColor = AdjustBrightness(ForegroundColor, -0.35);
+            MutedForegroundColor = DefaultMutedForegroundColor;
         }
 
         ConnectionString = profile.ConnectionString;
@@ -865,9 +875,30 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
         OnPropertyChanged(nameof(SelectedProfile));
         LoadProfile(_selectedProfile);
-        LicenseKey = _appConfig.LicenseKey;
         ContestDefinitionsJson = SerializeContestDefinitions(_appConfig.Contests);
         ConfigFilePath = AppConfigurationStore.GetConfigFilePath();
+    }
+
+    public void ResetColorsToDefaults()
+    {
+        BackgroundColor = DefaultBackgroundColor;
+        ForegroundColor = DefaultForegroundColor;
+        MenuBackgroundColor = DefaultMenuBackgroundColor;
+        MenuForegroundColor = DefaultMenuForegroundColor;
+        ButtonNormalColor = DefaultButtonNormalColor;
+        ButtonNormalForegroundColor = DefaultButtonNormalForegroundColor;
+        ButtonForegroundColor = DefaultButtonNormalForegroundColor;
+        ButtonCautionColor = DefaultButtonCautionColor;
+        ButtonCautionForegroundColor = DefaultButtonCautionForegroundColor;
+        ButtonDangerColor = DefaultButtonDangerColor;
+        ButtonDangerForegroundColor = DefaultButtonDangerForegroundColor;
+        InputBackgroundColor = DefaultInputBackgroundColor;
+        InputForegroundColor = DefaultInputForegroundColor;
+        InputBorderColor = DefaultInputBorderColor;
+        InputSelectionBackgroundColor = DefaultInputSelectionBackgroundColor;
+        InputSelectionForegroundColor = DefaultInputSelectionForegroundColor;
+        MutedForegroundColor = DefaultMutedForegroundColor;
+        HoverFontColor = DefaultHoverFontColor;
     }
 
     private static string SerializeContestDefinitions(IReadOnlyList<ContestDefinitionConfig> contests)

@@ -200,22 +200,22 @@ public partial class App
         if (Current?.Resources is not ResourceDictionary resources)
             return;
 
-        var background = ParseColor(profile.BackgroundColor, Color.Parse("#1F2937"));
-        var foreground = ParseColor(profile.ForegroundColor, Color.Parse("#FFFFFF"));
+        var background = ParseColor(profile.BackgroundColor, Color.Parse("#0F172A"));
+        var foreground = ParseColor(profile.ForegroundColor, Color.Parse("#E5E7EB"));
         var menuBackground = ParseColor(profile.MenuBackgroundColor, Color.Parse("#111827"));
-        var menuForeground = ParseColor(profile.MenuForegroundColor, foreground);
+        var menuForeground = ParseColor(profile.MenuForegroundColor, Color.Parse("#F9FAFB"));
         var buttonNormal = ParseColor(profile.ButtonNormalColor, Color.Parse("#2563EB"));
         var legacyButtonForeground = ParseColor(profile.ButtonForegroundColor, Color.Parse("#FFFFFF"));
         var buttonNormalForeground = ParseColor(profile.ButtonNormalForegroundColor, legacyButtonForeground);
-        var buttonCaution = ParseColor(profile.ButtonCautionColor, Color.Parse("#D97706"));
+        var buttonCaution = ParseColor(profile.ButtonCautionColor, Color.Parse("#B45309"));
         var buttonCautionForeground = ParseColor(profile.ButtonCautionForegroundColor, legacyButtonForeground);
-        var buttonDanger = ParseColor(profile.ButtonDangerColor, Color.Parse("#DC2626"));
+        var buttonDanger = ParseColor(profile.ButtonDangerColor, Color.Parse("#B91C1C"));
         var buttonDangerForeground = ParseColor(profile.ButtonDangerForegroundColor, legacyButtonForeground);
-        var inputBackground = ParseColor(profile.InputBackgroundColor, Color.Parse("#2C3E50"));
+        var inputBackground = ParseColor(profile.InputBackgroundColor, Color.Parse("#1F2937"));
         var inputForeground = EnsureReadableForeground(
-            ParseColor(profile.InputForegroundColor, Color.Parse("#FFFFFF")),
+            ParseColor(profile.InputForegroundColor, Color.Parse("#F9FAFB")),
             inputBackground);
-        var inputBorder = ParseColor(profile.InputBorderColor, Color.Parse("#34495E"));
+        var inputBorder = ParseColor(profile.InputBorderColor, Color.Parse("#334155"));
         var accent = Color.Parse("#3498DB");
         var inputSelectionBackground = ParseColor(profile.InputSelectionBackgroundColor, buttonNormal);
         if (IsVisuallyClose(inputSelectionBackground, inputBackground))

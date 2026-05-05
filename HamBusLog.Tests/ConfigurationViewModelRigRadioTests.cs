@@ -145,6 +145,24 @@ public sealed class ConfigurationViewModelRigRadioTests : IDisposable
         Assert.Equal("Custom", viewModel.SelectedFontSizePreset);
     }
 
+    [Fact]
+    public void ResetColorsToDefaults_RestoresReadablePalette()
+    {
+        SaveConfiguration(CreateConfiguration());
+
+        using var viewModel = new ConfigurationViewModel();
+        viewModel.BackgroundColor = Avalonia.Media.Color.Parse("#FFFFFF");
+        viewModel.ForegroundColor = Avalonia.Media.Color.Parse("#000000");
+        viewModel.ButtonDangerColor = Avalonia.Media.Color.Parse("#FF00FF");
+
+        viewModel.ResetColorsToDefaults();
+
+        Assert.Equal(Avalonia.Media.Color.Parse("#0F172A"), viewModel.BackgroundColor);
+        Assert.Equal(Avalonia.Media.Color.Parse("#E5E7EB"), viewModel.ForegroundColor);
+        Assert.Equal(Avalonia.Media.Color.Parse("#B91C1C"), viewModel.ButtonDangerColor);
+    }
+
+
     public void Dispose()
     {
         try
