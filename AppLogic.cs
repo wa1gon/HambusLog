@@ -99,8 +99,29 @@ public partial class App
         if (window is null || string.IsNullOrWhiteSpace(placementKey))
             return;
 
-        void OnOpened(object? sender, EventArgs e) => RestoreWindowPlacement(window, placementKey);
-        void OnClosing(object? sender, WindowClosingEventArgs e) => SaveWindowPlacement(window, placementKey);
+        void OnOpened(object? sender, EventArgs e)
+        {
+            try
+            {
+                RestoreWindowPlacement(window, placementKey);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"RestoreWindowPlacement warning ({placementKey}): {ex.Message}");
+            }
+        }
+
+        void OnClosing(object? sender, WindowClosingEventArgs e)
+        {
+            try
+            {
+                SaveWindowPlacement(window, placementKey);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"SaveWindowPlacement warning ({placementKey}): {ex.Message}");
+            }
+        }
         void OnClosed(object? sender, EventArgs e)
         {
             window.Opened -= OnOpened;
@@ -134,14 +155,21 @@ public partial class App
         if (window is null || string.IsNullOrWhiteSpace(placementKey))
             return;
 
-        var config = AppConfigurationStore.Load();
-        config.WindowPlacements[placementKey] = new WindowPlacement
+        try
         {
-            X = window.Position.X,
-            Y = window.Position.Y
-        };
+            var config = AppConfigurationStore.Load();
+            config.WindowPlacements[placementKey] = new WindowPlacement
+            {
+                X = window.Position.X,
+                Y = window.Position.Y
+            };
 
-        AppConfigurationStore.Save(config);
+            AppConfigurationStore.Save(config);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"SaveWindowPlacement warning ({placementKey}): {ex.Message}");
+        }
     }
 
     public static TWindow? FindOpenWindow<TWindow>()

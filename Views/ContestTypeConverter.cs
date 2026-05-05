@@ -10,12 +10,9 @@ public sealed class ContestTypeConverter : IValueConverter
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        return value is ContestType ct ? ct switch
-        {
-            ContestType.ArrlFieldDay => "ARRL Field Day",
-            ContestType.Normal       => "Normal",
-            _                        => value.ToString()
-        } : value;
+        return value is ContestType ct
+            ? ContestCatalog.Get(ct).DisplayName
+            : value;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

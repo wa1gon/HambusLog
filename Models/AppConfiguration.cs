@@ -3,7 +3,9 @@ namespace HamBusLog.Models;
 public sealed class AppConfiguration
 {
     public string ActiveProfile { get; set; } = "default";
+    public string LicenseKey { get; set; } = string.Empty;
     public Dictionary<string, WindowPlacement> WindowPlacements { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public List<ContestDefinitionConfig> Contests { get; set; } = [];
     public Dictionary<string, ConfigProfile> Profiles { get; set; } = new()
     {
         { "default", new ConfigProfile { Name = "default" } }
@@ -58,6 +60,22 @@ public sealed class ConfigProfile
     public string MyCqZone { get; set; } = string.Empty;
     public string MyFieldDaySection { get; set; } = string.Empty;
     public string MyFieldDayClass { get; set; } = string.Empty;
+}
+
+public sealed class ContestDefinitionConfig
+{
+    public string Key { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string AdifContestId { get; set; } = string.Empty;
+    public string ExchangeType { get; set; } = "normal";
+    public List<ContestFieldRequirementConfig> RequiredFields { get; set; } = [];
+}
+
+public sealed class ContestFieldRequirementConfig
+{
+    public string Key { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public string DetailFieldName { get; set; } = string.Empty;
 }
 
 public sealed class RigctldConfiguration

@@ -71,6 +71,20 @@
                         <Border Padding="14" CornerRadius="8" BorderThickness="1"
                                 BorderBrush="{DynamicResource AppBorderBrush}"
                                 Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="CardHeading" Text="License" />
+                                <TextBlock Text="Optional product/license key stored in the app config file."
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                                <TextBox Text="{Binding LicenseKey}"
+                                         Watermark="Enter license key"
+                                         Padding="8,7"
+                                         FontFamily="Monospace" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="14" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
                             <StackPanel Spacing="10">
                                 <TextBlock Classes="CardHeading" Text="Clone Profile" />
                                 <TextBlock Text="Optionally enter a name below, then click Clone to duplicate the active profile."
@@ -567,6 +581,28 @@
                             </Grid>
                         </Border>
 
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Contests">
+                <ScrollViewer Margin="12" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="10">
+                        <Border Padding="14" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="CardHeading" Text="Contest Definitions (JSON)" />
+                                <TextBlock Text="Define contest exchanges and ADIF IDs here. This supports a large contest catalog without code changes."
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                                <TextBox Text="{Binding ContestDefinitionsJson, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         FontFamily="Monospace"
+                                         MinHeight="340"
+                                         Padding="8,7" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

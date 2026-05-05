@@ -49,6 +49,8 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _statusMessage = string.Empty;
     private string _configFilePath = string.Empty;
     private string _newProfileName = string.Empty;
+    private string _licenseKey = string.Empty;
+    private string _contestDefinitionsJson = "[]";
     private string _clusterHostname = "127.0.0.1";
     private int _clusterTcpPort = 7300;
     private string _clusterCallsign = string.Empty;
@@ -424,6 +426,18 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _newProfileName, value);
     }
 
+    public string LicenseKey
+    {
+        get => _licenseKey;
+        set => SetProperty(ref _licenseKey, value ?? string.Empty);
+    }
+
+    public string ContestDefinitionsJson
+    {
+        get => _contestDefinitionsJson;
+        set => SetProperty(ref _contestDefinitionsJson, value ?? "[]");
+    }
+
     public string ClusterHostname
     {
         get => _clusterHostname;
@@ -482,6 +496,11 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             var normalizedDatabaseFileName = normalizedLocation.FileName;
             var normalizedDatabaseFilePath = BuildDatabasePath(normalizedDatabaseFolderPath, normalizedDatabaseFileName);
             var resolvedConnectionString = BuildConnectionString(ConnectionString, normalizedDatabaseFilePath);
+            if (!TryParseContestDefinitionsJson(ContestDefinitionsJson, out var parsedContests, out var parseError))
+            {
+                StatusMessage = $"✗ Save failed: {parseError}";
+                return;
+            }
 
             var profile = new ConfigProfile
             {
@@ -521,6 +540,8 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
             _appConfig.Profiles[_selectedProfile] = profile;
             _appConfig.ActiveProfile = _selectedProfile;
+            _appConfig.LicenseKey = LicenseKey.Trim();
+            _appConfig.Contests = parsedContests;
             var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
             rigctld.ReconnectIntervalSeconds = RigctldReconnectIntervalSeconds <= 0 ? 3 : Math.Min(RigctldReconnectIntervalSeconds, 300);
             var radio = ResolveRigRadio(rigctld, _selectedRigRadioId, SelectedRigRadioName);
@@ -574,6 +595,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             DatabaseFolderPath = normalizedDatabaseFolderPath;
             DatabaseFileName = normalizedDatabaseFileName;
             ConnectionString = resolvedConnectionString;
+            ContestDefinitionsJson = SerializeContestDefinitions(_appConfig.Contests);
             AppConfigurationStore.Save(_appConfig);
             PopulateAvailableRigRadios(rigctld);
             _activeRigRadioNames = rigctld.ActiveRadioNames
@@ -800,7 +822,51 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
         OnPropertyChanged(nameof(SelectedProfile));
         LoadProfile(_selectedProfile);
+        LicenseKey = _appConfig.LicenseKey;
+        ContestDefinitionsJson = SerializeContestDefinitions(_appConfig.Contests);
         ConfigFilePath = AppConfigurationStore.GetConfigFilePath();
+    }
+
+    private static string SerializeContestDefinitions(IReadOnlyList<ContestDefinitionConfig> contests)
+    {
+        return JsonSerializer.Serialize(contests, new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private static bool TryParseContestDefinitionsJson(string rawJson, out List<ContestDefinitionConfig> contests, out string errorMessage)
+    {
+        try
+        {
+            contests = JsonSerializer.Deserialize<List<ContestDefinitionConfig>>(rawJson ?? string.Empty) ?? [];
+            if (contests.Count == 0)
+            {
+                errorMessage = "Contest definition list cannot be empty.";
+                return false;
+            }
+
+            foreach (var contest in contests)
+            {
+                if (string.IsNullOrWhiteSpace(contest.Key))
+                {
+                    errorMessage = "Each contest requires a non-empty Key.";
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(contest.AdifContestId))
+                {
+                    errorMessage = $"Contest '{contest.Key}' requires AdifContestId.";
+                    return false;
+                }
+            }
+
+            errorMessage = string.Empty;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            contests = [];
+            errorMessage = "Contest JSON is invalid: " + ex.Message;
+            return false;
+        }
     }
 
     private List<string> _activeRigRadioNames = [];

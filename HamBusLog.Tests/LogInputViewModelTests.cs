@@ -119,6 +119,7 @@ public sealed class LogInputViewModelTests
 
         Assert.NotNull(qso);
         Assert.Equal(string.Empty, error);
+        Assert.Equal("NORMAL", qso!.ContestId);
         Assert.Equal("USA", qso!.Country);
         Assert.Equal("MA", qso.State);
         Assert.Contains(qso.Details, d => d.FieldName == "Name" && d.FieldValue == "Pat");
@@ -144,6 +145,7 @@ public sealed class LogInputViewModelTests
 
         Assert.NotNull(qso);
         Assert.Equal(string.Empty, error);
+        Assert.Equal("ARRL-FD", qso!.ContestId);
         Assert.Equal(string.Empty, qso!.RstSent);
         Assert.Equal(string.Empty, qso.RstRcvd);
         Assert.Contains(qso.Details, d => d.FieldName == "Section" && d.FieldValue == "EMA");

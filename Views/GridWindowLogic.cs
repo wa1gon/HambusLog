@@ -46,7 +46,8 @@ public partial class GridWindow
             // Save to database
             await SaveQsoAsync(qso);
         };
-        _logInputWindow.Show(this);
+        _logInputWindow.Show();
+        _logInputWindow.Activate();
     }
     
     private async Task SaveQsoAsync(Qso qso)

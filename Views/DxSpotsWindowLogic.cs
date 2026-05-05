@@ -155,7 +155,8 @@ public partial class DxSpotsWindow
         _logInputWindow = new LogInputWindow(callsign, frequencyMhz, spotInfo);
         _logInputWindow.Closed += (_, _) => _logInputWindow = null;
         _logInputWindow.QsoLogged += async (_, qso) => await SaveQsoAsync(qso);
-        _logInputWindow.Show(this);
+        _logInputWindow.Show();
+        _logInputWindow.Activate();
     }
 
     private async Task SaveQsoAsync(Qso qso)

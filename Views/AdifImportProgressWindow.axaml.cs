@@ -17,16 +17,5 @@ public partial class AdifImportProgressWindow : Window
         _viewModel.Update(progress);
         Title = _viewModel.WindowTitle;
     }
-
-    protected override void OnClosing(WindowClosingEventArgs e)
-    {
-        if (!_viewModel.IsCompleted)
-        {
-            e.Cancel = true;
-            return;
-        }
-
-        base.OnClosing(e);
-    }
 }
 
