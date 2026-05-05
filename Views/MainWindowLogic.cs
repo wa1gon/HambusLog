@@ -7,12 +7,45 @@ public partial class MainWindow
     private ConfigurationWindow? _configurationWindow;
     private DxSpotsWindow? _dxSpotsWindow;
     private bool _isImportingAdif;
+    private bool _isAppExitRequested;
 
     public MainWindow()
     {
         InitializeComponent();
-        App.TrackWindowPlacement(this, nameof(MainWindow));
+        // MainWindow placement tracking is disabled to avoid close-button hangs on Linux.
         App.Toasts.RegisterWindow(this);
+    }
+
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        if (_isAppExitRequested)
+        {
+            base.OnClosing(e);
+            return;
+        }
+
+        _isAppExitRequested = true;
+
+        // Close auxiliary windows first; then allow MainWindow to close normally.
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            foreach (var window in desktop.Windows.ToList())
+            {
+                if (ReferenceEquals(window, this))
+                    continue;
+
+                try { window.Close(); } catch { }
+            }
+        }
+
+        // Safety fallback: if the desktop lifetime fails to shut down, terminate process.
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(1200);
+            Environment.Exit(0);
+        });
+
+        base.OnClosing(e);
     }
 
     public async void OnMenuTreeViewSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -130,6 +163,8 @@ public partial class MainWindow
 
     public void OnOpenDxClusterClicked(object? sender, RoutedEventArgs e) => ToggleDxSpotsWindow();
 
+    public void OnExitProgramClicked(object? sender, RoutedEventArgs e) => Close();
+
     private void ToggleGridWindow()
     {
         if (_gridWindow is { IsVisible: true })
@@ -203,13 +238,8 @@ public partial class MainWindow
 
     private void ShowWithVisibleOwner(Window window)
     {
-        if (IsVisible)
-        {
-            window.Show(this);
-            return;
-        }
-
         window.Show();
+        window.Activate();
     }
 
     private void ResetTreeSelection(object? sender)

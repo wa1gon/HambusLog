@@ -23,7 +23,7 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _inputName    = string.Empty;
     private string _inputState   = string.Empty;
     private string _inputCounty  = string.Empty;
-    private ContestType _selectedContestType = ContestType.Normal;
+    private string _selectedContestKey = ContestCatalog.NormalKey;
 
     // ----- field day fields -----
     private string _inputFieldDaySection = string.Empty;
@@ -35,6 +35,7 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _modeError    = string.Empty;
     private string _sectionError = string.Empty;
     private string _classError   = string.Empty;
+    private string _contestError = string.Empty;
 
     // ----- detail row being edited -----
     private string _newDetailField = string.Empty;
@@ -67,9 +68,10 @@ public sealed class LogInputViewModel : ViewModelBase
     public LogInputViewModel()
     {
         _appConfig = AppConfigurationStore.Load();
-        ContestTypes    = [ContestType.Normal, ContestType.ArrlFieldDay];
+        ContestDefinitions = ContestCatalog.GetAll().ToList();
         Details         = [];
         AvailableConnectedRadios = new ObservableCollection<ConnectedRadioOption>();
+        _selectedContestKey = ContestDefinitions.FirstOrDefault()?.Key ?? ContestCatalog.NormalKey;
         SelectActiveProfile();
         LoadStationConfig();
         InputDate       = DateTime.UtcNow.ToString("yyyyMMdd");
@@ -78,7 +80,7 @@ public sealed class LogInputViewModel : ViewModelBase
     }
 
     // ── Properties ────────────────────────────────────────────────────
-    public List<ContestType> ContestTypes { get; }
+    public List<ContestDefinition> ContestDefinitions { get; }
     public ObservableCollection<QsoDetailRow> Details { get; }
 
     public ObservableCollection<ConnectedRadioOption> AvailableConnectedRadios
@@ -145,18 +147,54 @@ public sealed class LogInputViewModel : ViewModelBase
 
     public ContestType SelectedContestType
     {
-        get => _selectedContestType;
+        get => string.Equals(_selectedContestKey, ContestCatalog.ArrlFieldDayKey, StringComparison.OrdinalIgnoreCase)
+            ? ContestType.ArrlFieldDay
+            : ContestType.Normal;
         set
         {
-            if (!SetProperty(ref _selectedContestType, value))
-                return;
-
-            OnPropertyChanged(nameof(IsFieldDay));
-            OnPropertyChanged(nameof(IsNormalContest));
+            var nextKey = value == ContestType.ArrlFieldDay
+                ? ContestCatalog.ArrlFieldDayKey
+                : ContestCatalog.NormalKey;
+            SetSelectedContestKey(nextKey);
         }
     }
-    public bool IsFieldDay => SelectedContestType == ContestType.ArrlFieldDay;
-    public bool IsNormalContest => !IsFieldDay;
+
+    public ContestDefinition? SelectedContestDefinition
+    {
+        get => CurrentContestDefinition;
+        set
+        {
+            if (value is null)
+                return;
+
+            SetSelectedContestKey(value.Key);
+        }
+    }
+
+    private void SetSelectedContestKey(string contestKey)
+    {
+        var normalized = string.IsNullOrWhiteSpace(contestKey)
+            ? ContestCatalog.NormalKey
+            : contestKey.Trim();
+
+        if (string.Equals(_selectedContestKey, normalized, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _selectedContestKey = normalized;
+        OnPropertyChanged(nameof(SelectedContestType));
+        OnPropertyChanged(nameof(SelectedContestDefinition));
+        OnPropertyChanged(nameof(IsFieldDay));
+        OnPropertyChanged(nameof(IsNormalContest));
+        OnPropertyChanged(nameof(CurrentContestDefinition));
+        OnPropertyChanged(nameof(CurrentContestDisplayName));
+        OnPropertyChanged(nameof(CurrentContestAdifId));
+    }
+
+    public bool IsNormalContest => CurrentContestDefinition.UsesNormalExchange;
+    public bool IsFieldDay => CurrentContestDefinition.UsesFieldDayExchange;
+    public ContestDefinition CurrentContestDefinition => ContestCatalog.GetByKey(_selectedContestKey) ?? ContestCatalog.Get(ContestType.Normal);
+    public string CurrentContestDisplayName => CurrentContestDefinition.DisplayName;
+    public string CurrentContestAdifId => CurrentContestDefinition.AdifContestId;
 
     public string InputCall
     {
@@ -209,12 +247,14 @@ public sealed class LogInputViewModel : ViewModelBase
     public string ModeError    { get => _modeError;    private set { if (SetProperty(ref _modeError,    value)) OnPropertyChanged(nameof(HasModeError));    } }
     public string SectionError { get => _sectionError; private set { if (SetProperty(ref _sectionError, value)) OnPropertyChanged(nameof(HasSectionError)); } }
     public string ClassError   { get => _classError;   private set { if (SetProperty(ref _classError,   value)) OnPropertyChanged(nameof(HasClassError));   } }
+    public string ContestError { get => _contestError; private set { if (SetProperty(ref _contestError, value)) OnPropertyChanged(nameof(HasContestError)); } }
 
     public bool HasCallError    => !string.IsNullOrWhiteSpace(CallError);
     public bool HasBandError    => !string.IsNullOrWhiteSpace(BandError);
     public bool HasModeError    => !string.IsNullOrWhiteSpace(ModeError);
     public bool HasSectionError => !string.IsNullOrWhiteSpace(SectionError);
     public bool HasClassError   => !string.IsNullOrWhiteSpace(ClassError);
+    public bool HasContestError => !string.IsNullOrWhiteSpace(ContestError);
 
     // ── Detail Table Actions ──────────────────────────────────────────
     public bool AddDetail()
@@ -259,50 +299,19 @@ public sealed class LogInputViewModel : ViewModelBase
 
         if (IsFieldDay)
         {
-            var sec   = InputFieldDaySection.Trim().ToUpperInvariant();
-            var cls   = InputFieldDayClass.Trim().ToUpperInvariant();
-            var sr    = _sectionValidator.Validate(sec);
-            if (!sr.IsValid)  { SectionError = sr.ErrorMessage; errorMessage = SectionError; return null; }
-            var cr    = _classValidator.Validate(cls);
-            if (!cr.IsValid)  { ClassError   = cr.ErrorMessage; errorMessage = ClassError;   return null; }
+            var sec = InputFieldDaySection.Trim().ToUpperInvariant();
+            var cls = InputFieldDayClass.Trim().ToUpperInvariant();
+            var sr = _sectionValidator.Validate(sec);
+            if (!sr.IsValid) { SectionError = sr.ErrorMessage; errorMessage = SectionError; return null; }
+            var cr = _classValidator.Validate(cls);
+            if (!cr.IsValid) { ClassError = cr.ErrorMessage; errorMessage = ClassError; return null; }
         }
-        else
+
+        if (!TryValidateContestRequiredFields(out var contestError))
         {
-            if (string.IsNullOrWhiteSpace(InputSent))
-            {
-                errorMessage = "RST Sent is required for Normal contest.";
-                return null;
-            }
-
-            if (string.IsNullOrWhiteSpace(InputRec))
-            {
-                errorMessage = "RST Rec is required for Normal contest.";
-                return null;
-            }
-
-            if (string.IsNullOrWhiteSpace(InputCountry))
-            {
-                errorMessage = "Country is required for Normal contest.";
-                return null;
-            }
-
-            if (string.IsNullOrWhiteSpace(InputName))
-            {
-                errorMessage = "Name is required for Normal contest.";
-                return null;
-            }
-
-            if (string.IsNullOrWhiteSpace(InputState))
-            {
-                errorMessage = "State is required for Normal contest.";
-                return null;
-            }
-
-            if (string.IsNullOrWhiteSpace(InputCounty))
-            {
-                errorMessage = "County is required for Normal contest.";
-                return null;
-            }
+            ContestError = contestError;
+            errorMessage = contestError;
+            return null;
         }
 
         var qsoDate = DateTime.TryParseExact(InputDate + " " + InputTimeOn, "yyyyMMdd HHmm",
@@ -320,6 +329,7 @@ public sealed class LogInputViewModel : ViewModelBase
             QsoDate = qsoDate,
             Band    = band,
             Mode    = mode,
+            ContestId = CurrentContestAdifId,
             Freq    = freq,
             Country = InputCountry.Trim().ToUpperInvariant(),
             State   = InputState.Trim().ToUpperInvariant(),
@@ -332,17 +342,7 @@ public sealed class LogInputViewModel : ViewModelBase
         foreach (var row in Details)
             qso.Details.Add(new QsoDetail { FieldName = row.FieldName, FieldValue = row.FieldValue });
 
-        // field-day exchange stored as details
-        if (IsFieldDay)
-        {
-            qso.Details.Add(new QsoDetail { FieldName = "Section", FieldValue = InputFieldDaySection.Trim().ToUpperInvariant() });
-            qso.Details.Add(new QsoDetail { FieldName = "Class",   FieldValue = InputFieldDayClass.Trim().ToUpperInvariant()   });
-        }
-        else
-        {
-            qso.Details.Add(new QsoDetail { FieldName = "Name", FieldValue = InputName.Trim() });
-            qso.Details.Add(new QsoDetail { FieldName = "County", FieldValue = InputCounty.Trim().ToUpperInvariant() });
-        }
+        ApplyContestExchangeToQsoDetails(qso);
 
         // Attach selected connected rig metadata when available.
         var activeRig = GetSelectedOrPrimaryRigState();
@@ -454,7 +454,54 @@ public sealed class LogInputViewModel : ViewModelBase
 
     private void ClearErrors()
     {
-        CallError = BandError = ModeError = SectionError = ClassError = string.Empty;
+        CallError = BandError = ModeError = SectionError = ClassError = ContestError = string.Empty;
+    }
+
+    private bool TryValidateContestRequiredFields(out string errorMessage)
+    {
+        foreach (var requirement in CurrentContestDefinition.RequiredFields)
+        {
+            if (!string.IsNullOrWhiteSpace(GetContestFieldValue(requirement.Key)))
+                continue;
+
+            errorMessage = $"{requirement.Label} is required for {CurrentContestDisplayName}.";
+            return false;
+        }
+
+        errorMessage = string.Empty;
+        return true;
+    }
+
+    private string GetContestFieldValue(string key)
+    {
+        return key switch
+        {
+            ContestFieldKeys.RstSent => InputSent.Trim(),
+            ContestFieldKeys.RstRecv => InputRec.Trim(),
+            ContestFieldKeys.Country => InputCountry.Trim(),
+            ContestFieldKeys.Name => InputName.Trim(),
+            ContestFieldKeys.State => InputState.Trim(),
+            ContestFieldKeys.County => InputCounty.Trim(),
+            ContestFieldKeys.FieldDaySection => InputFieldDaySection.Trim(),
+            ContestFieldKeys.FieldDayClass => InputFieldDayClass.Trim(),
+            _ => string.Empty
+        };
+    }
+
+    private void ApplyContestExchangeToQsoDetails(Qso qso)
+    {
+        foreach (var requirement in CurrentContestDefinition.RequiredFields)
+        {
+            if (string.IsNullOrWhiteSpace(requirement.DetailFieldName))
+                continue;
+
+            var value = GetContestFieldValue(requirement.Key);
+            if (string.IsNullOrWhiteSpace(value))
+                continue;
+
+            var normalized = requirement.Key == ContestFieldKeys.Name ? value : value.ToUpperInvariant();
+            qso.Details.Add(new QsoDetail { FieldName = requirement.DetailFieldName, FieldValue = normalized });
+        }
     }
 
     private void ValidateBand()

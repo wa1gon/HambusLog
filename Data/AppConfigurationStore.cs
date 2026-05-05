@@ -22,6 +22,7 @@ public static class AppConfigurationStore
             {
                 var fresh = new AppConfiguration();
                 EnsureRigConfiguration(fresh);
+                EnsureContestConfiguration(fresh);
                 return fresh;
             }
 
@@ -32,8 +33,9 @@ public static class AppConfigurationStore
             EnsureWindowPlacements(config);
             EnsureRigConfiguration(config);
             EnsureClusterConfiguration(config);
+            EnsureContestConfiguration(config);
 
-            if (!ContainsActiveProfileProperty(json))
+            if (!ContainsActiveProfileProperty(json) || !ContainsContestsProperty(json))
                 Save(config);
 
             return config;
@@ -53,11 +55,25 @@ public static class AppConfigurationStore
             EnsureWindowPlacements(configuration);
             EnsureRigConfiguration(configuration);
             EnsureClusterConfiguration(configuration);
+            EnsureContestConfiguration(configuration);
 
             var directory = Path.GetDirectoryName(ConfigFilePath);
             if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
+            }
+
+            if (File.Exists(ConfigFilePath))
+            {
+                var backupPath = ConfigFilePath + ".bak";
+                try
+                {
+                    File.Copy(ConfigFilePath, backupPath, overwrite: true);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"AppConfigurationStore.Save backup warning: {ex.Message}");
+                }
             }
 
             var json = JsonSerializer.Serialize(configuration, JsonOptions);
@@ -180,6 +196,22 @@ public static class AppConfigurationStore
         }
     }
 
+    private static bool ContainsContestsProperty(string? rawJson)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson))
+            return false;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(rawJson);
+            return doc.RootElement.TryGetProperty("Contests", out _);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static void EnsureRigConfiguration(AppConfiguration config)
     {
         config.Rigctld ??= new RigctldConfiguration();
@@ -190,6 +222,104 @@ public static class AppConfigurationStore
     {
         config.Cluster ??= new ClusterConfig();
         NormalizeCluster(config.Cluster);
+    }
+
+    private static void EnsureContestConfiguration(AppConfiguration config)
+    {
+        config.Contests ??= [];
+        if (config.Contests.Count == 0)
+            config.Contests = BuildDefaultContests();
+
+        var normalized = new List<ContestDefinitionConfig>();
+        var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var contest in config.Contests)
+        {
+            if (contest is null)
+                continue;
+
+            var key = string.IsNullOrWhiteSpace(contest.Key)
+                ? contest.AdifContestId?.Trim() ?? string.Empty
+                : contest.Key.Trim();
+            if (string.IsNullOrWhiteSpace(key))
+                continue;
+
+            if (!seenKeys.Add(key))
+                continue;
+
+            var displayName = string.IsNullOrWhiteSpace(contest.DisplayName)
+                ? key
+                : contest.DisplayName.Trim();
+            var adifId = string.IsNullOrWhiteSpace(contest.AdifContestId)
+                ? key
+                : contest.AdifContestId.Trim();
+            var exchangeType = string.IsNullOrWhiteSpace(contest.ExchangeType)
+                ? "normal"
+                : contest.ExchangeType.Trim().ToLowerInvariant();
+
+            var fields = new List<ContestFieldRequirementConfig>();
+            foreach (var field in contest.RequiredFields ?? [])
+            {
+                if (field is null || string.IsNullOrWhiteSpace(field.Key))
+                    continue;
+
+                fields.Add(new ContestFieldRequirementConfig
+                {
+                    Key = field.Key.Trim(),
+                    Label = string.IsNullOrWhiteSpace(field.Label) ? field.Key.Trim() : field.Label.Trim(),
+                    DetailFieldName = field.DetailFieldName?.Trim() ?? string.Empty
+                });
+            }
+
+            normalized.Add(new ContestDefinitionConfig
+            {
+                Key = key,
+                DisplayName = displayName,
+                AdifContestId = adifId,
+                ExchangeType = exchangeType,
+                RequiredFields = fields
+            });
+        }
+
+        if (normalized.Count == 0)
+            normalized = BuildDefaultContests();
+
+        config.Contests = normalized;
+    }
+
+    private static List<ContestDefinitionConfig> BuildDefaultContests()
+    {
+        return
+        [
+            new ContestDefinitionConfig
+            {
+                Key = "NORMAL",
+                DisplayName = "Normal",
+                AdifContestId = "NORMAL",
+                ExchangeType = "normal",
+                RequiredFields =
+                [
+                    new ContestFieldRequirementConfig { Key = "rst_sent", Label = "RST Sent" },
+                    new ContestFieldRequirementConfig { Key = "rst_recv", Label = "RST Rec" },
+                    new ContestFieldRequirementConfig { Key = "country", Label = "Country" },
+                    new ContestFieldRequirementConfig { Key = "name", Label = "Name", DetailFieldName = "Name" },
+                    new ContestFieldRequirementConfig { Key = "state", Label = "State" },
+                    new ContestFieldRequirementConfig { Key = "county", Label = "County", DetailFieldName = "County" }
+                ]
+            },
+            new ContestDefinitionConfig
+            {
+                Key = "ARRL-FD",
+                DisplayName = "ARRL Field Day",
+                AdifContestId = "ARRL-FD",
+                ExchangeType = "fieldday",
+                RequiredFields =
+                [
+                    new ContestFieldRequirementConfig { Key = "fd_section", Label = "Field Day Section", DetailFieldName = "Section" },
+                    new ContestFieldRequirementConfig { Key = "fd_class", Label = "Field Day Class", DetailFieldName = "Class" }
+                ]
+            }
+        ];
     }
 
     private static void EnsureWindowPlacements(AppConfiguration config)
