@@ -112,6 +112,39 @@ public sealed class ConfigurationViewModelRigRadioTests : IDisposable
         Assert.Equal($"Data Source={expectedPath}", profile.ConnectionString);
     }
 
+    [Fact]
+    public void Save_ClampsAndPersistsAppFontSize()
+    {
+        SaveConfiguration(CreateConfiguration());
+
+        using var viewModel = new ConfigurationViewModel();
+        viewModel.AppFontSize = 42;
+
+        viewModel.Save();
+
+        var saved = AppConfigurationStore.Load();
+        var profile = saved.Profiles["default"];
+        Assert.Equal(24, profile.AppFontSize);
+
+        using var reloaded = new ConfigurationViewModel();
+        Assert.Equal(24, reloaded.AppFontSize);
+    }
+
+    [Fact]
+    public void FontSizePreset_UpdatesSize_AndCustomValueSetsCustomPreset()
+    {
+        SaveConfiguration(CreateConfiguration());
+
+        using var viewModel = new ConfigurationViewModel();
+        viewModel.SelectedFontSizePreset = "Large (14 pt)";
+
+        Assert.Equal(14, viewModel.AppFontSize);
+
+        viewModel.AppFontSize = 13;
+
+        Assert.Equal("Custom", viewModel.SelectedFontSizePreset);
+    }
+
     public void Dispose()
     {
         try

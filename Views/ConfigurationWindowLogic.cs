@@ -47,6 +47,14 @@ public partial class ConfigurationWindow
     private TextBlock? _menuAaFlagLabel;
     private TextBlock? _buttonAaFlagLabel;
     private TextBlock? _inputAaFlagLabel;
+    private TextBlock? _themeAaFailuresLabel;
+    private TextBlock? _menuAaFailuresLabel;
+    private TextBlock? _buttonAaFailuresLabel;
+    private TextBlock? _inputAaFailuresLabel;
+    private Border? _themeColorCardBorder;
+    private Border? _menuColorCardBorder;
+    private Border? _buttonColorCardBorder;
+    private Border? _inputColorCardBorder;
     private ListBox? _activeRadiosListBox;
     private RigRadioEditorWindow? _rigRadioEditorWindow;
     private bool _syncingActiveRadiosSelection;
@@ -116,6 +124,14 @@ public partial class ConfigurationWindow
         _menuAaFlagLabel = this.FindControl<TextBlock>("MenuAaFlagLabel");
         _buttonAaFlagLabel = this.FindControl<TextBlock>("ButtonAaFlagLabel");
         _inputAaFlagLabel = this.FindControl<TextBlock>("InputAaFlagLabel");
+        _themeAaFailuresLabel = this.FindControl<TextBlock>("ThemeAaFailuresLabel");
+        _menuAaFailuresLabel = this.FindControl<TextBlock>("MenuAaFailuresLabel");
+        _buttonAaFailuresLabel = this.FindControl<TextBlock>("ButtonAaFailuresLabel");
+        _inputAaFailuresLabel = this.FindControl<TextBlock>("InputAaFailuresLabel");
+        _themeColorCardBorder = this.FindControl<Border>("ThemeColorCardBorder");
+        _menuColorCardBorder = this.FindControl<Border>("MenuColorCardBorder");
+        _buttonColorCardBorder = this.FindControl<Border>("ButtonColorCardBorder");
+        _inputColorCardBorder = this.FindControl<Border>("InputColorCardBorder");
         _activeRadiosListBox = this.FindControl<ListBox>("ActiveRadiosListBox");
 
         // Push initial colors into pickers now that controls are fully rendered
@@ -381,19 +397,35 @@ public partial class ConfigurationWindow
         SetContrastLabel(_buttonCautionContrastLabel, "Button caution", _viewModel.ButtonCautionForegroundColor, _viewModel.ButtonCautionColor);
         SetContrastLabel(_buttonDangerContrastLabel, "Button danger", _viewModel.ButtonDangerForegroundColor, _viewModel.ButtonDangerColor);
 
-        var themePasses = GetContrastRatio(_viewModel.ForegroundColor, _viewModel.BackgroundColor) >= 4.5
-            && GetContrastRatio(_viewModel.MutedForegroundColor, GetPanelBackgroundColor()) >= 4.5;
-        var menuPasses = GetContrastRatio(_viewModel.MenuForegroundColor, _viewModel.MenuBackgroundColor) >= 4.5;
-        var buttonPasses = GetContrastRatio(_viewModel.ButtonNormalForegroundColor, _viewModel.ButtonNormalColor) >= 4.5
-            && GetContrastRatio(_viewModel.ButtonCautionForegroundColor, _viewModel.ButtonCautionColor) >= 4.5
-            && GetContrastRatio(_viewModel.ButtonDangerForegroundColor, _viewModel.ButtonDangerColor) >= 4.5;
-        var inputPasses = GetContrastRatio(_viewModel.InputForegroundColor, _viewModel.InputBackgroundColor) >= 4.5
-            && GetContrastRatio(_viewModel.InputSelectionForegroundColor, _viewModel.InputSelectionBackgroundColor) >= 4.5;
+        var themeFailures = new List<string>();
+        var menuFailures = new List<string>();
+        var buttonFailures = new List<string>();
+        var inputFailures = new List<string>();
+
+        var themePasses = TrackAaPair(themeFailures, "Foreground on background", _viewModel.ForegroundColor, _viewModel.BackgroundColor)
+            && TrackAaPair(themeFailures, "Muted labels on panel", _viewModel.MutedForegroundColor, GetPanelBackgroundColor());
+        var menuPasses = TrackAaPair(menuFailures, "Menu text", _viewModel.MenuForegroundColor, _viewModel.MenuBackgroundColor);
+        var buttonPasses = TrackAaPair(buttonFailures, "Normal button", _viewModel.ButtonNormalForegroundColor, _viewModel.ButtonNormalColor)
+            && TrackAaPair(buttonFailures, "Caution button", _viewModel.ButtonCautionForegroundColor, _viewModel.ButtonCautionColor)
+            && TrackAaPair(buttonFailures, "Danger button", _viewModel.ButtonDangerForegroundColor, _viewModel.ButtonDangerColor);
+        var inputPasses = TrackAaPair(inputFailures, "Input text", _viewModel.InputForegroundColor, _viewModel.InputBackgroundColor)
+            && TrackAaPair(inputFailures, "Selection text", _viewModel.InputSelectionForegroundColor, _viewModel.InputSelectionBackgroundColor);
 
         SetGroupAaFlag(_themeAaFlagLabel, themePasses);
         SetGroupAaFlag(_menuAaFlagLabel, menuPasses);
         SetGroupAaFlag(_buttonAaFlagLabel, buttonPasses);
         SetGroupAaFlag(_inputAaFlagLabel, inputPasses);
+
+        SetFailureSummaryLabel(_themeAaFailuresLabel, themeFailures);
+        SetFailureSummaryLabel(_menuAaFailuresLabel, menuFailures);
+        SetFailureSummaryLabel(_buttonAaFailuresLabel, buttonFailures);
+        SetFailureSummaryLabel(_inputAaFailuresLabel, inputFailures);
+
+        SetCardAaState(_themeColorCardBorder, themePasses);
+        SetCardAaState(_menuColorCardBorder, menuPasses);
+        SetCardAaState(_buttonColorCardBorder, buttonPasses);
+        SetCardAaState(_inputColorCardBorder, inputPasses);
+
         UpdateAaFieldFlags();
 
         // Debounce the toast so it doesn't fire on every drag tick
@@ -413,23 +445,61 @@ public partial class ConfigurationWindow
         MarkFailingPair(failingHexLabels, _inputFgHex, _inputBgHex, _viewModel.InputForegroundColor, _viewModel.InputBackgroundColor);
         MarkFailingPair(failingHexLabels, _inputSelectionFgHex, _inputSelectionBgHex, _viewModel.InputSelectionForegroundColor, _viewModel.InputSelectionBackgroundColor);
 
-        SetHexAaFlag(_bgHex, failingHexLabels.Contains(_bgHex!));
-        SetHexAaFlag(_fgHex, failingHexLabels.Contains(_fgHex!));
-        SetHexAaFlag(_menuBgHex, failingHexLabels.Contains(_menuBgHex!));
-        SetHexAaFlag(_menuFgHex, failingHexLabels.Contains(_menuFgHex!));
-        SetHexAaFlag(_btnNormalHex, failingHexLabels.Contains(_btnNormalHex!));
-        SetHexAaFlag(_btnNormalFgHex, failingHexLabels.Contains(_btnNormalFgHex!));
-        SetHexAaFlag(_btnCautionHex, failingHexLabels.Contains(_btnCautionHex!));
-        SetHexAaFlag(_btnCautionFgHex, failingHexLabels.Contains(_btnCautionFgHex!));
-        SetHexAaFlag(_btnDangerHex, failingHexLabels.Contains(_btnDangerHex!));
-        SetHexAaFlag(_btnDangerFgHex, failingHexLabels.Contains(_btnDangerFgHex!));
-        SetHexAaFlag(_inputBgHex, failingHexLabels.Contains(_inputBgHex!));
-        SetHexAaFlag(_inputFgHex, failingHexLabels.Contains(_inputFgHex!));
-        SetHexAaFlag(_inputSelectionBgHex, failingHexLabels.Contains(_inputSelectionBgHex!));
-        SetHexAaFlag(_inputSelectionFgHex, failingHexLabels.Contains(_inputSelectionFgHex!));
-        SetHexAaFlag(_mutedFgHex, failingHexLabels.Contains(_mutedFgHex!));
+        SetHexAaFlag(_bgHex, IsFlagged(failingHexLabels, _bgHex));
+        SetHexAaFlag(_fgHex, IsFlagged(failingHexLabels, _fgHex));
+        SetHexAaFlag(_menuBgHex, IsFlagged(failingHexLabels, _menuBgHex));
+        SetHexAaFlag(_menuFgHex, IsFlagged(failingHexLabels, _menuFgHex));
+        SetHexAaFlag(_btnNormalHex, IsFlagged(failingHexLabels, _btnNormalHex));
+        SetHexAaFlag(_btnNormalFgHex, IsFlagged(failingHexLabels, _btnNormalFgHex));
+        SetHexAaFlag(_btnCautionHex, IsFlagged(failingHexLabels, _btnCautionHex));
+        SetHexAaFlag(_btnCautionFgHex, IsFlagged(failingHexLabels, _btnCautionFgHex));
+        SetHexAaFlag(_btnDangerHex, IsFlagged(failingHexLabels, _btnDangerHex));
+        SetHexAaFlag(_btnDangerFgHex, IsFlagged(failingHexLabels, _btnDangerFgHex));
+        SetHexAaFlag(_inputBgHex, IsFlagged(failingHexLabels, _inputBgHex));
+        SetHexAaFlag(_inputFgHex, IsFlagged(failingHexLabels, _inputFgHex));
+        SetHexAaFlag(_inputSelectionBgHex, IsFlagged(failingHexLabels, _inputSelectionBgHex));
+        SetHexAaFlag(_inputSelectionFgHex, IsFlagged(failingHexLabels, _inputSelectionFgHex));
+        SetHexAaFlag(_mutedFgHex, IsFlagged(failingHexLabels, _mutedFgHex));
         SetHexAaFlag(_inputBorderHex, false);
         SetHexAaFlag(_hoverFontColorHex, false);
+    }
+
+    private static bool TrackAaPair(List<string> failures, string label, Color foreground, Color background)
+    {
+        var passes = GetContrastRatio(foreground, background) >= 4.5;
+        if (!passes)
+            failures.Add(label);
+        return passes;
+    }
+
+    private static bool IsFlagged(HashSet<TextBlock> failingHexLabels, TextBlock? label)
+        => label is not null && failingHexLabels.Contains(label);
+
+    private static void SetFailureSummaryLabel(TextBlock? label, IReadOnlyCollection<string> failures)
+    {
+        if (label is null)
+            return;
+
+        if (failures.Count == 0)
+        {
+            label.Text = "All monitored pairs meet AA";
+            label.Foreground = new SolidColorBrush(Color.Parse("#166534"));
+            return;
+        }
+
+        label.Text = $"Needs adjustment: {string.Join(", ", failures)}";
+        label.Foreground = new SolidColorBrush(Color.Parse("#92400E"));
+    }
+
+    private static void SetCardAaState(Border? cardBorder, bool isAa)
+    {
+        if (cardBorder is null)
+            return;
+
+        // Keep the card's themed background; only adjust border emphasis for AA state.
+        cardBorder.ClearValue(Border.BackgroundProperty);
+        cardBorder.BorderBrush = new SolidColorBrush(isAa ? Color.Parse("#22C55E") : Color.Parse("#F59E0B"));
+        cardBorder.BorderThickness = isAa ? new Thickness(1) : new Thickness(2);
     }
 
     private static void MarkFailingPair(HashSet<TextBlock> failingHexLabels, TextBlock? fgLabel, TextBlock? bgLabel, Color foreground, Color background)
@@ -457,7 +527,7 @@ public partial class ConfigurationWindow
 
         if (failsAa)
         {
-            label.Foreground = new SolidColorBrush(Color.Parse("#F59E0B"));
+            label.Foreground = new SolidColorBrush(Color.Parse("#92400E"));
             label.FontWeight = FontWeight.SemiBold;
             return;
         }
@@ -521,7 +591,7 @@ public partial class ConfigurationWindow
             return;
 
         label.Text = isAa ? "AA OK" : "Below AA";
-        label.Foreground = new SolidColorBrush(isAa ? Color.Parse("#22C55E") : Color.Parse("#F59E0B"));
+        label.Foreground = new SolidColorBrush(isAa ? Color.Parse("#166534") : Color.Parse("#92400E"));
     }
 
     private static double GetContrastRatio(Color a, Color b)

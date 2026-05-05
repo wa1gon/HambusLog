@@ -224,6 +224,7 @@ public partial class App
         var inputSelectionForeground = EnsureReadableForeground(
             ParseColor(profile.InputSelectionForegroundColor, buttonNormalForeground),
             inputSelectionBackground);
+        var baseFontSize = NormalizeFontSize(profile.AppFontSize);
 
         var mutedForeground = string.IsNullOrWhiteSpace(profile.MutedForegroundColor)
             ? AdjustBrightness(foreground, -0.35)
@@ -261,6 +262,7 @@ public partial class App
         SetBrush(resources, "TextControlSelectionForegroundBrush", inputSelectionForeground);
         SetColor(resources, "TextControlSelectionHighlightColor", inputSelectionBackground);
         SetColor(resources, "TextControlSelectionHighlightColorWhenNotFocused", inputSelectionBackground);
+        SetDouble(resources, "AppBaseFontSize", baseFontSize);
     }
 
     private static void SetBrush(ResourceDictionary resources, string key, Color color)
@@ -277,6 +279,19 @@ public partial class App
     private static void SetColor(ResourceDictionary resources, string key, Color color)
     {
         resources[key] = color;
+    }
+
+    private static void SetDouble(ResourceDictionary resources, string key, double value)
+    {
+        resources[key] = value;
+    }
+
+    private static double NormalizeFontSize(double value)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value) || value <= 0)
+            return 12.0;
+
+        return Math.Clamp(Math.Round(value, 1), 10.0, 24.0);
     }
 
     private static Color ParseColor(string? value, Color fallback)

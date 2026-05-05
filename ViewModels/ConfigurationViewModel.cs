@@ -57,8 +57,18 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _clusterPassword = string.Empty;
     private string _clusterCommand = string.Empty;
     private int _clusterQueueLength = 500;
+    private double _appFontSize = 12.0;
+    private string _selectedFontSizePreset = PresetMedium;
+    private bool _syncingFontSizePreset;
 
     private const int DefaultRigctldPort = 4532;
+    private const double MinAppFontSize = 10.0;
+    private const double MaxAppFontSize = 24.0;
+    private const double DefaultAppFontSize = 12.0;
+    private const string PresetSmall = "Small (10 pt)";
+    private const string PresetMedium = "Medium (12 pt)";
+    private const string PresetLarge = "Large (14 pt)";
+    private const string PresetCustom = "Custom";
 
     public ConfigurationViewModel()
         : this(new HamBusLog.Hardware.SerialPortCatalogService())
@@ -444,6 +454,35 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _clusterHostname, value ?? string.Empty);
     }
 
+    public IReadOnlyList<string> FontSizePresets { get; } = [PresetSmall, PresetMedium, PresetLarge, PresetCustom];
+
+    public double AppFontSize
+    {
+        get => _appFontSize;
+        set
+        {
+            if (!SetProperty(ref _appFontSize, NormalizeFontSize(value)))
+                return;
+
+            SyncPresetFromFontSize();
+        }
+    }
+
+    public string SelectedFontSizePreset
+    {
+        get => _selectedFontSizePreset;
+        set
+        {
+            var next = string.IsNullOrWhiteSpace(value) ? PresetCustom : value.Trim();
+            if (!SetProperty(ref _selectedFontSizePreset, next) || _syncingFontSizePreset)
+                return;
+
+            var presetSize = GetPresetFontSize(next);
+            if (presetSize.HasValue)
+                AppFontSize = presetSize.Value;
+        }
+    }
+
     public int ClusterTcpPort
     {
         get => _clusterTcpPort;
@@ -505,6 +544,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             var profile = new ConfigProfile
             {
                 Name = _selectedProfile,
+                AppFontSize = NormalizeFontSize(AppFontSize),
                 BackgroundColor = ToHexRgb(BackgroundColor),
                 ForegroundColor = ToHexRgb(ForegroundColor),
                 AdifDirectory = AdifDirectory.Trim(),
@@ -635,6 +675,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         var clone = new ConfigProfile
         {
             Name = cloneName,
+            AppFontSize = NormalizeFontSize(AppFontSize),
             BackgroundColor = ToHexRgb(BackgroundColor),
             ForegroundColor = ToHexRgb(ForegroundColor),
             AdifDirectory = src.AdifDirectory,
@@ -678,6 +719,8 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private void LoadProfile(string profileName)
     {
         if (!_appConfig.Profiles.TryGetValue(profileName, out var profile)) return;
+
+        AppFontSize = NormalizeFontSize(profile.AppFontSize);
 
         try { BackgroundColor = Color.Parse(profile.BackgroundColor); }
         catch { BackgroundColor = Color.Parse("#1F2937"); }
@@ -1028,6 +1071,55 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     }
 
     private static string ToHexRgb(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+
+    private static double? GetPresetFontSize(string preset)
+    {
+        return preset switch
+        {
+            PresetSmall => 10.0,
+            PresetMedium => 12.0,
+            PresetLarge => 14.0,
+            _ => null
+        };
+    }
+
+    private static string GetPresetFromFontSize(double fontSize)
+    {
+        if (Math.Abs(fontSize - 10.0) < 0.05)
+            return PresetSmall;
+        if (Math.Abs(fontSize - 12.0) < 0.05)
+            return PresetMedium;
+        if (Math.Abs(fontSize - 14.0) < 0.05)
+            return PresetLarge;
+
+        return PresetCustom;
+    }
+
+    private void SyncPresetFromFontSize()
+    {
+        var preset = GetPresetFromFontSize(_appFontSize);
+        _syncingFontSizePreset = true;
+        try
+        {
+            if (!string.Equals(_selectedFontSizePreset, preset, StringComparison.Ordinal))
+            {
+                _selectedFontSizePreset = preset;
+                OnPropertyChanged(nameof(SelectedFontSizePreset));
+            }
+        }
+        finally
+        {
+            _syncingFontSizePreset = false;
+        }
+    }
+
+    private static double NormalizeFontSize(double value)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value) || value <= 0)
+            return DefaultAppFontSize;
+
+        return Math.Clamp(Math.Round(value, 1), MinAppFontSize, MaxAppFontSize);
+    }
 
     private static Color AdjustBrightness(Color color, double delta)
     {

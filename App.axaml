@@ -47,6 +47,7 @@
         <SolidColorBrush x:Key="ActiveControlBackgroundBrush" Color="#4A90E2" />
         <SolidColorBrush x:Key="ActiveControlForegroundBrush" Color="#FFFFFF" />
         <SolidColorBrush x:Key="ActiveControlBorderBrush" Color="#007AFF" />
+        <x:Double x:Key="AppBaseFontSize">12</x:Double>
 
     </Application.Resources>
   
@@ -54,6 +55,12 @@
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml"/>
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+        <Style Selector="TemplatedControl">
+            <Setter Property="FontSize" Value="{DynamicResource AppBaseFontSize}" />
+        </Style>
+        <Style Selector="TextBlock">
+            <Setter Property="FontSize" Value="{DynamicResource AppBaseFontSize}" />
+        </Style>
         <Style Selector="ComboBox">
             <Setter Property="Background" Value="{DynamicResource AppPanelBackgroundBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />

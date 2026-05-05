@@ -27,6 +27,7 @@ public sealed class WindowPlacement
 public sealed class ConfigProfile
 {
     public string Name { get; set; } = "default";
+    public double AppFontSize { get; set; } = 12.0;
     public string AdifDirectory { get; set; } = string.Empty;
     public string DatabaseFolderPath { get; set; } = string.Empty;
     public string DatabaseFileName { get; set; } = "hambuslog.db";
