@@ -43,6 +43,10 @@ public partial class ConfigurationWindow
     private TextBlock? _buttonNormalContrastLabel;
     private TextBlock? _buttonCautionContrastLabel;
     private TextBlock? _buttonDangerContrastLabel;
+    private TextBlock? _themeAaFlagLabel;
+    private TextBlock? _menuAaFlagLabel;
+    private TextBlock? _buttonAaFlagLabel;
+    private TextBlock? _inputAaFlagLabel;
     private ListBox? _activeRadiosListBox;
     private RigRadioEditorWindow? _rigRadioEditorWindow;
     private bool _syncingActiveRadiosSelection;
@@ -102,11 +106,16 @@ public partial class ConfigurationWindow
         _inputSelectionBgHex = this.FindControl<TextBlock>("InputSelectionBgColorHex");
         _inputSelectionFgHex = this.FindControl<TextBlock>("InputSelectionFgColorHex");
         _mutedFgHex = this.FindControl<TextBlock>("MutedFgColorHex");
+        _hoverFontColorHex = this.FindControl<TextBlock>("HoverFontColorHex");
         _menuContrastLabel = this.FindControl<TextBlock>("MenuContrastLabel");
         _mutedContrastLabel = this.FindControl<TextBlock>("MutedContrastLabel");
         _buttonNormalContrastLabel = this.FindControl<TextBlock>("ButtonNormalContrastLabel");
         _buttonCautionContrastLabel = this.FindControl<TextBlock>("ButtonCautionContrastLabel");
         _buttonDangerContrastLabel = this.FindControl<TextBlock>("ButtonDangerContrastLabel");
+        _themeAaFlagLabel = this.FindControl<TextBlock>("ThemeAaFlagLabel");
+        _menuAaFlagLabel = this.FindControl<TextBlock>("MenuAaFlagLabel");
+        _buttonAaFlagLabel = this.FindControl<TextBlock>("ButtonAaFlagLabel");
+        _inputAaFlagLabel = this.FindControl<TextBlock>("InputAaFlagLabel");
         _activeRadiosListBox = this.FindControl<ListBox>("ActiveRadiosListBox");
 
         // Push initial colors into pickers now that controls are fully rendered
@@ -372,9 +381,89 @@ public partial class ConfigurationWindow
         SetContrastLabel(_buttonCautionContrastLabel, "Button caution", _viewModel.ButtonCautionForegroundColor, _viewModel.ButtonCautionColor);
         SetContrastLabel(_buttonDangerContrastLabel, "Button danger", _viewModel.ButtonDangerForegroundColor, _viewModel.ButtonDangerColor);
 
+        var themePasses = GetContrastRatio(_viewModel.ForegroundColor, _viewModel.BackgroundColor) >= 4.5
+            && GetContrastRatio(_viewModel.MutedForegroundColor, GetPanelBackgroundColor()) >= 4.5;
+        var menuPasses = GetContrastRatio(_viewModel.MenuForegroundColor, _viewModel.MenuBackgroundColor) >= 4.5;
+        var buttonPasses = GetContrastRatio(_viewModel.ButtonNormalForegroundColor, _viewModel.ButtonNormalColor) >= 4.5
+            && GetContrastRatio(_viewModel.ButtonCautionForegroundColor, _viewModel.ButtonCautionColor) >= 4.5
+            && GetContrastRatio(_viewModel.ButtonDangerForegroundColor, _viewModel.ButtonDangerColor) >= 4.5;
+        var inputPasses = GetContrastRatio(_viewModel.InputForegroundColor, _viewModel.InputBackgroundColor) >= 4.5
+            && GetContrastRatio(_viewModel.InputSelectionForegroundColor, _viewModel.InputSelectionBackgroundColor) >= 4.5;
+
+        SetGroupAaFlag(_themeAaFlagLabel, themePasses);
+        SetGroupAaFlag(_menuAaFlagLabel, menuPasses);
+        SetGroupAaFlag(_buttonAaFlagLabel, buttonPasses);
+        SetGroupAaFlag(_inputAaFlagLabel, inputPasses);
+        UpdateAaFieldFlags();
+
         // Debounce the toast so it doesn't fire on every drag tick
         _contrastWarnTimer?.Stop();
         _contrastWarnTimer?.Start();
+    }
+
+    private void UpdateAaFieldFlags()
+    {
+        var failingHexLabels = new HashSet<TextBlock>();
+        MarkFailingPair(failingHexLabels, _fgHex, _bgHex, _viewModel.ForegroundColor, _viewModel.BackgroundColor);
+        MarkFailingPair(failingHexLabels, _mutedFgHex, _bgHex, _viewModel.MutedForegroundColor, GetPanelBackgroundColor());
+        MarkFailingPair(failingHexLabels, _menuFgHex, _menuBgHex, _viewModel.MenuForegroundColor, _viewModel.MenuBackgroundColor);
+        MarkFailingPair(failingHexLabels, _btnNormalFgHex, _btnNormalHex, _viewModel.ButtonNormalForegroundColor, _viewModel.ButtonNormalColor);
+        MarkFailingPair(failingHexLabels, _btnCautionFgHex, _btnCautionHex, _viewModel.ButtonCautionForegroundColor, _viewModel.ButtonCautionColor);
+        MarkFailingPair(failingHexLabels, _btnDangerFgHex, _btnDangerHex, _viewModel.ButtonDangerForegroundColor, _viewModel.ButtonDangerColor);
+        MarkFailingPair(failingHexLabels, _inputFgHex, _inputBgHex, _viewModel.InputForegroundColor, _viewModel.InputBackgroundColor);
+        MarkFailingPair(failingHexLabels, _inputSelectionFgHex, _inputSelectionBgHex, _viewModel.InputSelectionForegroundColor, _viewModel.InputSelectionBackgroundColor);
+
+        SetHexAaFlag(_bgHex, failingHexLabels.Contains(_bgHex!));
+        SetHexAaFlag(_fgHex, failingHexLabels.Contains(_fgHex!));
+        SetHexAaFlag(_menuBgHex, failingHexLabels.Contains(_menuBgHex!));
+        SetHexAaFlag(_menuFgHex, failingHexLabels.Contains(_menuFgHex!));
+        SetHexAaFlag(_btnNormalHex, failingHexLabels.Contains(_btnNormalHex!));
+        SetHexAaFlag(_btnNormalFgHex, failingHexLabels.Contains(_btnNormalFgHex!));
+        SetHexAaFlag(_btnCautionHex, failingHexLabels.Contains(_btnCautionHex!));
+        SetHexAaFlag(_btnCautionFgHex, failingHexLabels.Contains(_btnCautionFgHex!));
+        SetHexAaFlag(_btnDangerHex, failingHexLabels.Contains(_btnDangerHex!));
+        SetHexAaFlag(_btnDangerFgHex, failingHexLabels.Contains(_btnDangerFgHex!));
+        SetHexAaFlag(_inputBgHex, failingHexLabels.Contains(_inputBgHex!));
+        SetHexAaFlag(_inputFgHex, failingHexLabels.Contains(_inputFgHex!));
+        SetHexAaFlag(_inputSelectionBgHex, failingHexLabels.Contains(_inputSelectionBgHex!));
+        SetHexAaFlag(_inputSelectionFgHex, failingHexLabels.Contains(_inputSelectionFgHex!));
+        SetHexAaFlag(_mutedFgHex, failingHexLabels.Contains(_mutedFgHex!));
+        SetHexAaFlag(_inputBorderHex, false);
+        SetHexAaFlag(_hoverFontColorHex, false);
+    }
+
+    private static void MarkFailingPair(HashSet<TextBlock> failingHexLabels, TextBlock? fgLabel, TextBlock? bgLabel, Color foreground, Color background)
+    {
+        if (GetContrastRatio(foreground, background) >= 4.5)
+            return;
+
+        if (fgLabel != null)
+            failingHexLabels.Add(fgLabel);
+        if (bgLabel != null)
+            failingHexLabels.Add(bgLabel);
+    }
+
+    private static void SetHexAaFlag(TextBlock? label, bool failsAa)
+    {
+        if (label is null)
+            return;
+
+        const string marker = "  !AA";
+        var baseText = label.Text?.EndsWith(marker, StringComparison.Ordinal) == true
+            ? label.Text[..^marker.Length]
+            : label.Text ?? string.Empty;
+
+        label.Text = failsAa ? $"{baseText}{marker}" : baseText;
+
+        if (failsAa)
+        {
+            label.Foreground = new SolidColorBrush(Color.Parse("#F59E0B"));
+            label.FontWeight = FontWeight.SemiBold;
+            return;
+        }
+
+        label.ClearValue(TextBlock.ForegroundProperty);
+        label.ClearValue(TextBlock.FontWeightProperty);
     }
 
     private void WarnOnContrastFailures()
@@ -424,6 +513,15 @@ public partial class ConfigurationWindow
         var ratio = GetContrastRatio(foreground, background);
         var grade = ratio >= 7.0 ? "AAA" : ratio >= 4.5 ? "AA" : ratio >= 3.0 ? "Large text only" : "Fail";
         label.Text = $"{title}: {ratio:0.00}:1 ({grade})";
+    }
+
+    private static void SetGroupAaFlag(TextBlock? label, bool isAa)
+    {
+        if (label is null)
+            return;
+
+        label.Text = isAa ? "AA OK" : "Below AA";
+        label.Foreground = new SolidColorBrush(isAa ? Color.Parse("#22C55E") : Color.Parse("#F59E0B"));
     }
 
     private static double GetContrastRatio(Color a, Color b)
