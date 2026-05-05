@@ -475,9 +475,20 @@ public sealed class LogInputViewModel : ViewModelBase
     {
         var snapshot = App.RigctldConnectionManager.GetSnapshot();
         var selectedName = SelectedConnectedRadio?.RadioName;
+        var config = AppConfigurationStore.Load();
+        var rigctld = AppConfigurationStore.GetRigctld(config);
+
+        var activeRadioNames = rigctld.ActiveRadioNames
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var radio in rigctld.Radios.Where(x => x.IsActive && !string.IsNullOrWhiteSpace(x.RadioName)))
+            activeRadioNames.Add(radio.RadioName);
+
+        var hasActiveFilter = activeRadioNames.Count > 0;
 
         var connected = snapshot
-            .Where(x => x.IsConnected)
+            .Where(x => x.IsConnected && (!hasActiveFilter || activeRadioNames.Contains(x.RadioName)))
             .OrderBy(x => x.RadioName, StringComparer.OrdinalIgnoreCase)
             .Select(x => new ConnectedRadioOption(x))
             .ToList();
