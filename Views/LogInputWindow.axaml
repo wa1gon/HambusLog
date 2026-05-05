@@ -99,65 +99,116 @@
         </Border>
 
 
-        <!-- ── Contact entry form ─────────────────────────────────────────── -->
-        <Border Grid.Row="1"
-                Padding="12"
-                Margin="0,0,0,10"
-                CornerRadius="8"
-                Background="{DynamicResource AppPanelBackgroundBrush}"
-                BorderBrush="{DynamicResource AppBorderBrush}"
-                BorderThickness="1">
-            <Grid ColumnDefinitions="Auto,170,16,Auto,170"
-                  RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
-                  RowSpacing="10">
-                <TextBlock Grid.Row="0" Grid.Column="0" Classes="FieldLabel" Text="Call" VerticalAlignment="Center" />
-                <TextBox Grid.Row="0" Grid.Column="1"
-                         Text="{Binding InputCall}"
-                         Watermark="K1ABC"
-                         TextChanged="OnUppercaseInputChanged" />
+        <!-- ── Contact entry cards ────────────────────────────────────────── -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="10">
+                <Border Padding="12"
+                        CornerRadius="8"
+                        Background="{DynamicResource AppPanelBackgroundBrush}"
+                        BorderBrush="{DynamicResource AppBorderBrush}"
+                        BorderThickness="1">
+                    <Grid ColumnDefinitions="Auto,170,16,Auto,170"
+                          RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                          RowSpacing="10">
+                        <TextBlock Grid.Row="0" Grid.ColumnSpan="5"
+                                   Classes="SectionHeading"
+                                   Text="REQUIRED FIELDS" />
 
-                <TextBlock Grid.Row="0" Grid.Column="3" Classes="FieldLabel" Text="Date (YYYYMMDD)" VerticalAlignment="Center" />
-                <TextBox Grid.Row="0" Grid.Column="4" Text="{Binding InputDate}" Watermark="20260504" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Classes="FieldLabel" Text="Call" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="1" Grid.Column="1"
+                                 Text="{Binding InputCall}"
+                                 Watermark="K1ABC"
+                                 TextChanged="OnUppercaseInputChanged" />
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Classes="FieldLabel" Text="Time On (HHMM)" VerticalAlignment="Center" />
-                <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                    <TextBox Grid.Column="0" Text="{Binding InputTimeOn}" Watermark="1930" />
-                    <Button Grid.Column="1" Content="Now" Click="OnStampNowClicked" Padding="10,6" />
-                </Grid>
+                        <TextBlock Grid.Row="1" Grid.Column="3" Classes="FieldLabel" Text="Date (YYYYMMDD)" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="1" Grid.Column="4" Text="{Binding InputDate}" Watermark="20260504" />
 
-                <TextBlock Grid.Row="1" Grid.Column="3" Classes="FieldLabel" Text="Frequency (MHz)" VerticalAlignment="Center" />
-                <TextBox Grid.Row="1" Grid.Column="4" Text="{Binding InputFreq}" Watermark="14.250" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Classes="FieldLabel" Text="Time On (HHMM)" VerticalAlignment="Center" />
+                        <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <TextBox Grid.Column="0" Text="{Binding InputTimeOn}" Watermark="1930" />
+                            <Button Grid.Column="1" Content="Now" Click="OnStampNowClicked" Padding="10,6" />
+                        </Grid>
 
-                <TextBlock Grid.Row="2" Grid.Column="0" Classes="FieldLabel" Text="Band" VerticalAlignment="Center" />
-                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding InputBand}" Watermark="20M" />
+                        <TextBlock Grid.Row="2" Grid.Column="3" Classes="FieldLabel" Text="Frequency (MHz)" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="2" Grid.Column="4" Text="{Binding InputFreq}" Watermark="14.250" />
 
-                <TextBlock Grid.Row="2" Grid.Column="3" Classes="FieldLabel" Text="Mode" VerticalAlignment="Center" />
-                <TextBox Grid.Row="2" Grid.Column="4" Text="{Binding InputMode}" Watermark="SSB" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Classes="FieldLabel" Text="Band" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding InputBand}" Watermark="20M" />
 
-                <TextBlock Grid.Row="3" Grid.Column="0" Classes="FieldLabel" Text="RST Sent" VerticalAlignment="Center" />
-                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding InputSent}" Watermark="59" />
+                        <TextBlock Grid.Row="3" Grid.Column="3" Classes="FieldLabel" Text="Mode" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="3" Grid.Column="4" Text="{Binding InputMode}" Watermark="SSB" />
 
-                <TextBlock Grid.Row="3" Grid.Column="3" Classes="FieldLabel" Text="RST Rec" VerticalAlignment="Center" />
-                <TextBox Grid.Row="3" Grid.Column="4" Text="{Binding InputRec}" Watermark="59" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="5"
+                                   Text="These are always required for every log entry."
+                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                   FontSize="11" />
+                    </Grid>
+                </Border>
 
-                <TextBlock Grid.Row="4" Grid.Column="0" Classes="FieldLabel" Text="Field Day Section" VerticalAlignment="Center" />
-                <TextBox Grid.Row="4" Grid.Column="1"
-                         Text="{Binding InputFieldDaySection}"
-                         Watermark="EMA"
-                         TextChanged="OnUppercaseInputChanged" />
+                <Border Padding="12"
+                        CornerRadius="8"
+                        Background="{DynamicResource AppPanelBackgroundBrush}"
+                        BorderBrush="{DynamicResource AppBorderBrush}"
+                        BorderThickness="1">
+                    <Grid ColumnDefinitions="Auto,170,16,Auto,170"
+                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                          RowSpacing="10">
+                        <TextBlock Grid.Row="0" Grid.ColumnSpan="5"
+                                   Classes="SectionHeading"
+                                   Text="CONTEST REQUIREMENTS" />
 
-                <TextBlock Grid.Row="4" Grid.Column="3" Classes="FieldLabel" Text="Field Day Class" VerticalAlignment="Center" />
-                <TextBox Grid.Row="4" Grid.Column="4"
-                         Text="{Binding InputFieldDayClass}"
-                         Watermark="1D"
-                         TextChanged="OnUppercaseInputChanged" />
+                        <TextBlock Grid.Row="1" Grid.ColumnSpan="5"
+                                   IsVisible="{Binding IsNormalContest}"
+                                   Text="Normal Contest Required Exchange"
+                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                   FontSize="11" />
 
-                <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5"
-                           Text="Tip: Required fields are Call, Band, and Mode."
-                           Foreground="{DynamicResource AppMutedForegroundBrush}"
-                           FontSize="11" />
-            </Grid>
-        </Border>
+                        <TextBlock Grid.Row="2" Grid.Column="0" IsVisible="{Binding IsNormalContest}" Classes="FieldLabel" Text="RST Sent" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="2" Grid.Column="1" IsVisible="{Binding IsNormalContest}" Text="{Binding InputSent}" Watermark="59" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="3" IsVisible="{Binding IsNormalContest}" Classes="FieldLabel" Text="RST Rec" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="2" Grid.Column="4" IsVisible="{Binding IsNormalContest}" Text="{Binding InputRec}" Watermark="59" />
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" IsVisible="{Binding IsNormalContest}" Classes="FieldLabel" Text="Country" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="3" Grid.Column="1" IsVisible="{Binding IsNormalContest}" Text="{Binding InputCountry}" Watermark="USA" TextChanged="OnUppercaseInputChanged" />
+
+                        <TextBlock Grid.Row="3" Grid.Column="3" IsVisible="{Binding IsNormalContest}" Classes="FieldLabel" Text="Name" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="3" Grid.Column="4" IsVisible="{Binding IsNormalContest}" Text="{Binding InputName}" Watermark="Darryl" />
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" IsVisible="{Binding IsNormalContest}" Classes="FieldLabel" Text="State" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="4" Grid.Column="1" IsVisible="{Binding IsNormalContest}" Text="{Binding InputState}" Watermark="MA" TextChanged="OnUppercaseInputChanged" />
+
+                        <TextBlock Grid.Row="4" Grid.Column="3" IsVisible="{Binding IsNormalContest}" Classes="FieldLabel" Text="County" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="4" Grid.Column="4" IsVisible="{Binding IsNormalContest}" Text="{Binding InputCounty}" Watermark="MIDDLESEX" TextChanged="OnUppercaseInputChanged" />
+
+                        <TextBlock Grid.Row="1" Grid.ColumnSpan="5"
+                                   IsVisible="{Binding IsFieldDay}"
+                                   Text="Field Day Required Exchange"
+                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                   FontSize="11" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" IsVisible="{Binding IsFieldDay}" Classes="FieldLabel" Text="Field Day Section" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="2" Grid.Column="1"
+                                 IsVisible="{Binding IsFieldDay}"
+                                 Text="{Binding InputFieldDaySection}"
+                                 Watermark="EMA"
+                                 TextChanged="OnUppercaseInputChanged" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="3" IsVisible="{Binding IsFieldDay}" Classes="FieldLabel" Text="Field Day Class" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="2" Grid.Column="4"
+                                 IsVisible="{Binding IsFieldDay}"
+                                 Text="{Binding InputFieldDayClass}"
+                                 Watermark="1D"
+                                 TextChanged="OnUppercaseInputChanged" />
+
+                        <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5"
+                                   Text="Card #2 changes based on selected Log Type."
+                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                   FontSize="11" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
 
         <!-- ── Action bar ────────────────────────────────────────────────── -->
         <Border Grid.Row="2" Padding="0,10,0,0"
