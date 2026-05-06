@@ -79,14 +79,50 @@
                                 BorderBrush="{DynamicResource AppBorderBrush}"
                                 Background="{DynamicResource AppPanelBackgroundBrush}">
                             <StackPanel Spacing="8">
-                                <TextBlock Classes="CardHeading" Text="Contest Licensing" />
-                                <TextBlock Text="Licenses are configured per contest in the Contests tab using each definition's LicenseKey field."
+                                <TextBlock Classes="CardHeading" Text="Contest Import" />
+                                <TextBlock Text="Import signed contest definitions from a JSON file and validate with your license key (supports key or group.key/group)."
                                            Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
-                                <TextBlock Text="Example JSON field: LicenseKey = your-key"
-                                           Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                           FontFamily="Monospace"
-                                           FontSize="11" />
-                                <Grid ColumnDefinitions="160,220,220,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="6">
+                                <Grid ColumnDefinitions="160,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               Text="License key"
+                                               VerticalAlignment="Center"
+                                               FontWeight="SemiBold" />
+                                    <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3"
+                                             Text="{Binding ContestImportLicenseKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Watermark="paste contest license key"
+                                             Width="500"
+                                             HorizontalAlignment="Left"
+                                             Padding="8,7" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0"
+                                               Text="Contest file"
+                                               VerticalAlignment="Center"
+                                               FontWeight="SemiBold" />
+                                    <TextBox Grid.Row="1" Grid.Column="1"
+                                             Text="{Binding ContestImportFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Watermark="/path/to/contest-import.json"
+                                             MinWidth="360"
+                                             Padding="8,7" />
+                                    <Button Grid.Row="1" Grid.Column="2" Content="Browse..." Click="OnBrowseContestImportFileClicked"
+                                            Padding="12,7"
+                                            Background="{DynamicResource AppButtonCautionBrush}"
+                                            Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+                                    <Button Grid.Row="1" Grid.Column="3" Content="Import Contest" Click="OnImportContestClicked"
+                                            Padding="12,7"
+                                            Background="{DynamicResource AppButtonNormalBrush}"
+                                            Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
+                                               Text="{Binding ImportedContestsSummary}"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                               FontSize="11" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
+                                               Text="{Binding ContestImportStatus}"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                               FontSize="11" />
+                                </Grid>
+
+                                <Grid ColumnDefinitions="160,220,220,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="6">
                                     <TextBlock Grid.Row="0" Grid.Column="0"
                                                Text="Application font size"
                                                VerticalAlignment="Center"
@@ -109,10 +145,6 @@
                                               Width="200"
                                               ItemsSource="{Binding FontSizePresets}"
                                               SelectedItem="{Binding SelectedFontSizePreset, Mode=TwoWay}" />
-                                    <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
-                                               Text="Location: Configuration window -> Config tab -> License card. Applies when you save this profile."
-                                               FontSize="11"
-                                               Foreground="{DynamicResource AppMutedForegroundBrush}" />
                                 </Grid>
                             </StackPanel>
                         </Border>
@@ -624,28 +656,6 @@
                             </Grid>
                         </Border>
 
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <TabItem Header="Contests">
-                <ScrollViewer Margin="12" VerticalScrollBarVisibility="Auto">
-                    <StackPanel Spacing="10">
-                        <Border Padding="14" CornerRadius="8" BorderThickness="1"
-                                BorderBrush="{DynamicResource AppBorderBrush}"
-                                Background="{DynamicResource AppPanelBackgroundBrush}">
-                            <StackPanel Spacing="8">
-                                <TextBlock Classes="CardHeading" Text="Contest Definitions (JSON)" />
-                                <TextBlock Text="Define contest exchanges, ADIF IDs, and per-contest LicenseKey values here."
-                                           Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
-                                <TextBox Text="{Binding ContestDefinitionsJson, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         AcceptsReturn="True"
-                                         TextWrapping="Wrap"
-                                         FontFamily="Monospace"
-                                         MinHeight="340"
-                                         Padding="8,7" />
-                            </StackPanel>
-                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

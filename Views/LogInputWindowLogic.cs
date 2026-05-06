@@ -6,7 +6,7 @@ namespace HamBusLog.Views;
 public partial class LogInputWindow
 {
     private readonly LogInputViewModel _viewModel;
-    private readonly DispatcherTimer _activeRigRefreshTimer = new() { Interval = TimeSpan.FromSeconds(0.5) };
+    private readonly DispatcherTimer _activeRigRefreshTimer = new() { Interval = TimeSpan.FromSeconds(5) };
 
     /// <summary>Raised when the user successfully logs a QSO.</summary>
     public event EventHandler<Qso>? QsoLogged;
@@ -103,7 +103,7 @@ public partial class LogInputWindow
 
     private void OnActiveRigRefreshTick(object? sender, EventArgs e)
     {
-        _viewModel.RefreshSelectedRadioInputs();
+        _viewModel.RefreshAutoFields();
     }
 
     private void OnWindowClosed(object? sender, EventArgs e)

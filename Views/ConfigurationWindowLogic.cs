@@ -808,6 +808,28 @@ public partial class ConfigurationWindow
             _viewModel.AdifDirectory = folders[0].Path.LocalPath;
     }
 
+    public async void OnBrowseContestImportFileClicked(object? sender, RoutedEventArgs e)
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = "Select contest import file",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("JSON files") { Patterns = ["*.json"] },
+                new Avalonia.Platform.Storage.FilePickerFileType("All files") { Patterns = ["*"] }
+            ]
+        });
+
+        if (files.Count > 0)
+            _viewModel.ContestImportFilePath = files[0].Path.LocalPath;
+    }
+
+    public void OnImportContestClicked(object? sender, RoutedEventArgs e)
+    {
+        _viewModel.ImportContestsFromFile();
+    }
+
     public async void OnBrowseDatabaseDirectoryClicked(object? sender, RoutedEventArgs e)
     {
         if (!StorageProvider.CanPickFolder)

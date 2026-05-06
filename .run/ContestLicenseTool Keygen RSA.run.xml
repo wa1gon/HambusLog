@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ContestLicenseTool Keygen RSA" type="DotNetProject" factoryName=".NET Project">
+    <option name="PROJECT_FILE_PATH" value="$PROJECT_DIR$/ContestLicenseTool/ContestLicenseTool.csproj" />
+    <option name="PROGRAM_PARAMETERS" value="keygen --alg rsa-sha256" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="PASS_PARENT_ENVS" value="true" />
+    <envs />
+    <method v="2" />
+  </configuration>
+</component>
+

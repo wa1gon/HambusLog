@@ -1,0 +1,33 @@
+{
+  "contests": [
+    {
+      "key": "ARQP-INSTATE",
+      "group": {
+        "key": "ARQP",
+        "name": "Arkansas QSO Party"
+      },
+      "displayName": "Arkansas QSO Party (In-State)",
+      "adifContestId": "AR-QSO-PARTY",
+      "exchangeType": "normal",
+      "licenseKey": "sha256:REPLACE_WITH_GENERATED_LICENSE",
+      "requiredFields": {
+        "state": "State/Province"
+      }
+    },
+    {
+      "key": "ARQP-OUTSTATE",
+      "group": {
+        "key": "ARQP",
+        "name": "Arkansas QSO Party"
+      },
+      "displayName": "Arkansas QSO Party (Out-of-State)",
+      "adifContestId": "AR-QSO-PARTY",
+      "exchangeType": "normal",
+      "licenseKey": "sha256:REPLACE_WITH_GENERATED_LICENSE",
+      "requiredFields": {
+        "county": "Arkansas County"
+      }
+    }
+  ]
+}
+

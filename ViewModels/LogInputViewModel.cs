@@ -61,7 +61,6 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _activeRigMode = string.Empty;
     private string _activeRigFrequency = string.Empty;
     private bool _isActiveRigConnected;
-    private bool _keepInitialSpotValues;
     private ObservableCollection<ConnectedRadioOption> _availableConnectedRadios = [];
     private ConnectedRadioOption? _selectedConnectedRadio;
 
@@ -392,13 +391,13 @@ public sealed class LogInputViewModel : ViewModelBase
         if (!string.IsNullOrWhiteSpace(derivedMode))
             InputMode = derivedMode;
 
-        // Preserve the clicked spot values until the user explicitly applies rig values.
-        _keepInitialSpotValues = true;
+        // Always prefer live rig updates on the refresh cadence.
+        EnableAutoRadioPopulate();
     }
 
     public void EnableAutoRadioPopulate()
     {
-        _keepInitialSpotValues = false;
+        // No-op: live radio values are always applied when a connected rig is selected.
     }
 
     public void PrepareForNextLogEntry()
@@ -424,16 +423,17 @@ public sealed class LogInputViewModel : ViewModelBase
     public void RefreshSelectedRadioInputs()
     {
         RefreshActiveRigSnapshot();
-        if (_keepInitialSpotValues)
-            return;
-
         ApplySelectedRadioToInputs();
+    }
+
+    public void RefreshAutoFields()
+    {
+        RefreshSelectedRadioInputs();
+        InputTimeOn = DateTime.UtcNow.ToString("HHmm");
     }
 
     public void ApplySelectedRadioToInputs()
     {
-        if (_keepInitialSpotValues)
-            return;
 
         var state = SelectedConnectedRadio?.State;
         if (state is null || !state.IsConnected)
