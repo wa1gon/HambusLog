@@ -51,6 +51,24 @@ Output format:
 sig:rsa-sha256:<base64PublicKey>:<base64Signature>
 ```
 
+### 5) Generate full-access license key
+
+```bash
+dotnet run --project /home/darryl/github/Hambus/HamBusLog/ContestLicenseTool/ContestLicenseTool.csproj -- full
+```
+
+Output format:
+
+```text
+full:<TOKEN>
+```
+
+You can provide your own token:
+
+```bash
+dotnet run --project /home/darryl/github/Hambus/HamBusLog/ContestLicenseTool/ContestLicenseTool.csproj -- full --token "ALL-CONTESTS-2026"
+```
+
 ## JSON input mode
 
 Instead of `--fields`, you can read required fields directly from a contest JSON payload:

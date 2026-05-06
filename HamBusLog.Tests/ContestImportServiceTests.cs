@@ -181,6 +181,61 @@ public sealed class ContestImportServiceTests
     }
 
     [Fact]
+    public void ImportContests_WithFullLicenseOverride_ImportsAllContests()
+    {
+        var service = new ContestImportService();
+        var payload =
+            """
+            {
+              "contests": [
+                {
+                  "key": "ARQP-IN",
+                  "adifContestId": "AR-QSO-PARTY",
+                  "requiredFields": {
+                    "state": "State/Province"
+                  }
+                },
+                {
+                  "key": "ARQP-OUT",
+                  "adifContestId": "AR-QSO-PARTY",
+                  "requiredFields": {
+                    "county": "Arkansas County"
+                  }
+                }
+              ]
+            }
+            """;
+
+        var result = service.ImportContests(payload, "full:ALL-CONTESTS-2026");
+
+        Assert.True(result.Success, result.ErrorMessage);
+        Assert.Equal(2, result.Contests.Count);
+    }
+
+    [Fact]
+    public void ImportContests_WithMalformedFullLicense_FailsValidation()
+    {
+        var service = new ContestImportService();
+        var payload =
+            """
+            [
+              {
+                "key": "BROKEN",
+                "adifContestId": "BROKEN",
+                "requiredFields": {
+                  "name": "Name"
+                }
+              }
+            ]
+            """;
+
+        var result = service.ImportContests(payload, "full:");
+
+        Assert.False(result.Success);
+        Assert.Contains("full license format is invalid", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ImportContests_WithoutLicense_FailsValidation()
     {
         var service = new ContestImportService();

@@ -23,6 +23,7 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _inputName    = string.Empty;
     private string _inputState   = string.Empty;
     private string _inputCounty  = string.Empty;
+    private string _inputExchange = string.Empty;
     private string _selectedContestKey = ContestCatalog.NormalKey;
 
     // ----- field day fields -----
@@ -184,6 +185,9 @@ public sealed class LogInputViewModel : ViewModelBase
         OnPropertyChanged(nameof(SelectedContestDefinition));
         OnPropertyChanged(nameof(IsFieldDay));
         OnPropertyChanged(nameof(IsNormalContest));
+        OnPropertyChanged(nameof(UsesUnifiedExchange));
+        OnPropertyChanged(nameof(ShowLegacyNormalExchangeFields));
+        OnPropertyChanged(nameof(ShowUnifiedExchangeField));
         OnPropertyChanged(nameof(CurrentContestDefinition));
         OnPropertyChanged(nameof(CurrentContestDisplayName));
         OnPropertyChanged(nameof(CurrentContestAdifId));
@@ -191,6 +195,10 @@ public sealed class LogInputViewModel : ViewModelBase
 
     public bool IsNormalContest => CurrentContestDefinition.UsesNormalExchange;
     public bool IsFieldDay => CurrentContestDefinition.UsesFieldDayExchange;
+    public bool UsesUnifiedExchange => CurrentContestDefinition.RequiredFields
+        .Any(x => string.Equals(x.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase));
+    public bool ShowLegacyNormalExchangeFields => IsNormalContest && !UsesUnifiedExchange;
+    public bool ShowUnifiedExchangeField => UsesUnifiedExchange;
     public ContestDefinition CurrentContestDefinition => ContestCatalog.GetByKey(_selectedContestKey) ?? ContestCatalog.Get(ContestType.Normal);
     public string CurrentContestDisplayName => CurrentContestDefinition.DisplayName;
     public string CurrentContestAdifId => CurrentContestDefinition.AdifContestId;
@@ -211,6 +219,7 @@ public sealed class LogInputViewModel : ViewModelBase
     public string InputName    { get => _inputName;    set => SetProperty(ref _inputName,    value ?? string.Empty); }
     public string InputState   { get => _inputState;   set => SetProperty(ref _inputState,   (value ?? string.Empty).ToUpperInvariant()); }
     public string InputCounty  { get => _inputCounty;  set => SetProperty(ref _inputCounty,  (value ?? string.Empty).ToUpperInvariant()); }
+    public string InputExchange { get => _inputExchange; set => SetProperty(ref _inputExchange, (value ?? string.Empty).ToUpperInvariant()); }
     public string InputFieldDaySection
     {
         get => _inputFieldDaySection;
@@ -321,6 +330,10 @@ public sealed class LogInputViewModel : ViewModelBase
         var freq = decimal.TryParse(InputFreq, System.Globalization.NumberStyles.Any,
                        System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : 0m;
 
+        var normalizedState = InputState.Trim().ToUpperInvariant();
+        if (UsesUnifiedExchange && TryParseUnifiedExchange(InputExchange, out var normalizedExchange, out var isCounty) && !isCounty)
+            normalizedState = normalizedExchange;
+
         var qso = new Qso
         {
             Call    = InputCall.Trim().ToUpperInvariant(),
@@ -331,7 +344,7 @@ public sealed class LogInputViewModel : ViewModelBase
             ContestId = CurrentContestAdifId,
             Freq    = freq,
             Country = InputCountry.Trim().ToUpperInvariant(),
-            State   = InputState.Trim().ToUpperInvariant(),
+            State   = normalizedState,
             RstSent = IsFieldDay ? string.Empty : InputSent.Trim(),
             RstRcvd = IsFieldDay ? string.Empty : InputRec.Trim(),
             Details = new List<QsoDetail>()
@@ -409,6 +422,7 @@ public sealed class LogInputViewModel : ViewModelBase
         InputName = string.Empty;
         InputState = string.Empty;
         InputCounty = string.Empty;
+        InputExchange = string.Empty;
         InputFieldDaySection = string.Empty;
         InputFieldDayClass = string.Empty;
     }
@@ -461,6 +475,15 @@ public sealed class LogInputViewModel : ViewModelBase
     {
         foreach (var requirement in CurrentContestDefinition.RequiredFields)
         {
+            if (string.Equals(requirement.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase))
+            {
+                if (TryParseUnifiedExchange(InputExchange, out _, out _))
+                    continue;
+
+                errorMessage = "Exchange must be 2 letters (outside Arkansas) or 3 letters (Arkansas county).";
+                return false;
+            }
+
             if (!string.IsNullOrWhiteSpace(GetContestFieldValue(requirement.Key)))
                 continue;
 
@@ -476,6 +499,7 @@ public sealed class LogInputViewModel : ViewModelBase
     {
         return key switch
         {
+            ContestFieldKeys.Exchange => InputExchange.Trim(),
             ContestFieldKeys.RstSent => InputSent.Trim(),
             ContestFieldKeys.RstRecv => InputRec.Trim(),
             ContestFieldKeys.Country => InputCountry.Trim(),
@@ -492,6 +516,14 @@ public sealed class LogInputViewModel : ViewModelBase
     {
         foreach (var requirement in CurrentContestDefinition.RequiredFields)
         {
+            if (string.Equals(requirement.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase))
+            {
+                if (TryParseUnifiedExchange(InputExchange, out var normalizedExchange, out var isCounty) && isCounty)
+                    qso.Details.Add(new QsoDetail { FieldName = "County", FieldValue = normalizedExchange });
+
+                continue;
+            }
+
             if (string.IsNullOrWhiteSpace(requirement.DetailFieldName))
                 continue;
 
@@ -502,6 +534,21 @@ public sealed class LogInputViewModel : ViewModelBase
             var normalized = requirement.Key == ContestFieldKeys.Name ? value : value.ToUpperInvariant();
             qso.Details.Add(new QsoDetail { FieldName = requirement.DetailFieldName, FieldValue = normalized });
         }
+    }
+
+    private static bool TryParseUnifiedExchange(string? rawExchange, out string normalized, out bool isCounty)
+    {
+        normalized = (rawExchange ?? string.Empty).Trim().ToUpperInvariant();
+        isCounty = false;
+
+        if (normalized.Length != 2 && normalized.Length != 3)
+            return false;
+
+        if (!normalized.All(char.IsLetter))
+            return false;
+
+        isCounty = normalized.Length == 3;
+        return true;
     }
 
     private void ValidateBand()

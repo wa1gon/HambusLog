@@ -21,6 +21,10 @@ public sealed class ContestLicenseValidationService : IContestLicenseValidationS
         if (string.IsNullOrWhiteSpace(licenseKey))
             return ContestLicenseValidationResult.Failure("License key is required.");
 
+        var trimmedLicense = licenseKey.Trim();
+        if (trimmedLicense.StartsWith("full:", StringComparison.OrdinalIgnoreCase))
+            return ValidateFullLicense(trimmedLicense);
+
         if (requiredFieldNameValues.Count == 0)
             return ContestLicenseValidationResult.Failure("At least one required field is needed for license validation.");
 
@@ -33,7 +37,6 @@ public sealed class ContestLicenseValidationService : IContestLicenseValidationS
         }
 
         var canonicalPayload = BuildCanonicalPayload(requiredFieldNameValues);
-        var trimmedLicense = licenseKey.Trim();
 
         if (trimmedLicense.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
             return ValidateSha256License(trimmedLicense, canonicalPayload);
@@ -41,7 +44,15 @@ public sealed class ContestLicenseValidationService : IContestLicenseValidationS
         if (trimmedLicense.StartsWith("sig:", StringComparison.OrdinalIgnoreCase))
             return ValidateSignatureLicense(trimmedLicense, canonicalPayload);
 
-        return ContestLicenseValidationResult.Failure("Unsupported license format. Use 'sha256:<hex>' or 'sig:<rsa-sha256|ecdsa-sha256>:<base64PublicKey>:<base64Signature>'.");
+        return ContestLicenseValidationResult.Failure("Unsupported license format. Use 'full:<token>', 'sha256:<hex>', or 'sig:<rsa-sha256|ecdsa-sha256>:<base64PublicKey>:<base64Signature>'.");
+    }
+
+    private static ContestLicenseValidationResult ValidateFullLicense(string licenseKey)
+    {
+        var token = licenseKey["full:".Length..].Trim();
+        return string.IsNullOrWhiteSpace(token)
+            ? ContestLicenseValidationResult.Failure("Full license format is invalid. Expected 'full:<token>'.")
+            : ContestLicenseValidationResult.Success();
     }
 
     private static ContestLicenseValidationResult ValidateSha256License(string licenseKey, string canonicalPayload)

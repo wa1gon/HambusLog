@@ -24,6 +24,7 @@ static int Run(string[] args)
             "sha256" => RunSha256(options),
             "sign" => RunSign(options),
             "keygen" => RunKeygen(options),
+            "full" => RunFull(options),
             _ => Fail($"Unknown command '{command}'.")
         };
     }
@@ -112,6 +113,20 @@ static int RunKeygen(IReadOnlyDictionary<string, string> options)
         default:
             return Fail("Unsupported --alg value. Use rsa-sha256 or ecdsa-sha256.");
     }
+}
+
+static int RunFull(IReadOnlyDictionary<string, string> options)
+{
+    var token = GetOption(options, "token")?.Trim();
+    if (string.IsNullOrWhiteSpace(token))
+    {
+        Span<byte> randomBytes = stackalloc byte[24];
+        RandomNumberGenerator.Fill(randomBytes);
+        token = Convert.ToHexString(randomBytes);
+    }
+
+    Console.WriteLine($"full:{token}");
+    return 0;
 }
 
 static Dictionary<string, string> ResolveRequiredFields(IReadOnlyDictionary<string, string> options)
@@ -348,6 +363,7 @@ static void PrintUsage()
     Console.WriteLine("  sha256      Print sha256 license key");
     Console.WriteLine("  sign        Print signature license key");
     Console.WriteLine("  keygen      Generate keypair");
+    Console.WriteLine("  full        Print full-access license key");
     Console.WriteLine();
     Console.WriteLine("Input options (canonical/sha256/sign):");
     Console.WriteLine("  --fields \"name=Name;state=State\"");
@@ -360,6 +376,9 @@ static void PrintUsage()
     Console.WriteLine();
     Console.WriteLine("Keygen options:");
     Console.WriteLine("  --alg rsa-sha256|ecdsa-sha256");
+    Console.WriteLine();
+    Console.WriteLine("Full options:");
+    Console.WriteLine("  --token <string>    Optional token (random if omitted)");
 }
 
 static int Fail(string message)
