@@ -11,6 +11,8 @@
       "exchangeType": "normal",
       "licenseKey": "full:REPLACE_WITH_SHARED_FULL_LICENSE",
       "requiredFields": {
+        "rst_sent": "RST Sent",
+        "rst_recv": "RST Rec",
         "exchange": "State/Province or Arkansas County"
       }
     }

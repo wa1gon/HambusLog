@@ -1,5 +1,7 @@
 namespace HamBusLog.Views;
 
+using Avalonia.VisualTree;
+
 public partial class MainWindow
 {
     private MenuNode? _previousSelection;
@@ -8,6 +10,7 @@ public partial class MainWindow
     private DxSpotsWindow? _dxSpotsWindow;
     private bool _isImportingAdif;
     private bool _isAppExitRequested;
+    private bool _skipNextMenuSelectionChanged;
 
     public MainWindow()
     {
@@ -50,107 +53,88 @@ public partial class MainWindow
 
     public async void OnMenuTreeViewSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (e.AddedItems.Count > 0 && e.AddedItems[0] is MenuNode node)
+        if (_skipNextMenuSelectionChanged)
         {
-            if (node.Title == "Grid" || node.Title == "Open/Reopen Grid")
-            {
-                ToggleGridWindow();
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Add New Contact")
-            {
-                OpenNewContactWindow();
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Configuration")
-            {
-                OpenConfigurationWindow();
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Import ADIF")
-            {
-                await ImportAdifAsync();
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Import JADE")
-            {
-                await ImportJadeAsync();
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Export ADIF")
-            {
-                await ExportAdifAsync();
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Export JADE")
-            {
-                await ExportJadeAsync();
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Export JADE Schema")
-            {
-                await ExportJadeSchemaAsync();
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Export JADE Example")
-            {
-                await ExportJadeExampleAsync();
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "DX Spots" || node.Title == "DX Cluster")
-            {
-                ToggleDxSpotsWindow();
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Callbook")
-            {
-                ShowNotImplemented("Callbook");
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Awards")
-            {
-                ShowNotImplemented("Awards");
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "eLogs")
-            {
-                ShowNotImplemented("eLogs");
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "RecCall")
-            {
-                ShowNotImplemented("RecCall");
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Net View")
-            {
-                ShowNotImplemented("Net View");
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Watch List")
-            {
-                ShowNotImplemented("Watch List");
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Remove Dups")
-            {
-                ShowNotImplemented("Remove Dups");
-                ResetTreeSelection(sender);
-            }
-            else if (node.Title == "Help")
-            {
-                ShowNotImplemented("Help");
-                ResetTreeSelection(sender);
-            }
-            else
-            {
-                _previousSelection = node;
-            }
+            _skipNextMenuSelectionChanged = false;
+            return;
         }
+
+        if (e.AddedItems.Count > 0 && e.AddedItems[0] is MenuNode node)
+            await HandleMenuNodeClickAsync(node, sender);
     }
 
-    public void OnMenuTreeViewPointerPressed(object? sender, PointerPressedEventArgs e)
+    public async void OnMenuTreeViewPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (e.Source is not Visual visual)
+            return;
+
+        var item = visual.FindAncestorOfType<TreeViewItem>();
+        if (item?.DataContext is not MenuNode node)
+            return;
+
+        _skipNextMenuSelectionChanged = true;
+
+        if (node.HasChildren)
+        {
+            item.IsExpanded = !item.IsExpanded;
+            node.IsExpanded = item.IsExpanded;
+            e.Handled = true;
+            ResetTreeSelection(sender);
+            return;
+        }
+
+        await HandleMenuNodeClickAsync(node, sender);
+        e.Handled = true;
+    }
+
+    private async Task HandleMenuNodeClickAsync(MenuNode node, object? sender)
+    {
+        if (node.Title == "Grid" || node.Title == "Open/Reopen Grid")
+            ToggleGridWindow();
+        else if (node.Title == "Add New Contact")
+            OpenNewContactWindow();
+        else if (node.Title == "Configuration")
+            OpenConfigurationWindow();
+        else if (node.Title == "Import ADIF")
+            await ImportAdifAsync();
+        else if (node.Title == "Import JADE")
+            await ImportJadeAsync();
+        else if (node.Title == "Export ADIF")
+            await ExportAdifAsync();
+        else if (node.Title == "Export JADE")
+            await ExportJadeAsync();
+        else if (node.Title == "Export JADE Schema")
+            await ExportJadeSchemaAsync();
+        else if (node.Title == "Export JADE Example")
+            await ExportJadeExampleAsync();
+        else if (node.Title == "DX Spots" || node.Title == "DX Cluster")
+            ToggleDxSpotsWindow();
+        else if (node.Title == "Callbook")
+            ShowNotImplemented("Callbook");
+        else if (node.Title == "Awards")
+            ShowNotImplemented("Awards");
+        else if (node.Title == "eLogs")
+            ShowNotImplemented("eLogs");
+        else if (node.Title == "RecCall")
+            ShowNotImplemented("RecCall");
+        else if (node.Title == "Net View")
+            ShowNotImplemented("Net View");
+        else if (node.Title == "Watch List")
+            ShowNotImplemented("Watch List");
+        else if (node.Title == "Remove Dups")
+            ShowNotImplemented("Remove Dups");
+        else if (node.Title == "About")
+            await ShowSimpleModalAsync(
+                "About HamBusLog",
+                "HamBusLog\n\nAmateur radio logging with rig control, contest workflows, ADIF/JADE import-export, and DX tools.");
+        else if (node.Title == "Credits")
+            await ShowSimpleModalAsync(
+                "Credits",
+                "Credits\n\nChris K0SWE - dxcc-json\n\nBuilt by the HamBusLog contributors.");
+        else
+            _previousSelection = node;
+
+        ResetTreeSelection(sender);
     }
 
     public void OnOpenGridClicked(object? sender, RoutedEventArgs e) => ToggleGridWindow();
@@ -251,6 +235,49 @@ public partial class MainWindow
     private static void ShowNotImplemented(string featureName)
     {
         App.Toasts.ShowInfo(featureName, $"{featureName} is not wired yet. The menu flow is connected and ready for implementation.");
+    }
+
+    private async Task ShowSimpleModalAsync(string title, string message)
+    {
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 440,
+            Height = 230,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+
+        var closeButton = new Button
+        {
+            Content = "Close",
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+            MinWidth = 88,
+            Padding = new Thickness(12, 7)
+        };
+        closeButton.Click += (_, _) => dialog.Close();
+
+        dialog.Content = new Border
+        {
+            Padding = new Thickness(16),
+            Child = new StackPanel
+            {
+                Spacing = 12,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = message,
+                        TextWrapping = TextWrapping.Wrap,
+                        FontSize = 13
+                    },
+                    closeButton
+                }
+            }
+        };
+
+        var owner = GetPreferredDialogOwner() ?? this;
+        await dialog.ShowDialog(owner);
     }
 
     private async Task ImportAdifAsync()

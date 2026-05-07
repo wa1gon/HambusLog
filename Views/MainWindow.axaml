@@ -76,6 +76,26 @@
         <Style Selector="TreeViewItem /template/ ContentPresenter">
             <Setter Property="Margin" Value="0,2,0,2" />
         </Style>
+        <Style Selector="TreeViewItem /template/ ToggleButton">
+            <Setter Property="Foreground" Value="{DynamicResource AppMenuForegroundBrush}" />
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="IsVisible" Value="False" />
+            <Setter Property="Width" Value="0" />
+            <Setter Property="MinWidth" Value="0" />
+        </Style>
+        <Style Selector="TreeViewItem /template/ ToggleButton PathIcon">
+            <Setter Property="Foreground" Value="{DynamicResource AppMenuForegroundBrush}" />
+        </Style>
+        <Style Selector="TreeViewItem /template/ ToggleButton Path">
+            <Setter Property="Fill" Value="{DynamicResource AppMenuForegroundBrush}" />
+            <Setter Property="Stroke" Value="{DynamicResource AppMenuForegroundBrush}" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="TreeViewItem:expanded /template/ ToggleButton Path">
+            <Setter Property="Fill" Value="{DynamicResource AppMenuForegroundBrush}" />
+            <Setter Property="Stroke" Value="{DynamicResource AppMenuForegroundBrush}" />
+        </Style>
+        <!-- Custom carets are bound to MenuNode.IsCollapsed/IsExpanded. -->
     </Window.Styles>
 
     <Design.DataContext>
@@ -121,7 +141,21 @@
                             </TreeView.Styles>
                             <TreeView.ItemTemplate>
                                 <TreeDataTemplate x:DataType="vm:MenuNode" ItemsSource="{Binding Children}">
-                                    <TextBlock Text="{Binding Title}" Foreground="{DynamicResource AppMenuForegroundBrush}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="▸"
+                                                   Classes="CaretCollapsed"
+                                                   IsVisible="{Binding ShowCollapsedCaret}"
+                                                   Foreground="{DynamicResource AppMenuForegroundBrush}"
+                                                   FontSize="13"
+                                                   FontWeight="Bold" />
+                                        <TextBlock Text="▾"
+                                                   Classes="CaretExpanded"
+                                                   IsVisible="{Binding ShowExpandedCaret}"
+                                                   Foreground="{DynamicResource AppMenuForegroundBrush}"
+                                                   FontSize="13"
+                                                   FontWeight="Bold" />
+                                        <TextBlock Text="{Binding Title}" Foreground="{DynamicResource AppMenuForegroundBrush}" />
+                                    </StackPanel>
                                 </TreeDataTemplate>
                             </TreeView.ItemTemplate>
                         </TreeView>

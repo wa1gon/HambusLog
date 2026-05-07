@@ -2,13 +2,13 @@
 
 using Avalonia.Media;
 using Avalonia.Threading;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
     public MenuNode[] MenuItems { get; } =
     [
-        new MenuNode("Grid"),
-        new MenuNode("Add New Contact"),
         new MenuNode("File", false, // Set default to collapsed
             new MenuNode("Open/Reopen Grid"),
             new MenuNode("Import ADIF"),
@@ -20,14 +20,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             new MenuNode("Export JADE Example"),
             new MenuNode("Remove Dups"),
             new MenuNode("Watch List")),
+        new MenuNode("Grid"),
         new MenuNode("DX Cluster"),
         new MenuNode("Configuration"),
-        new MenuNode("Callbook"),
         new MenuNode("Awards"),
         new MenuNode("eLogs"),
-        new MenuNode("RecCall"),
-        new MenuNode("Net View"),
-        new MenuNode("Help")
+        new MenuNode("Help", false,
+            new MenuNode("About"),
+            new MenuNode("Credits"))
     ];
 
     private MenuNode? _selectedMenuItem;
@@ -486,7 +486,7 @@ public sealed class ActiveRadioOption
     public override string ToString() => Display;
 }
 
-public sealed class MenuNode
+public sealed class MenuNode : INotifyPropertyChanged
 {
     public MenuNode(string title, params MenuNode[] children)
         : this(title, false, children)
@@ -496,12 +496,35 @@ public sealed class MenuNode
     public MenuNode(string title, bool isExpanded, params MenuNode[] children)
     {
         Title = title;
-        IsExpanded = isExpanded;
+        _isExpanded = isExpanded;
         Children = children;
     }
 
     public string Title { get; }
-    public bool IsExpanded { get; set; }
+    private bool _isExpanded;
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set
+        {
+            if (value == _isExpanded)
+                return;
+
+            _isExpanded = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsCollapsed));
+            OnPropertyChanged(nameof(ShowCollapsedCaret));
+            OnPropertyChanged(nameof(ShowExpandedCaret));
+        }
+    }
+    public bool IsCollapsed => !_isExpanded;
+    public bool ShowCollapsedCaret => HasChildren && IsCollapsed;
+    public bool ShowExpandedCaret => HasChildren && IsExpanded;
     public MenuNode[] Children { get; }
     public bool HasChildren => Children.Length > 0;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
