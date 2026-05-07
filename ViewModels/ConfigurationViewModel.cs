@@ -603,6 +603,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 InputSelectionBackgroundColor = ToHexRgb(InputSelectionBackgroundColor),
                 InputSelectionForegroundColor = ToHexRgb(InputSelectionForegroundColor),
                 MutedForegroundColor = ToHexRgb(MutedForegroundColor),
+                HoverFontColor = ToHexRgb(HoverFontColor),
                 ConnectionString = resolvedConnectionString
             };
 
@@ -731,6 +732,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             InputSelectionBackgroundColor = ToHexRgb(InputSelectionBackgroundColor),
             InputSelectionForegroundColor = ToHexRgb(InputSelectionForegroundColor),
             MutedForegroundColor = ToHexRgb(MutedForegroundColor),
+            HoverFontColor = ToHexRgb(HoverFontColor),
             ConnectionString = src.ConnectionString
         };
 
@@ -803,6 +805,16 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         else
         {
             MutedForegroundColor = DefaultMutedForegroundColor;
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile.HoverFontColor))
+        {
+            try { HoverFontColor = Color.Parse(profile.HoverFontColor); }
+            catch { HoverFontColor = DefaultHoverFontColor; }
+        }
+        else
+        {
+            HoverFontColor = DefaultHoverFontColor;
         }
 
         ConnectionString = profile.ConnectionString;

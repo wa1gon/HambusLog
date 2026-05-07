@@ -211,6 +211,8 @@ public partial class App
         var buttonCautionForeground = ParseColor(profile.ButtonCautionForegroundColor, legacyButtonForeground);
         var buttonDanger = ParseColor(profile.ButtonDangerColor, Color.Parse("#B91C1C"));
         var buttonDangerForeground = ParseColor(profile.ButtonDangerForegroundColor, legacyButtonForeground);
+        var requestedHoverFont = ParseColor(profile.HoverFontColor, Color.Parse("#FFFFFF"));
+        var hoverFontColor = EnsureReadableHoverForeground(requestedHoverFont, buttonNormal, buttonCaution, buttonDanger);
         var inputBackground = ParseColor(profile.InputBackgroundColor, Color.Parse("#1F2937"));
         var inputForeground = EnsureReadableForeground(
             ParseColor(profile.InputForegroundColor, Color.Parse("#F9FAFB")),
@@ -247,6 +249,7 @@ public partial class App
         SetBrush(resources, "AppButtonDangerBrush", buttonDanger);
         SetBrush(resources, "AppButtonDangerForegroundBrush", buttonDangerForeground);
         SetBrush(resources, "AppButtonForegroundBrush", buttonNormalForeground);
+        SetBrush(resources, "AppHoverFontBrush", hoverFontColor);
         SetBrush(resources, "AppErrorBrush", Color.Parse("#FF6B6B"));
         SetBrush(resources, "AppWarningBrush", Color.Parse("#FFD700"));
         SetBrush(resources, "TextControlBackground", inputBackground);
@@ -314,6 +317,22 @@ public partial class App
         var black = Color.Parse("#000000");
         var white = Color.Parse("#FFFFFF");
         return ContrastRatio(white, background) >= ContrastRatio(black, background) ? white : black;
+    }
+
+    private static Color EnsureReadableHoverForeground(Color foreground, params Color[] backgrounds)
+    {
+        if (backgrounds.Length == 0)
+            return foreground;
+
+        var minimumContrast = backgrounds.Min(background => ContrastRatio(foreground, background));
+        if (minimumContrast >= 4.5)
+            return foreground;
+
+        var black = Color.Parse("#000000");
+        var white = Color.Parse("#FFFFFF");
+        var blackMin = backgrounds.Min(background => ContrastRatio(black, background));
+        var whiteMin = backgrounds.Min(background => ContrastRatio(white, background));
+        return whiteMin >= blackMin ? white : black;
     }
 
     private static bool IsVisuallyClose(Color first, Color second)

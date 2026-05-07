@@ -27,6 +27,7 @@
         <SolidColorBrush x:Key="AppButtonDangerBrush" Color="#B91C1C" />
         <SolidColorBrush x:Key="AppButtonDangerForegroundBrush" Color="#FFFFFF" />
         <SolidColorBrush x:Key="AppButtonForegroundBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="AppHoverFontBrush" Color="#FFFFFF" />
         <SolidColorBrush x:Key="AppErrorBrush" Color="#FF6B6B" />
         <SolidColorBrush x:Key="AppWarningBrush" Color="#FFD700" />
 
@@ -174,10 +175,18 @@
             <Setter Property="TextElement.Foreground" Value="{DynamicResource AppButtonNormalForegroundBrush}" />
         </Style>
         <Style Selector="Button:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource AppHoverFontBrush}" />
             <Setter Property="Opacity" Value="1" />
         </Style>
         <Style Selector="Button:pressed">
+            <Setter Property="Foreground" Value="{DynamicResource AppHoverFontBrush}" />
             <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button:pointerover /template/ ContentPresenter">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource AppHoverFontBrush}" />
+        </Style>
+        <Style Selector="Button:pressed /template/ ContentPresenter">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource AppHoverFontBrush}" />
         </Style>
     </Application.Styles>
 </Application>

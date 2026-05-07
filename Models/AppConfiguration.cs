@@ -50,6 +50,7 @@ public sealed class ConfigProfile
     public string InputSelectionBackgroundColor { get; set; } = "#1D4ED8";
     public string InputSelectionForegroundColor { get; set; } = "#FFFFFF";
     public string MutedForegroundColor { get; set; } = "#94A3B8";
+    public string HoverFontColor { get; set; } = "#FFFFFF";
     public string ConnectionString { get; set; } = "Data Source=hambuslog.db";
 
     // ── Station / operator info ──────────────────────────────────────
