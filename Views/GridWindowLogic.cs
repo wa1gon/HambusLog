@@ -14,6 +14,24 @@ public partial class GridWindow
         InitializeComponent();
         App.TrackWindowPlacement(this, nameof(GridWindow));
         App.Toasts.RegisterWindow(this);
+        RebuildRepositoryBinding();
+        App.DbContextReinitialized += OnDbContextReinitialized;
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        App.DbContextReinitialized -= OnDbContextReinitialized;
+        base.OnClosed(e);
+    }
+
+    private void OnDbContextReinitialized(object? sender, EventArgs e)
+    {
+        RebuildRepositoryBinding();
+        App.Toasts.ShowInfo("Database", "Database connection switched to the updated SQLite file.");
+    }
+
+    private void RebuildRepositoryBinding()
+    {
         _repository = new SqliteQsoRepository(App.DbContext);
         _viewModel = new GridViewModel(_repository);
         DataContext = _viewModel;

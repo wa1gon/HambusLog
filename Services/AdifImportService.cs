@@ -144,11 +144,15 @@ public static class AdifImportService
     }
 }
 
-public readonly record struct AdifImportOptions(DatabaseProvider Provider = DatabaseProvider.Sqlite, string? ConnectionString = null)
+public readonly record struct AdifImportOptions(DatabaseProvider Provider = DatabaseProvider.Sqlite, string? ConnectionString = null, string? DefaultMyCall = null)
 {
     public string ConnectionString { get; } = string.IsNullOrWhiteSpace(ConnectionString)
         ? string.Empty
         : ConnectionString;
+
+    public string DefaultMyCall { get; } = string.IsNullOrWhiteSpace(DefaultMyCall)
+        ? string.Empty
+        : DefaultMyCall.Trim();
 }
 
 public readonly record struct AdifImportResult(int ParsedCount, int SavedChanges, string FilePath, int DuplicateCount = 0);

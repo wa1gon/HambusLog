@@ -9,29 +9,84 @@ public partial class App
     public static IToastService Toasts { get; } = new ToastService();
 
     private static HamBusLogDbContext? _dbContext;
+    private static string _dbConnectionString = string.Empty;
+    private static readonly object _dbContextSync = new();
+    public static event EventHandler? DbContextReinitialized;
+
     public static HamBusLogDbContext DbContext
     {
         get
         {
             if (_dbContext == null)
             {
-                var connectionString = ResolveAppConnectionString();
-                var dbPath = ExtractDataSourcePath(connectionString);
-
-                if (!string.IsNullOrWhiteSpace(dbPath))
+                lock (_dbContextSync)
                 {
-                    var directory = Path.GetDirectoryName(dbPath);
-                    if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
-                        Directory.CreateDirectory(directory);
+                    if (_dbContext == null)
+                        _dbContext = CreateDbContext(ResolveAppConnectionString());
                 }
-
-                var options = HamBusLogDbContextFactory.BuildOptions(DatabaseProvider.Sqlite, connectionString);
-                _dbContext = new HamBusLogDbContext(options);
-                _dbContext.Database.EnsureCreated();
-                System.Diagnostics.Debug.WriteLine($"Database context created: {connectionString}");
             }
             return _dbContext;
         }
+    }
+
+    public static bool ReinitializeDbContext(string? requestedConnectionString, out string errorMessage)
+    {
+        try
+        {
+            var nextConnectionString = string.IsNullOrWhiteSpace(requestedConnectionString)
+                ? ResolveAppConnectionString()
+                : requestedConnectionString.Trim();
+
+            lock (_dbContextSync)
+            {
+                if (_dbContext is not null && string.Equals(_dbConnectionString, nextConnectionString, StringComparison.Ordinal))
+                {
+                    errorMessage = string.Empty;
+                    return false;
+                }
+
+                var nextContext = CreateDbContext(nextConnectionString);
+                var previous = _dbContext;
+                _dbContext = nextContext;
+
+                try
+                {
+                    previous?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"DbContext dispose warning: {ex.Message}");
+                }
+            }
+
+            DbContextReinitialized?.Invoke(null, EventArgs.Empty);
+            errorMessage = string.Empty;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            return false;
+        }
+    }
+
+    private static HamBusLogDbContext CreateDbContext(string connectionString)
+    {
+        var dbPath = ExtractDataSourcePath(connectionString);
+
+        if (!string.IsNullOrWhiteSpace(dbPath))
+        {
+            var directory = Path.GetDirectoryName(dbPath);
+            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
+        }
+
+        var options = HamBusLogDbContextFactory.BuildOptions(DatabaseProvider.Sqlite, connectionString);
+        var context = new HamBusLogDbContext(options);
+        context.Database.EnsureCreated();
+        _dbConnectionString = connectionString;
+        System.Diagnostics.Debug.WriteLine($"Database context created: {connectionString}");
+        return context;
     }
 
     private static string ResolveAppConnectionString()

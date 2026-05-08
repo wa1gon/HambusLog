@@ -3,7 +3,7 @@ namespace HamBusLog.Views;
 public partial class DxSpotsWindow
 {
     private readonly DxSpotsWindowViewModel _viewModel;
-    private readonly SqliteQsoRepository _repository;
+    private SqliteQsoRepository _repository;
     private LogInputWindow? _logInputWindow;
 
     public DxSpotsWindow()
@@ -12,13 +12,20 @@ public partial class DxSpotsWindow
         App.TrackWindowPlacement(this, nameof(DxSpotsWindow));
         _viewModel = new DxSpotsWindowViewModel();
         _repository = new SqliteQsoRepository(App.DbContext);
+        App.DbContextReinitialized += OnDbContextReinitialized;
         DataContext = _viewModel;
     }
 
     protected override void OnClosed(EventArgs e)
     {
+        App.DbContextReinitialized -= OnDbContextReinitialized;
         _viewModel.Dispose();
         base.OnClosed(e);
+    }
+
+    private void OnDbContextReinitialized(object? sender, EventArgs e)
+    {
+        _repository = new SqliteQsoRepository(App.DbContext);
     }
 
     private async void OnSpotsGridTapped(object? sender, TappedEventArgs e)

@@ -569,6 +569,9 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             var normalizedDatabaseFileName = normalizedLocation.FileName;
             var normalizedDatabaseFilePath = BuildDatabasePath(normalizedDatabaseFolderPath, normalizedDatabaseFileName);
             var resolvedConnectionString = BuildConnectionString(ConnectionString, normalizedDatabaseFilePath);
+            var previousConnectionString = _appConfig.Profiles.TryGetValue(_selectedProfile, out var existingProfile)
+                ? existingProfile.ConnectionString?.Trim() ?? string.Empty
+                : string.Empty;
             var profile = new ConfigProfile
             {
                 Name = _selectedProfile,
@@ -663,6 +666,18 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             DatabaseFileName = normalizedDatabaseFileName;
             ConnectionString = resolvedConnectionString;
             AppConfigurationStore.Save(_appConfig);
+
+            if (!string.Equals(previousConnectionString, resolvedConnectionString, StringComparison.Ordinal)
+                && !App.ReinitializeDbContext(resolvedConnectionString, out var dbSwitchError))
+            {
+                App.Toasts.ShowError("Database switch failed", dbSwitchError);
+                StatusMessage = $"✗ Save failed: Unable to switch database. {dbSwitchError}";
+                return;
+            }
+
+            if (!string.Equals(previousConnectionString, resolvedConnectionString, StringComparison.Ordinal))
+                App.Toasts.ShowSuccess("Database switched", $"Now using SQLite DB: {normalizedDatabaseFilePath}");
+
             PopulateAvailableRigRadios(rigctld);
             _activeRigRadioNames = rigctld.ActiveRadioNames
                 .Where(x => !string.IsNullOrWhiteSpace(x))

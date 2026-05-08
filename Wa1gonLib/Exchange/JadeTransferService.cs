@@ -125,14 +125,14 @@ public static class JadeTransferService
             throw new FileNotFoundException("JADE file was not found.", fullPath);
 
         var json = await File.ReadAllTextAsync(fullPath, cancellationToken);
-        var records = ParseRecords(json);
+        var importOptions = ResolveOptions(options);
+        var records = ParseRecords(json, importOptions.DefaultMyCall);
         if (records.Count == 0)
             return 0;
 
         var qsos = records.Select((record, index) => FromJadeRecord(record, index + 1)).ToList();
         PrepareForPersistence(qsos);
 
-        var importOptions = ResolveOptions(options);
         await using var db = HamBusLogDbContextFactory.Create(importOptions.Provider, importOptions.ConnectionString);
         await db.Database.EnsureCreatedAsync(cancellationToken);
         var duplicateFilter = await QsoImportDuplicateDetector.FilterNewQsosAsync(db, qsos, cancellationToken);
@@ -145,7 +145,7 @@ public static class JadeTransferService
         return duplicateFilter.Accepted.Count;
     }
 
-    private static List<Dictionary<string, string>> ParseRecords(string json)
+    private static List<Dictionary<string, string>> ParseRecords(string json, string fallbackMyCall)
     {
         JsonNode? root;
         try
@@ -190,6 +190,9 @@ public static class JadeTransferService
 
                 fields[pair.Key] = pair.Value.ToString();
             }
+
+            if (!HasValue(fields, "MY_CALL") && !string.IsNullOrWhiteSpace(fallbackMyCall))
+                fields["MY_CALL"] = fallbackMyCall.Trim().ToUpperInvariant();
 
             ValidateRecord(fields, recordNumber, errors);
             list.Add(fields);
@@ -444,7 +447,11 @@ public static class JadeTransferService
             ? "Data Source=hambuslog.db"
             : profile.ConnectionString;
 
-        return new AdifImportOptions(options?.Provider ?? DatabaseProvider.Sqlite, connectionString);
+        var defaultMyCall = string.IsNullOrWhiteSpace(options?.DefaultMyCall)
+            ? profile.MyCall
+            : options!.Value.DefaultMyCall;
+
+        return new AdifImportOptions(options?.Provider ?? DatabaseProvider.Sqlite, connectionString, defaultMyCall);
     }
 }
 
