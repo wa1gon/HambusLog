@@ -4,7 +4,7 @@ public class Qso
 {
     [Required] [Key] public Guid Id { get; set; }
     [Required] [MaxLength(15)] public string Call { get; set; } = string.Empty;
-    [Required] [MaxLength(15)] public string MyCall { get; set; } = string.Empty;
+    [Required] [MaxLength(15)] public string StationCall { get; set; } = string.Empty;
     [Required] public DateTime QsoDate { get; set; }
     [Required] [MaxLength(30)] public string Mode { get; set; } = string.Empty;
     [MaxLength(10)] public string ContestId { get; set; } = string.Empty;

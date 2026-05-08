@@ -4,7 +4,7 @@ public interface IQso
 {
     Guid Id { get; set; }
     string Call { get; set; }
-    string MyCall { get; set; }
+    string StationCall { get; set; }
     DateTime QsoDate { get; set; }
     string Mode { get; set; }
     string ContestId { get; set; }

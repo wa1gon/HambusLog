@@ -79,7 +79,7 @@ public static class JadeTransferService
     {
         return new JsonObject
         {
-            ["required"] = new JsonArray("UUID", "CALL", "MY_CALL", "QSO_DATE", "BAND_OR_FREQ"),
+            ["required"] = new JsonArray("UUID", "CALL", "STATION_CALL", "OPERATOR", "QSO_DATE", "BAND_OR_FREQ"),
             ["date_format"] = "yyyyMMdd",
             ["time_format"] = "HHmm or HHmmss",
             ["freq_format"] = "MHz decimal string",
@@ -98,7 +98,7 @@ public static class JadeTransferService
         {
             Id = Guid.Parse("2f3dcb4f-0adb-4dfc-bf95-72d11b3761e4"),
             Call = "JA1ABC",
-            MyCall = "N0CALL",
+            StationCall = "N0CALL",
             QsoDate = DateTime.SpecifyKind(new DateTime(2026, 5, 2, 18, 30, 15), DateTimeKind.Utc),
             Band = "20M",
             Freq = 14.074m,
@@ -126,7 +126,7 @@ public static class JadeTransferService
 
         var json = await File.ReadAllTextAsync(fullPath, cancellationToken);
         var importOptions = ResolveOptions(options);
-        var records = ParseRecords(json, importOptions.DefaultMyCall);
+        var records = ParseRecords(json, importOptions.DefaultStationCall);
         if (records.Count == 0)
             return 0;
 
@@ -145,7 +145,7 @@ public static class JadeTransferService
         return duplicateFilter.Accepted.Count;
     }
 
-    private static List<Dictionary<string, string>> ParseRecords(string json, string fallbackMyCall)
+    private static List<Dictionary<string, string>> ParseRecords(string json, string fallbackStationCall)
     {
         JsonNode? root;
         try
@@ -191,8 +191,14 @@ public static class JadeTransferService
                 fields[pair.Key] = pair.Value.ToString();
             }
 
-            if (!HasValue(fields, "MY_CALL") && !string.IsNullOrWhiteSpace(fallbackMyCall))
-                fields["MY_CALL"] = fallbackMyCall.Trim().ToUpperInvariant();
+            if (!HasValue(fields, "STATION_CALL"))
+            {
+                if (!string.IsNullOrWhiteSpace(fallbackStationCall))
+                    fields["STATION_CALL"] = fallbackStationCall.Trim().ToUpperInvariant();
+            }
+
+            if (!HasValue(fields, "OPERATOR") && HasValue(fields, "STATION_CALL"))
+                fields["OPERATOR"] = fields["STATION_CALL"].Trim().ToUpperInvariant();
 
             ValidateRecord(fields, recordNumber, errors);
             list.Add(fields);
@@ -218,8 +224,11 @@ public static class JadeTransferService
         if (!HasValue(fields, "CALL"))
             errors.Add($"Record {recordNumber}: CALL is required.");
 
-        if (!HasValue(fields, "MY_CALL"))
-            errors.Add($"Record {recordNumber}: MY_CALL is required.");
+        if (!HasValue(fields, "STATION_CALL"))
+            errors.Add($"Record {recordNumber}: STATION_CALL is required.");
+
+        if (!HasValue(fields, "OPERATOR"))
+            errors.Add($"Record {recordNumber}: OPERATOR is required.");
 
         if (!fields.TryGetValue("QSO_DATE", out var qsoDate) || string.IsNullOrWhiteSpace(qsoDate))
         {
@@ -282,7 +291,10 @@ public static class JadeTransferService
         {
             ["UUID"] = qso.Id.ToString(),
             ["CALL"] = qso.Call,
-            ["MY_CALL"] = qso.MyCall,
+            ["STATION_CALL"] = qso.StationCall,
+            ["OPERATOR"] = qso.Details?.FirstOrDefault(x =>
+                string.Equals(x.FieldName, "OPERATOR", StringComparison.OrdinalIgnoreCase))?.FieldValue
+                ?? qso.StationCall,
             ["QSO_DATE"] = qso.QsoDate.ToUniversalTime().ToString("yyyyMMdd", CultureInfo.InvariantCulture),
             ["TIME_ON"] = qso.QsoDate.ToUniversalTime().ToString("HHmmss", CultureInfo.InvariantCulture),
             ["BAND"] = qso.Band,
@@ -296,7 +308,7 @@ public static class JadeTransferService
             ["CONTEST-ID"] = qso.ContestId
         };
 
-        foreach (var detail in qso.Details)
+        foreach (var detail in qso.Details ?? [])
         {
             if (string.IsNullOrWhiteSpace(detail.FieldName) || string.IsNullOrWhiteSpace(detail.FieldValue))
                 continue;
@@ -306,7 +318,7 @@ public static class JadeTransferService
                 record[key] = detail.FieldValue;
         }
 
-        foreach (var qsl in qso.QslInfo)
+        foreach (var qsl in qso.QslInfo ?? [])
         {
             var service = qsl.QslService?.Trim().ToUpperInvariant();
             if (string.IsNullOrWhiteSpace(service))
@@ -338,6 +350,7 @@ public static class JadeTransferService
         var qslInfos = new Dictionary<string, QsoQslInfo>(StringComparer.OrdinalIgnoreCase);
         DateTime? qsoDate = null;
         TimeSpan? qsoTime = null;
+        string? operatorValue = null;
 
         foreach (var field in fields)
         {
@@ -362,7 +375,8 @@ public static class JadeTransferService
                         qso.Id = parsedId;
                     break;
                 case "CALL": qso.Call = value; break;
-                case "MY_CALL": qso.MyCall = value; break;
+                case "STATION_CALL": qso.StationCall = value; break;
+                case "OPERATOR": operatorValue = value; break;
                 case "BAND": qso.Band = value; break;
                 case "MODE": qso.Mode = value; break;
                 case "COUNTRY": qso.Country = value; break;
@@ -394,6 +408,11 @@ public static class JadeTransferService
                     break;
             }
         }
+
+        var normalizedOperator = string.IsNullOrWhiteSpace(operatorValue)
+            ? qso.StationCall
+            : operatorValue.Trim().ToUpperInvariant();
+        qso.Details.Add(new QsoDetail { FieldName = "OPERATOR", FieldValue = normalizedOperator });
 
         if (qso.Id == Guid.Empty)
             throw new JadeValidationException("JADE validation failed.", [$"Record {recordNumber}: UUID/GUID is required."]);
@@ -447,11 +466,11 @@ public static class JadeTransferService
             ? "Data Source=hambuslog.db"
             : profile.ConnectionString;
 
-        var defaultMyCall = string.IsNullOrWhiteSpace(options?.DefaultMyCall)
-            ? profile.MyCall
-            : options!.Value.DefaultMyCall;
+        var defaultStationCall = string.IsNullOrWhiteSpace(options?.DefaultStationCall)
+            ? profile.StationCall
+            : options!.Value.DefaultStationCall;
 
-        return new AdifImportOptions(options?.Provider ?? DatabaseProvider.Sqlite, connectionString, defaultMyCall);
+        return new AdifImportOptions(options?.Provider ?? DatabaseProvider.Sqlite, connectionString, defaultStationCall);
     }
 }
 

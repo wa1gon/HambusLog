@@ -203,8 +203,8 @@
                                 <TextBlock Classes="CardHeading" Text="Station Identity" />
                                 <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="10">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Callsign" VerticalAlignment="Center" FontWeight="SemiBold" />
-                                    <TextBox Grid.Row="0" Grid.Column="1"
-                                             Text="{Binding MyCall, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Grid.Row="1" Grid.Column="1"
+                                             Text="{Binding StationCall, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              Watermark="N0CALL"
                                              Width="220"
                                              HorizontalAlignment="Left"

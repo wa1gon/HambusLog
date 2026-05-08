@@ -11,6 +11,8 @@ public sealed partial class QsoEditViewModel : ObservableObject
     [ObservableProperty] private string _rstRcvd = string.Empty;
     [ObservableProperty] private string _freq = string.Empty;
     [ObservableProperty] private string _qsoDateText = string.Empty;
+    [ObservableProperty] private string _stationCall = string.Empty;
+    [ObservableProperty] private string _operator = string.Empty;
 
     [ObservableProperty] private string _newDetailField = string.Empty;
     [ObservableProperty] private string _newDetailValue = string.Empty;
@@ -26,6 +28,10 @@ public sealed partial class QsoEditViewModel : ObservableObject
         RstSent = qso.RstSent ?? string.Empty;
         RstRcvd = qso.RstRcvd ?? string.Empty;
         Freq = qso.Freq.ToString("0.###");
+        StationCall = qso.StationCall ?? string.Empty;
+        Operator = qso.Details?.FirstOrDefault(x =>
+                string.Equals(x.FieldName, "OPERATOR", StringComparison.OrdinalIgnoreCase))?.FieldValue
+            ?? StationCall;
         var dt = qso.QsoDate == default ? DateTime.Now : qso.QsoDate;
         QsoDateText = dt.ToString("yyyy-MM-dd HH:mm");
 
@@ -83,12 +89,26 @@ public sealed partial class QsoEditViewModel : ObservableObject
             RstRcvd = (RstRcvd ?? string.Empty).Trim(),
             Freq = freq,
             QsoDate = qsoDate,
+            StationCall = (StationCall ?? string.Empty).Trim().ToUpperInvariant(),
             Details = [],
             QslInfo = []
         };
 
+        var operatorCall = string.IsNullOrWhiteSpace(Operator)
+            ? copy.StationCall
+            : Operator.Trim().ToUpperInvariant();
+        copy.Details.Add(new QsoDetail
+        {
+            QsoId = id,
+            FieldName = "OPERATOR",
+            FieldValue = operatorCall
+        });
+
         foreach (var detail in Details)
         {
+            if (string.Equals(detail.FieldName, "OPERATOR", StringComparison.OrdinalIgnoreCase))
+                continue;
+
             copy.Details.Add(new QsoDetail
             {
                 QsoId = id,

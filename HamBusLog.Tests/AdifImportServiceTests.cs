@@ -110,7 +110,7 @@ public sealed class AdifImportServiceTests : IDisposable
     }
 
     private static string CreateSampleAdif() =>
-        "Sample Header <eoh>\n<CALL:4>W1AW <MY_CALL:6>N0CALL <QSO_DATE:8>20260425 <TIME_ON:6>123000 <BAND:3>20M <MODE:3>SSB <RST_SENT:2>59 <RST_RCVD:2>59 <EOR>\n";
+        "Sample Header <eoh>\n<CALL:4>W1AW <STATION_CALLSIGN:6>N0CALL <QSO_DATE:8>20260425 <TIME_ON:6>123000 <BAND:3>20M <MODE:3>SSB <RST_SENT:2>59 <RST_RCVD:2>59 <EOR>\n";
 }
 
 
