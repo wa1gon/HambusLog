@@ -150,8 +150,8 @@ public class AdifReader
                 // Core fields
                 case "call": qso.Call = value; break;
                 case "station_callsign":
-                    if (string.IsNullOrWhiteSpace(qso.StationCall))
-                        qso.StationCall = value;
+                    if (string.IsNullOrWhiteSpace(qso.StationCallSign))
+                        qso.StationCallSign = value;
                     break;
                 case "band": qso.Band = value; break;
                 case "mode": qso.Mode = value; break;

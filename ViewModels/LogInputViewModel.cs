@@ -47,7 +47,7 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _selectedProfile = "default";
 
     // ----- station / operator config -----
-    private string _stationCall = string.Empty;
+    private string _stationCallSign = string.Empty;
     private string _myLocation = string.Empty;
     private string _myGridSquare = string.Empty;
     private string _myLatitude = string.Empty;
@@ -222,7 +222,7 @@ public sealed class LogInputViewModel : ViewModelBase
     public string InputCounty  { get => _inputCounty;  set => SetProperty(ref _inputCounty,  (value ?? string.Empty).ToUpperInvariant()); }
     public string InputOperator { get => _inputOperator; set => SetProperty(ref _inputOperator, (value ?? string.Empty).ToUpperInvariant()); }
     public string InputExchange { get => _inputExchange; set => SetProperty(ref _inputExchange, (value ?? string.Empty).ToUpperInvariant()); }
-    public string StationCall => _stationCall.Trim().ToUpperInvariant();
+    public string StationCallSign => _stationCallSign.Trim().ToUpperInvariant();
     public string InputFieldDaySection
     {
         get => _inputFieldDaySection;
@@ -340,7 +340,7 @@ public sealed class LogInputViewModel : ViewModelBase
         var qso = new Qso
         {
             Call    = InputCall.Trim().ToUpperInvariant(),
-            StationCall = _stationCall.Trim().ToUpperInvariant(),
+            StationCallSign = _stationCallSign.Trim().ToUpperInvariant(),
             QsoDate = qsoDate,
             Band    = band,
             Mode    = mode,
@@ -358,7 +358,7 @@ public sealed class LogInputViewModel : ViewModelBase
             qso.Details.Add(new QsoDetail { FieldName = row.FieldName, FieldValue = row.FieldValue });
 
         var operatorCall = string.IsNullOrWhiteSpace(InputOperator)
-            ? qso.StationCall
+            ? qso.StationCallSign
             : InputOperator.Trim().ToUpperInvariant();
         qso.Details.Add(new QsoDetail { FieldName = "OPERATOR", FieldValue = operatorCall });
 
@@ -430,7 +430,7 @@ public sealed class LogInputViewModel : ViewModelBase
         InputName = string.Empty;
         InputState = string.Empty;
         InputCounty = string.Empty;
-        InputOperator = StationCall;
+        InputOperator = StationCallSign;
         InputExchange = string.Empty;
         InputFieldDaySection = string.Empty;
         InputFieldDayClass = string.Empty;
@@ -596,7 +596,7 @@ public sealed class LogInputViewModel : ViewModelBase
     private void LoadStationConfig()
     {
         var p = ActiveConfigProfile();
-        _stationCall        = p.StationCall;
+        _stationCallSign    = p.StationCallSign;
         _myLocation         = p.MyLocation;
         _myGridSquare       = p.MyGridSquare;
         _myLatitude         = p.MyLatitude;
@@ -605,8 +605,8 @@ public sealed class LogInputViewModel : ViewModelBase
         _myCqZone           = p.MyCqZone;
         _myFieldDaySection  = p.MyFieldDaySection;
         _myFieldDayClass    = p.MyFieldDayClass;
-        InputOperator = StationCall;
-        OnPropertyChanged(nameof(StationCall));
+        InputOperator = StationCallSign;
+        OnPropertyChanged(nameof(StationCallSign));
     }
 
     private ConfigProfile ActiveConfigProfile()

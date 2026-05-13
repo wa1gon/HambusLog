@@ -31,7 +31,7 @@ Every JADE record must include:
 
 - `UUID` or `GUID`
 - `CALL`
-- `STATION_CALL`
+- `STATION_CALLSIGN`
 - `OPERATOR`
 - `QSO_DATE`
 - `BAND` and/or `FREQ`
@@ -73,7 +73,7 @@ JADE keeps the familiar ADIF field names, reducing mapping friction when moving 
   "format": "JADE",
   "version": "1.0",
   "schema": {
-    "required": ["UUID", "CALL", "STATION_CALL", "OPERATOR", "QSO_DATE", "BAND_OR_FREQ"],
+    "required": ["UUID", "CALL", "STATION_CALLSIGN", "OPERATOR", "QSO_DATE", "BAND_OR_FREQ"],
     "date_format": "yyyyMMdd",
     "time_format": "HHmm or HHmmss",
     "freq_format": "MHz decimal string",
@@ -84,7 +84,7 @@ JADE keeps the familiar ADIF field names, reducing mapping friction when moving 
     {
       "UUID": "2f3dcb4f-0adb-4dfc-bf95-72d11b3761e4",
       "CALL": "JA1ABC",
-      "STATION_CALL": "N0CALL",
+      "STATION_CALLSIGN": "N0CALL",
       "OPERATOR": "N0CALL",
       "QSO_DATE": "20260502",
       "TIME_ON": "183015",

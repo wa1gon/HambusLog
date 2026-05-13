@@ -827,7 +827,17 @@ public partial class ConfigurationWindow
 
     public void OnImportContestClicked(object? sender, RoutedEventArgs e)
     {
-        _viewModel.ImportContestsFromFile();
+        var succeeded = _viewModel.ImportContestsFromFile();
+        if (succeeded)
+        {
+            App.Toasts.ShowSuccess("Contest import complete", _viewModel.ImportedContestsSummary);
+            return;
+        }
+
+        var details = string.IsNullOrWhiteSpace(_viewModel.ContestImportStatus)
+            ? "Contest import failed."
+            : _viewModel.ContestImportStatus;
+        App.Toasts.ShowError("Contest import failed", details);
     }
 
     public async void OnBrowseDatabaseDirectoryClicked(object? sender, RoutedEventArgs e)

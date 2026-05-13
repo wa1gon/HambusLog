@@ -11,7 +11,7 @@ public sealed partial class QsoEditViewModel : ObservableObject
     [ObservableProperty] private string _rstRcvd = string.Empty;
     [ObservableProperty] private string _freq = string.Empty;
     [ObservableProperty] private string _qsoDateText = string.Empty;
-    [ObservableProperty] private string _stationCall = string.Empty;
+    [ObservableProperty] private string _stationCallSign = string.Empty;
     [ObservableProperty] private string _operator = string.Empty;
 
     [ObservableProperty] private string _newDetailField = string.Empty;
@@ -28,10 +28,10 @@ public sealed partial class QsoEditViewModel : ObservableObject
         RstSent = qso.RstSent ?? string.Empty;
         RstRcvd = qso.RstRcvd ?? string.Empty;
         Freq = qso.Freq.ToString("0.###");
-        StationCall = qso.StationCall ?? string.Empty;
+        StationCallSign = qso.StationCallSign ?? string.Empty;
         Operator = qso.Details?.FirstOrDefault(x =>
                 string.Equals(x.FieldName, "OPERATOR", StringComparison.OrdinalIgnoreCase))?.FieldValue
-            ?? StationCall;
+            ?? StationCallSign;
         var dt = qso.QsoDate == default ? DateTime.Now : qso.QsoDate;
         QsoDateText = dt.ToString("yyyy-MM-dd HH:mm");
 
@@ -89,13 +89,13 @@ public sealed partial class QsoEditViewModel : ObservableObject
             RstRcvd = (RstRcvd ?? string.Empty).Trim(),
             Freq = freq,
             QsoDate = qsoDate,
-            StationCall = (StationCall ?? string.Empty).Trim().ToUpperInvariant(),
+            StationCallSign = (StationCallSign ?? string.Empty).Trim().ToUpperInvariant(),
             Details = [],
             QslInfo = []
         };
 
         var operatorCall = string.IsNullOrWhiteSpace(Operator)
-            ? copy.StationCall
+            ? copy.StationCallSign
             : Operator.Trim().ToUpperInvariant();
         copy.Details.Add(new QsoDetail
         {

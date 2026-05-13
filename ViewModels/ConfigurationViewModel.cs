@@ -27,7 +27,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _databaseFolderPath = string.Empty;
     private string _databaseFileName = "hambuslog.db";
     private string _connectionString = "Data Source=hambuslog.db";
-    private string _stationCall = string.Empty;
+    private string _stationCallSign = string.Empty;
     private string _myLocation = string.Empty;
     private string _myGridSquare = string.Empty;
     private string _myLatitude = string.Empty;
@@ -265,10 +265,10 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _adifDirectory, value ?? string.Empty);
     }
 
-    public string StationCall
+    public string StationCallSign
     {
-        get => _stationCall;
-        set => SetProperty(ref _stationCall, (value ?? string.Empty).ToUpperInvariant());
+        get => _stationCallSign;
+        set => SetProperty(ref _stationCallSign, (value ?? string.Empty).ToUpperInvariant());
     }
 
     public string MyLocation
@@ -579,7 +579,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 BackgroundColor = ToHexRgb(BackgroundColor),
                 ForegroundColor = ToHexRgb(ForegroundColor),
                 AdifDirectory = AdifDirectory.Trim(),
-                StationCall = StationCall.Trim(),
+                StationCallSign = StationCallSign.Trim(),
                 MyLocation = MyLocation.Trim(),
                 MyGridSquare = MyGridSquare.Trim(),
                 MyLatitude = MyLatitude.Trim(),
@@ -720,7 +720,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             BackgroundColor = ToHexRgb(BackgroundColor),
             ForegroundColor = ToHexRgb(ForegroundColor),
             AdifDirectory = src.AdifDirectory,
-            StationCall = src.StationCall,
+            StationCallSign = src.StationCallSign,
             MyLocation = src.MyLocation,
             MyGridSquare = src.MyGridSquare,
             MyLatitude = src.MyLatitude,
@@ -846,7 +846,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         DatabaseFileName = normalizedLocation.FileName;
 
         AdifDirectory = profile.AdifDirectory;
-        StationCall = profile.StationCall;
+        StationCallSign = profile.StationCallSign;
         MyLocation = profile.MyLocation;
         MyGridSquare = profile.MyGridSquare;
         MyLatitude = profile.MyLatitude;

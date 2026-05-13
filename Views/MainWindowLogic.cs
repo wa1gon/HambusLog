@@ -377,9 +377,14 @@ public partial class MainWindow
             return;
 
         var path = files[0].Path.LocalPath;
+        var jadeImportOptions = new AdifImportOptions(
+            DatabaseProvider.Sqlite,
+            profile.ConnectionString,
+            profile.StationCallSign);
+
         try
         {
-            var imported = await HamBusLog.Wa1gonLib.Exchange.JadeTransferService.ImportFromFileAsync(path);
+            var imported = await HamBusLog.Wa1gonLib.Exchange.JadeTransferService.ImportFromFileAsync(path, jadeImportOptions);
             if (imported == 0)
             {
                 App.Toasts.ShowWarning("JADE import complete", "No QSO records were found in the selected file.");
@@ -394,6 +399,11 @@ public partial class MainWindow
             var topErrors = ex.Errors.Take(4).ToList();
             var moreCount = Math.Max(0, ex.Errors.Count - topErrors.Count);
             var details = string.Join("\n", topErrors);
+            if (string.IsNullOrWhiteSpace(profile.StationCallSign)
+                && ex.Errors.Any(x => x.Contains("STATION_CALLSIGN", StringComparison.OrdinalIgnoreCase)))
+            {
+                details += "\nTip: Set Station Call Sign in Configuration before importing JADE files that omit STATION_CALLSIGN.";
+            }
             if (moreCount > 0)
                 details += $"\n...and {moreCount} more issue(s).";
 

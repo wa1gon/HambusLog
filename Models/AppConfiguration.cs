@@ -54,7 +54,7 @@ public sealed class ConfigProfile
     public string ConnectionString { get; set; } = "Data Source=hambuslog.db";
 
     // ── Station / operator info ──────────────────────────────────────
-    public string StationCall { get; set; } = string.Empty;
+    public string StationCallSign { get; set; } = string.Empty;
     public string MyLocation { get; set; } = string.Empty;
     public string MyGridSquare { get; set; } = string.Empty;
     public string MyLatitude { get; set; } = string.Empty;

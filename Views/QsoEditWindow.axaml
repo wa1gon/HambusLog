@@ -45,7 +45,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="0" Grid.Row="2" Spacing="3">
                         <TextBlock Text="Station Call" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
-                        <TextBox Text="{Binding StationCall}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                        <TextBox Text="{Binding StationCallSign}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" Grid.Row="2" Spacing="3">
                         <TextBlock Text="Operator" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />

@@ -29,9 +29,9 @@ public static class AdifImportService
             return new AdifImportResult(0, 0, fullPath);
         }
 
-        PrepareForPersistence(parsed);
-
         var importOptions = ResolveOptions(options);
+        ApplyDefaultStationCallSign(parsed, importOptions.DefaultStationCallSign);
+        PrepareForPersistence(parsed);
 
         await using var db = HamBusLogDbContextFactory.Create(importOptions.Provider, importOptions.ConnectionString);
         await db.Database.EnsureCreatedAsync(cancellationToken);
@@ -109,16 +109,32 @@ public static class AdifImportService
 
     private static AdifImportOptions ResolveOptions(AdifImportOptions? options)
     {
-        if (options is { ConnectionString: { Length: > 0 } })
-            return options.Value;
-
         var config = AppConfigurationStore.Load();
         var profile = AppConfigurationStore.GetActiveProfile(config);
-        var connectionString = string.IsNullOrWhiteSpace(profile.ConnectionString)
-            ? "Data Source=hambuslog.db"
-            : profile.ConnectionString;
+        var connectionString = options is { ConnectionString: { Length: > 0 } }
+            ? options.Value.ConnectionString
+            : (string.IsNullOrWhiteSpace(profile.ConnectionString)
+                ? "Data Source=hambuslog.db"
+                : profile.ConnectionString);
 
-        return new AdifImportOptions(options?.Provider ?? DatabaseProvider.Sqlite, connectionString);
+        var defaultStationCallSign = string.IsNullOrWhiteSpace(options?.DefaultStationCallSign)
+            ? profile.StationCallSign
+            : options!.Value.DefaultStationCallSign;
+
+        return new AdifImportOptions(options?.Provider ?? DatabaseProvider.Sqlite, connectionString, defaultStationCallSign);
+    }
+
+    private static void ApplyDefaultStationCallSign(IEnumerable<Qso> qsos, string defaultStationCallSign)
+    {
+        if (string.IsNullOrWhiteSpace(defaultStationCallSign))
+            return;
+
+        var normalized = defaultStationCallSign.Trim().ToUpperInvariant();
+        foreach (var qso in qsos)
+        {
+            if (string.IsNullOrWhiteSpace(qso.StationCallSign))
+                qso.StationCallSign = normalized;
+        }
     }
 
     private static void PrepareForPersistence(IEnumerable<Qso> qsos)
@@ -144,15 +160,15 @@ public static class AdifImportService
     }
 }
 
-public readonly record struct AdifImportOptions(DatabaseProvider Provider = DatabaseProvider.Sqlite, string? ConnectionString = null, string? DefaultStationCall = null)
+public readonly record struct AdifImportOptions(DatabaseProvider Provider = DatabaseProvider.Sqlite, string? ConnectionString = null, string? DefaultStationCallSign = null)
 {
     public string ConnectionString { get; } = string.IsNullOrWhiteSpace(ConnectionString)
         ? string.Empty
         : ConnectionString;
 
-    public string DefaultStationCall { get; } = string.IsNullOrWhiteSpace(DefaultStationCall)
+    public string DefaultStationCallSign { get; } = string.IsNullOrWhiteSpace(DefaultStationCallSign)
         ? string.Empty
-        : DefaultStationCall.Trim();
+        : DefaultStationCallSign.Trim();
 }
 
 public readonly record struct AdifImportResult(int ParsedCount, int SavedChanges, string FilePath, int DuplicateCount = 0);
