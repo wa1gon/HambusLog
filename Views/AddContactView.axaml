@@ -23,7 +23,7 @@
                            FontWeight="SemiBold" />
 
                 <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Call" />
-                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding InputCall, Mode=TwoWay}" Watermark="K1ABC" />
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding InputCall, Mode=TwoWay}" Watermark="K1ABC" TextChanged="OnUppercaseInputChanged" />
 
                 <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Date (YYYYMMDD)" />
                 <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding InputDate, Mode=TwoWay}" />

@@ -526,7 +526,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     public string ClusterCallsign
     {
         get => _clusterCallsign;
-        set => SetProperty(ref _clusterCallsign, value ?? string.Empty);
+        set => SetProperty(ref _clusterCallsign, (value ?? string.Empty).ToUpperInvariant());
     }
 
     public string ClusterPassword

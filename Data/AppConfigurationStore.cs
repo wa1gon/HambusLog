@@ -334,7 +334,8 @@ public static class AppConfigurationStore
                 [
                     new ContestFieldRequirementConfig { Key = "rst_sent", Label = "RST Sent" },
                     new ContestFieldRequirementConfig { Key = "rst_recv", Label = "RST Rec" },
-                    new ContestFieldRequirementConfig { Key = "exchange", Label = "State / County" }
+                    new ContestFieldRequirementConfig { Key = "state", Label = "State" },
+                    new ContestFieldRequirementConfig { Key = "county", Label = "County", DetailFieldName = "County" }
                 ]
             },
             new ContestDefinitionConfig

@@ -206,6 +206,7 @@ public sealed class LogInputViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowCounty));
         OnPropertyChanged(nameof(ShowFieldDaySection));
         OnPropertyChanged(nameof(ShowFieldDayClass));
+        EnforceArkansasCountyRule();
     }
 
     public bool IsNormalContest => CurrentContestDefinition.UsesNormalExchange;
@@ -249,8 +250,26 @@ public sealed class LogInputViewModel : ViewModelBase
     public string InputRec     { get => _inputRec;     set => SetProperty(ref _inputRec,     value); }
     public string InputCountry { get => _inputCountry; set => SetProperty(ref _inputCountry, (value ?? string.Empty).ToUpperInvariant()); }
     public string InputName    { get => _inputName;    set => SetProperty(ref _inputName,    value ?? string.Empty); }
-    public string InputState   { get => _inputState;   set => SetProperty(ref _inputState,   (value ?? string.Empty).ToUpperInvariant()); }
-    public string InputCounty  { get => _inputCounty;  set => SetProperty(ref _inputCounty,  (value ?? string.Empty).ToUpperInvariant()); }
+    public string InputState
+    {
+        get => _inputState;
+        set
+        {
+            if (SetProperty(ref _inputState, (value ?? string.Empty).ToUpperInvariant()))
+                EnforceArkansasCountyRule();
+        }
+    }
+
+    public string InputCounty
+    {
+        get => _inputCounty;
+        set
+        {
+            if (SetProperty(ref _inputCounty, (value ?? string.Empty).ToUpperInvariant()))
+                EnforceArkansasCountyRule();
+        }
+    }
+
     public string InputOperator { get => _inputOperator; set => SetProperty(ref _inputOperator, (value ?? string.Empty).ToUpperInvariant()); }
     public string InputExchange { get => _inputExchange; set => SetProperty(ref _inputExchange, (value ?? string.Empty).ToUpperInvariant()); }
     public string StationCallSign => _stationCallSign.Trim().ToUpperInvariant();
@@ -515,6 +534,28 @@ public sealed class LogInputViewModel : ViewModelBase
     {
         foreach (var requirement in EffectiveRequiredFields)
         {
+            if (IsArkansasQsoParty
+                && string.Equals(requirement.Key, ContestFieldKeys.County, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!IsInputStateArkansas())
+                    continue;
+
+                var county = InputCounty.Trim().ToUpperInvariant();
+                if (string.IsNullOrWhiteSpace(county))
+                {
+                    errorMessage = "County is required when State is AR.";
+                    return false;
+                }
+
+                if (!IsValidArkansasCountyCode(county))
+                {
+                    errorMessage = "County must be 4 letters (A-Z).";
+                    return false;
+                }
+
+                continue;
+            }
+
             if (string.Equals(requirement.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase))
             {
                 if (IsArkansasQsoParty)
@@ -569,6 +610,16 @@ public sealed class LogInputViewModel : ViewModelBase
     {
         foreach (var requirement in EffectiveRequiredFields)
         {
+            if (IsArkansasQsoParty
+                && string.Equals(requirement.Key, ContestFieldKeys.County, StringComparison.OrdinalIgnoreCase))
+            {
+                var county = InputCounty.Trim().ToUpperInvariant();
+                if (!string.IsNullOrWhiteSpace(county))
+                    qso.Details.Add(new QsoDetail { FieldName = "County", FieldValue = county });
+
+                continue;
+            }
+
             if (string.Equals(requirement.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase))
             {
                 if (TryParseUnifiedExchange(InputExchange, out var normalizedExchange, out var isCounty) && isCounty)
@@ -660,6 +711,9 @@ public sealed class LogInputViewModel : ViewModelBase
     private bool IsArkansasStation
         => string.Equals(_myStateProvince.Trim(), "AR", StringComparison.OrdinalIgnoreCase);
 
+    private bool IsInputStateArkansas()
+        => string.Equals(_inputState.Trim(), "AR", StringComparison.OrdinalIgnoreCase);
+
     private bool IsContestKeyMatch(string key)
     {
         return string.Equals(CurrentContestDefinition.Key, key, StringComparison.OrdinalIgnoreCase)
@@ -700,7 +754,8 @@ public sealed class LogInputViewModel : ViewModelBase
     [
         new ContestFieldRequirement(ContestFieldKeys.RstSent, "RST Sent"),
         new ContestFieldRequirement(ContestFieldKeys.RstRecv, "RST Rec"),
-        new ContestFieldRequirement(ContestFieldKeys.Exchange, "Exchange")
+        new ContestFieldRequirement(ContestFieldKeys.State, "State"),
+        new ContestFieldRequirement(ContestFieldKeys.County, "County")
     ];
 
     private string BuildExchangeHelpText()
@@ -719,6 +774,26 @@ public sealed class LogInputViewModel : ViewModelBase
             return "MA or PUL";
 
         return IsArkansasStation ? "PUL" : "MA";
+    }
+
+    private void EnforceArkansasCountyRule()
+    {
+        if (!IsArkansasQsoParty)
+            return;
+
+        if (IsInputStateArkansas())
+            return;
+
+        if (string.IsNullOrWhiteSpace(_inputCounty))
+            return;
+
+        _inputCounty = string.Empty;
+        OnPropertyChanged(nameof(InputCounty));
+    }
+
+    private static bool IsValidArkansasCountyCode(string county)
+    {
+        return county.Length == 4 && county.All(char.IsLetter);
     }
 
     private ConfigProfile ActiveConfigProfile()

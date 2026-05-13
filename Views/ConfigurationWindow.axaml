@@ -210,7 +210,8 @@
                                              MinHeight="30"
                                              HorizontalAlignment="Left"
                                              Padding="8,7"
-                                             FontWeight="SemiBold" />
+                                             FontWeight="SemiBold"
+                                             TextChanged="OnUppercaseInputChanged" />
 
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Location" VerticalAlignment="Center" FontWeight="SemiBold" />
                                     <TextBox Grid.Row="1" Grid.Column="1"
@@ -686,7 +687,7 @@
                                 <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ClusterTcpPort, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Padding="8,7" />
 
                                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Callsign" VerticalAlignment="Center" FontWeight="SemiBold" />
-                                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ClusterCallsign}" Watermark="K1ABC" Width="220" Padding="8,7" />
+                                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ClusterCallsign}" Watermark="K1ABC" Width="220" Padding="8,7" TextChanged="OnUppercaseInputChanged" />
 
                                 <TextBlock Grid.Row="3" Grid.Column="0" Text="Password" VerticalAlignment="Center" FontWeight="SemiBold" />
                                 <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ClusterPassword}" Width="220" Padding="8,7" />
