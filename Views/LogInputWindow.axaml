@@ -226,22 +226,17 @@
                                  Watermark="1D"
                                  TextChanged="OnUppercaseInputChanged" />
 
-                        <StackPanel Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="5" Spacing="4">
-                            <TextBlock IsVisible="{Binding HasContestError}"
-                                       Text="{Binding ContestError}"
-                                       Foreground="{DynamicResource AppErrorBrush}"
-                                       FontSize="11" />
+                        <TextBlock Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="5"
+                                   IsVisible="{Binding HasContestError}"
+                                   Text="{Binding ContestError}"
+                                   Foreground="{DynamicResource AppErrorBrush}"
+                                   FontSize="11" />
 
-                            <TextBlock IsVisible="{Binding !HasContestError}"
-                                       Text="Card #2 changes based on selected Log Type."
-                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                       FontSize="11" />
-
-                            <TextBlock IsVisible="{Binding ShowArkansasCountyHelp}"
-                                       Text="ARQP: Enter a 4-letter county code (e.g., PULK). If County is set, State auto-fills to AR."
-                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                       FontSize="11" />
-                        </StackPanel>
+                        <TextBlock Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="5"
+                                   IsVisible="{Binding !HasContestError}"
+                                   Text="Card #2 changes based on selected Log Type."
+                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                   FontSize="11" />
                     </Grid>
                 </Border>
             </StackPanel>

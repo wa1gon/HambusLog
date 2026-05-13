@@ -206,7 +206,6 @@ public sealed class LogInputViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowCounty));
         OnPropertyChanged(nameof(ShowFieldDaySection));
         OnPropertyChanged(nameof(ShowFieldDayClass));
-        OnPropertyChanged(nameof(ShowArkansasCountyHelp));
         EnforceArkansasCountyRule();
     }
 
@@ -227,7 +226,6 @@ public sealed class LogInputViewModel : ViewModelBase
     public bool ShowCounty => HasRequiredField(ContestFieldKeys.County) && ShowLegacyNormalExchangeFields;
     public bool ShowFieldDaySection => HasRequiredField(ContestFieldKeys.FieldDaySection);
     public bool ShowFieldDayClass => HasRequiredField(ContestFieldKeys.FieldDayClass);
-    public bool ShowArkansasCountyHelp => IsArkansasQsoParty && ShowCounty;
     public ContestDefinition CurrentContestDefinition => ContestCatalog.GetByKey(_selectedContestKey) ?? ContestCatalog.Get(ContestType.Normal);
     public string CurrentContestDisplayName => CurrentContestDefinition.DisplayName;
     public string CurrentContestAdifId => CurrentContestDefinition.AdifContestId;
@@ -783,15 +781,14 @@ public sealed class LogInputViewModel : ViewModelBase
         if (!IsArkansasQsoParty)
             return;
 
-        var county = _inputCounty?.Trim() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(county))
-            return;
-
         if (IsInputStateArkansas())
             return;
 
-        _inputState = "AR";
-        OnPropertyChanged(nameof(InputState));
+        if (string.IsNullOrWhiteSpace(_inputCounty))
+            return;
+
+        _inputCounty = string.Empty;
+        OnPropertyChanged(nameof(InputCounty));
     }
 
     private static bool IsValidArkansasCountyCode(string county)
