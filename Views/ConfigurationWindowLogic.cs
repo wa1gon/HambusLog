@@ -825,9 +825,15 @@ public partial class ConfigurationWindow
             _viewModel.ContestImportFilePath = files[0].Path.LocalPath;
     }
 
-    public void OnImportContestClicked(object? sender, RoutedEventArgs e)
+    public async void OnImportContestClicked(object? sender, RoutedEventArgs e)
     {
+        var progressWindow = new OperationProgressWindow("Importing Contests", "Validating contest definitions...");
+        progressWindow.Show(this);
+        await Task.Yield();
+
         var succeeded = _viewModel.ImportContestsFromFile();
+        progressWindow.Close();
+
         if (succeeded)
         {
             App.Toasts.ShowSuccess("Contest import complete", _viewModel.ImportedContestsSummary);

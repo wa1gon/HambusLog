@@ -174,37 +174,37 @@
                                    FontSize="11" />
 
                         <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
-                                   IsVisible="{Binding IsNormalContest}"
+                                   IsVisible="{Binding ShowLegacyNormalExchangeFields}"
                                    Text="Normal Contest Required Exchange"
                                    Foreground="{DynamicResource AppMutedForegroundBrush}"
                                    FontSize="11" />
 
                         <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
-                                   IsVisible="{Binding ShowUnifiedExchangeField}"
-                                   Text="Unified Exchange: 2 letters = out-of-state, 3 letters = Arkansas county"
+                                   IsVisible="{Binding ShowExchangeHelp}"
+                                   Text="{Binding ExchangeHelpText}"
                                    Foreground="{DynamicResource AppMutedForegroundBrush}"
                                    FontSize="11" />
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" IsVisible="{Binding IsNormalContest}" Classes="FieldLabel" Text="RST Sent" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="3" Grid.Column="1" IsVisible="{Binding IsNormalContest}" Text="{Binding InputSent}" Watermark="59" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" IsVisible="{Binding ShowRstSent}" Classes="FieldLabel" Text="RST Sent" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="3" Grid.Column="1" IsVisible="{Binding ShowRstSent}" Text="{Binding InputSent}" Watermark="59" />
 
-                        <TextBlock Grid.Row="3" Grid.Column="3" IsVisible="{Binding IsNormalContest}" Classes="FieldLabel" Text="RST Rec" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="3" Grid.Column="4" IsVisible="{Binding IsNormalContest}" Text="{Binding InputRec}" Watermark="59" />
+                        <TextBlock Grid.Row="3" Grid.Column="3" IsVisible="{Binding ShowRstRecv}" Classes="FieldLabel" Text="RST Rec" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="3" Grid.Column="4" IsVisible="{Binding ShowRstRecv}" Text="{Binding InputRec}" Watermark="59" />
 
-                        <TextBlock Grid.Row="4" Grid.Column="0" IsVisible="{Binding IsNormalContest}" Classes="FieldLabel" Text="Country" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="4" Grid.Column="1" IsVisible="{Binding IsNormalContest}" Text="{Binding InputCountry}" Watermark="USA" TextChanged="OnUppercaseInputChanged" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" IsVisible="{Binding ShowCountry}" Classes="FieldLabel" Text="Country" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="4" Grid.Column="1" IsVisible="{Binding ShowCountry}" Text="{Binding InputCountry}" Watermark="USA" TextChanged="OnUppercaseInputChanged" />
 
-                        <TextBlock Grid.Row="4" Grid.Column="3" IsVisible="{Binding IsNormalContest}" Classes="FieldLabel" Text="Name" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="4" Grid.Column="4" IsVisible="{Binding IsNormalContest}" Text="{Binding InputName}" Watermark="Darryl" />
+                        <TextBlock Grid.Row="4" Grid.Column="3" IsVisible="{Binding ShowName}" Classes="FieldLabel" Text="Name" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="4" Grid.Column="4" IsVisible="{Binding ShowName}" Text="{Binding InputName}" Watermark="Darryl" />
 
-                        <TextBlock Grid.Row="5" Grid.Column="0" IsVisible="{Binding IsNormalContest}" Classes="FieldLabel" Text="State" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="5" Grid.Column="1" IsVisible="{Binding ShowLegacyNormalExchangeFields}" Text="{Binding InputState}" Watermark="MA" TextChanged="OnUppercaseInputChanged" />
+                        <TextBlock Grid.Row="5" Grid.Column="0" IsVisible="{Binding ShowState}" Classes="FieldLabel" Text="State" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="5" Grid.Column="1" IsVisible="{Binding ShowState}" Text="{Binding InputState}" Watermark="MA" TextChanged="OnUppercaseInputChanged" />
 
-                        <TextBlock Grid.Row="5" Grid.Column="0" IsVisible="{Binding ShowUnifiedExchangeField}" Classes="FieldLabel" Text="Exchange" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="5" Grid.Column="1" IsVisible="{Binding ShowUnifiedExchangeField}" Text="{Binding InputExchange}" Watermark="MA or PUL" TextChanged="OnUppercaseInputChanged" />
+                        <TextBlock Grid.Row="5" Grid.Column="0" IsVisible="{Binding ShowExchange}" Classes="FieldLabel" Text="{Binding ExchangeLabel}" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="5" Grid.Column="1" IsVisible="{Binding ShowExchange}" Text="{Binding InputExchange}" Watermark="{Binding ExchangeWatermark}" TextChanged="OnUppercaseInputChanged" />
 
-                        <TextBlock Grid.Row="5" Grid.Column="3" IsVisible="{Binding ShowLegacyNormalExchangeFields}" Classes="FieldLabel" Text="County" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="5" Grid.Column="4" IsVisible="{Binding ShowLegacyNormalExchangeFields}" Text="{Binding InputCounty}" Watermark="MIDDLESEX" TextChanged="OnUppercaseInputChanged" />
+                        <TextBlock Grid.Row="5" Grid.Column="3" IsVisible="{Binding ShowCounty}" Classes="FieldLabel" Text="County" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="5" Grid.Column="4" IsVisible="{Binding ShowCounty}" Text="{Binding InputCounty}" Watermark="MIDDLESEX" TextChanged="OnUppercaseInputChanged" />
 
                         <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
                                    IsVisible="{Binding IsFieldDay}"
@@ -212,16 +212,16 @@
                                    Foreground="{DynamicResource AppMutedForegroundBrush}"
                                    FontSize="11" />
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" IsVisible="{Binding IsFieldDay}" Classes="FieldLabel" Text="Field Day Section" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" IsVisible="{Binding ShowFieldDaySection}" Classes="FieldLabel" Text="Field Day Section" VerticalAlignment="Center" />
                         <TextBox Grid.Row="3" Grid.Column="1"
-                                 IsVisible="{Binding IsFieldDay}"
+                                 IsVisible="{Binding ShowFieldDaySection}"
                                  Text="{Binding InputFieldDaySection}"
                                  Watermark="EMA"
                                  TextChanged="OnUppercaseInputChanged" />
 
-                        <TextBlock Grid.Row="3" Grid.Column="3" IsVisible="{Binding IsFieldDay}" Classes="FieldLabel" Text="Field Day Class" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="3" Grid.Column="3" IsVisible="{Binding ShowFieldDayClass}" Classes="FieldLabel" Text="Field Day Class" VerticalAlignment="Center" />
                         <TextBox Grid.Row="3" Grid.Column="4"
-                                 IsVisible="{Binding IsFieldDay}"
+                                 IsVisible="{Binding ShowFieldDayClass}"
                                  Text="{Binding InputFieldDayClass}"
                                  Watermark="1D"
                                  TextChanged="OnUppercaseInputChanged" />

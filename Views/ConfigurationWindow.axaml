@@ -201,7 +201,7 @@
                                 Background="{DynamicResource AppPanelBackgroundBrush}">
                             <StackPanel Spacing="10">
                                 <TextBlock Classes="CardHeading" Text="Station Identity" />
-                                <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="10">
+                                <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="10">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Station Callsign" VerticalAlignment="Center" FontWeight="SemiBold" />
                                     <TextBox Grid.Row="0" Grid.Column="1"
                                              Text="{Binding StationCallSign, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -217,6 +217,38 @@
                                              Text="{Binding MyLocation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              Watermark="Home, portable site, club station..."
                                              Width="420"
+                                             HorizontalAlignment="Left"
+                                             Padding="8,7" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="State / Prov" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                    <TextBox Grid.Row="2" Grid.Column="1"
+                                             Text="{Binding MyStateProvince, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Watermark="AR"
+                                             Width="120"
+                                             HorizontalAlignment="Left"
+                                             Padding="8,7" />
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Grid Square" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                    <TextBox Grid.Row="3" Grid.Column="1"
+                                             Text="{Binding MyGridSquare, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Watermark="EM48"
+                                             Width="140"
+                                             HorizontalAlignment="Left"
+                                             Padding="8,7" />
+
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Latitude" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                    <TextBox Grid.Row="4" Grid.Column="1"
+                                             Text="{Binding MyLatitude, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Watermark="35.01"
+                                             Width="140"
+                                             HorizontalAlignment="Left"
+                                             Padding="8,7" />
+
+                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Longitude" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                    <TextBox Grid.Row="5" Grid.Column="1"
+                                             Text="{Binding MyLongitude, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Watermark="-90.12"
+                                             Width="140"
                                              HorizontalAlignment="Left"
                                              Padding="8,7" />
                                 </Grid>

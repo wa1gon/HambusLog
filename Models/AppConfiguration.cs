@@ -56,6 +56,7 @@ public sealed class ConfigProfile
     // ── Station / operator info ──────────────────────────────────────
     public string StationCallSign { get; set; } = string.Empty;
     public string MyLocation { get; set; } = string.Empty;
+    public string MyStateProvince { get; set; } = string.Empty;
     public string MyGridSquare { get; set; } = string.Empty;
     public string MyLatitude { get; set; } = string.Empty;
     public string MyLongitude { get; set; } = string.Empty;

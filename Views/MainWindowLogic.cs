@@ -382,6 +382,13 @@ public partial class MainWindow
             profile.ConnectionString,
             profile.StationCallSign);
 
+        var progressWindow = new OperationProgressWindow("Importing JADE", $"Reading {Path.GetFileName(path)}...");
+        var owner = GetPreferredDialogOwner();
+        if (owner is not null)
+            progressWindow.Show(owner);
+        else
+            progressWindow.Show();
+
         try
         {
             var imported = await HamBusLog.Wa1gonLib.Exchange.JadeTransferService.ImportFromFileAsync(path, jadeImportOptions);
@@ -413,6 +420,10 @@ public partial class MainWindow
         {
             App.Toasts.ShowError("JADE import failed", ex.Message);
         }
+        finally
+        {
+            progressWindow.Close();
+        }
     }
 
     private async Task ExportAdifAsync()
@@ -435,6 +446,13 @@ public partial class MainWindow
             return;
 
         var path = file.Path.LocalPath;
+        var progressWindow = new OperationProgressWindow("Exporting ADIF", $"Writing {Path.GetFileName(path)}...");
+        var owner = GetPreferredDialogOwner();
+        if (owner is not null)
+            progressWindow.Show(owner);
+        else
+            progressWindow.Show();
+
         try
         {
             var exported = await AdifExportService.ExportToFileAsync(path);
@@ -444,6 +462,10 @@ public partial class MainWindow
         catch (Exception ex)
         {
             App.Toasts.ShowError("ADIF export failed", ex.Message);
+        }
+        finally
+        {
+            progressWindow.Close();
         }
     }
 
@@ -467,6 +489,13 @@ public partial class MainWindow
             return;
 
         var path = file.Path.LocalPath;
+        var progressWindow = new OperationProgressWindow("Exporting JADE", $"Writing {Path.GetFileName(path)}...");
+        var owner = GetPreferredDialogOwner();
+        if (owner is not null)
+            progressWindow.Show(owner);
+        else
+            progressWindow.Show();
+
         try
         {
             var exported = await HamBusLog.Wa1gonLib.Exchange.JadeTransferService.ExportToFileAsync(path);
@@ -476,6 +505,10 @@ public partial class MainWindow
         catch (Exception ex)
         {
             App.Toasts.ShowError("JADE export failed", ex.Message);
+        }
+        finally
+        {
+            progressWindow.Close();
         }
     }
 
@@ -499,6 +532,13 @@ public partial class MainWindow
             return;
 
         var path = file.Path.LocalPath;
+        var progressWindow = new OperationProgressWindow("Exporting JADE Schema", $"Writing {Path.GetFileName(path)}...");
+        var owner = GetPreferredDialogOwner();
+        if (owner is not null)
+            progressWindow.Show(owner);
+        else
+            progressWindow.Show();
+
         try
         {
             await HamBusLog.Wa1gonLib.Exchange.JadeTransferService.ExportSchemaToFileAsync(path);
@@ -508,6 +548,10 @@ public partial class MainWindow
         catch (Exception ex)
         {
             App.Toasts.ShowError("JADE schema export failed", ex.Message);
+        }
+        finally
+        {
+            progressWindow.Close();
         }
     }
 
@@ -531,6 +575,13 @@ public partial class MainWindow
             return;
 
         var path = file.Path.LocalPath;
+        var progressWindow = new OperationProgressWindow("Exporting JADE Example", $"Writing {Path.GetFileName(path)}...");
+        var owner = GetPreferredDialogOwner();
+        if (owner is not null)
+            progressWindow.Show(owner);
+        else
+            progressWindow.Show();
+
         try
         {
             await HamBusLog.Wa1gonLib.Exchange.JadeTransferService.ExportExampleToFileAsync(path);
@@ -540,6 +591,10 @@ public partial class MainWindow
         catch (Exception ex)
         {
             App.Toasts.ShowError("JADE example export failed", ex.Message);
+        }
+        finally
+        {
+            progressWindow.Close();
         }
     }
 

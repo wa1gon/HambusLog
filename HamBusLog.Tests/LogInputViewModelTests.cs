@@ -160,7 +160,7 @@ public sealed class LogInputViewModelTests
 
         Assert.NotNull(qso);
         Assert.Equal(string.Empty, error);
-        Assert.Equal("ARRL-FD", qso!.ContestId);
+        Assert.Equal("ARRL-FIELD-DAY", qso!.ContestId);
         Assert.Equal(string.Empty, qso!.RstSent);
         Assert.Equal(string.Empty, qso.RstRcvd);
         Assert.Contains(qso.Details, d => d.FieldName == "Section" && d.FieldValue == "EMA");
@@ -179,4 +179,3 @@ public sealed class LogInputViewModelTests
             DateTime.UtcNow));
     }
 }
-

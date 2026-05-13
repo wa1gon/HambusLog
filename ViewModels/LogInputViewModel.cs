@@ -49,6 +49,7 @@ public sealed class LogInputViewModel : ViewModelBase
     // ----- station / operator config -----
     private string _stationCallSign = string.Empty;
     private string _myLocation = string.Empty;
+    private string _myStateProvince = string.Empty;
     private string _myGridSquare = string.Empty;
     private string _myLatitude = string.Empty;
     private string _myLongitude = string.Empty;
@@ -192,6 +193,11 @@ public sealed class LogInputViewModel : ViewModelBase
         OnPropertyChanged(nameof(CurrentContestDefinition));
         OnPropertyChanged(nameof(CurrentContestDisplayName));
         OnPropertyChanged(nameof(CurrentContestAdifId));
+        OnPropertyChanged(nameof(ShowExchange));
+        OnPropertyChanged(nameof(ExchangeLabel));
+        OnPropertyChanged(nameof(ExchangeHelpText));
+        OnPropertyChanged(nameof(ShowExchangeHelp));
+        OnPropertyChanged(nameof(ExchangeWatermark));
     }
 
     public bool IsNormalContest => CurrentContestDefinition.UsesNormalExchange;
@@ -200,9 +206,14 @@ public sealed class LogInputViewModel : ViewModelBase
         .Any(x => string.Equals(x.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase));
     public bool ShowLegacyNormalExchangeFields => IsNormalContest && !UsesUnifiedExchange;
     public bool ShowUnifiedExchangeField => UsesUnifiedExchange;
+    public bool ShowExchange => ShowUnifiedExchangeField;
     public ContestDefinition CurrentContestDefinition => ContestCatalog.GetByKey(_selectedContestKey) ?? ContestCatalog.Get(ContestType.Normal);
     public string CurrentContestDisplayName => CurrentContestDefinition.DisplayName;
     public string CurrentContestAdifId => CurrentContestDefinition.AdifContestId;
+    public string ExchangeLabel => IsArkansasQsoParty ? "State / County" : "Exchange";
+    public string ExchangeHelpText => BuildExchangeHelpText();
+    public bool ShowExchangeHelp => IsArkansasQsoParty && ShowUnifiedExchangeField;
+    public string ExchangeWatermark => BuildExchangeWatermark();
 
     public string InputCall
     {
@@ -486,6 +497,14 @@ public sealed class LogInputViewModel : ViewModelBase
         {
             if (string.Equals(requirement.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase))
             {
+                if (IsArkansasQsoParty)
+                {
+                    if (!TryValidateArkansasQsoPartyExchange(out errorMessage))
+                        return false;
+
+                    continue;
+                }
+
                 if (TryParseUnifiedExchange(InputExchange, out _, out _))
                     continue;
 
@@ -598,6 +617,7 @@ public sealed class LogInputViewModel : ViewModelBase
         var p = ActiveConfigProfile();
         _stationCallSign    = p.StationCallSign;
         _myLocation         = p.MyLocation;
+        _myStateProvince    = p.MyStateProvince;
         _myGridSquare       = p.MyGridSquare;
         _myLatitude         = p.MyLatitude;
         _myLongitude        = p.MyLongitude;
@@ -607,6 +627,66 @@ public sealed class LogInputViewModel : ViewModelBase
         _myFieldDayClass    = p.MyFieldDayClass;
         InputOperator = StationCallSign;
         OnPropertyChanged(nameof(StationCallSign));
+    }
+
+    private bool IsArkansasQsoParty
+        => IsContestKeyMatch("AR-QSO-PARTY") || IsContestKeyMatch("ARQP");
+
+    private bool IsArkansasStation
+        => string.Equals(_myStateProvince.Trim(), "AR", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsContestKeyMatch(string key)
+    {
+        return string.Equals(CurrentContestDefinition.Key, key, StringComparison.OrdinalIgnoreCase)
+               || string.Equals(CurrentContestDefinition.AdifContestId, key, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool TryValidateArkansasQsoPartyExchange(out string errorMessage)
+    {
+        if (!TryParseUnifiedExchange(InputExchange, out var normalized, out _))
+        {
+            errorMessage = "Exchange must be 2 letters (state/province) or 3 letters (Arkansas county).";
+            return false;
+        }
+
+        if (IsArkansasStation)
+        {
+            if (normalized.Length != 3)
+            {
+                errorMessage = "In-state exchange must be a 3-letter Arkansas county.";
+                return false;
+            }
+
+            errorMessage = string.Empty;
+            return true;
+        }
+
+        if (normalized.Length != 2)
+        {
+            errorMessage = "Out-of-state exchange must be a 2-letter state/province.";
+            return false;
+        }
+
+        errorMessage = string.Empty;
+        return true;
+    }
+
+    private string BuildExchangeHelpText()
+    {
+        if (!IsArkansasQsoParty)
+            return string.Empty;
+
+        return IsArkansasStation
+            ? "In-state exchange: 3-letter Arkansas county (e.g., PUL)."
+            : "Out-of-state exchange: 2-letter state/province (e.g., MA).";
+    }
+
+    private string BuildExchangeWatermark()
+    {
+        if (!IsArkansasQsoParty)
+            return "MA or PUL";
+
+        return IsArkansasStation ? "PUL" : "MA";
     }
 
     private ConfigProfile ActiveConfigProfile()
