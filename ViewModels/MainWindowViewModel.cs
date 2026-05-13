@@ -313,10 +313,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         var mode = primary.Mode == "-" ? string.Empty : $" {primary.Mode}";
-        var model = primary.RigModel == "-" ? string.Empty : $" model {primary.RigModel}";
         var endpoint = primary.ListenPort == "-" ? string.Empty : $" port {primary.ListenPort}";
         var frequency = primary.FrequencyMhz == "-" ? string.Empty : $" {primary.FrequencyMhz} MHz";
-        RadioStatusSummary = $"Rig: {primary.Label}{model}{endpoint}{frequency}{mode} - {primary.Status}";
+        RadioStatusSummary = $"Rig: {primary.Label}{endpoint}{frequency}{mode} - {primary.Status}";
     }
 
     public async Task ApplyFrequencyToSelectedRadioAsync()
