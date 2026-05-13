@@ -24,6 +24,7 @@ public static class AdifWriter
 
             // Core fields
             AppendField(sb, "CALL", qso.Call);
+            AppendField(sb, "STATION_CALLSIGN", qso.StationCallSign);
 
             if (hasBand)
                 AppendField(sb, "BAND", qso.Band);

@@ -79,7 +79,7 @@ public static class JadeTransferService
     {
         return new JsonObject
         {
-            ["required"] = new JsonArray("UUID", "CALL", "MY_CALL", "QSO_DATE", "BAND_OR_FREQ"),
+            ["required"] = new JsonArray("UUID", "CALL", "STATION_CALLSIGN", "QSO_DATE", "BAND_OR_FREQ"),
             ["date_format"] = "yyyyMMdd",
             ["time_format"] = "HHmm or HHmmss",
             ["freq_format"] = "MHz decimal string",
@@ -98,7 +98,7 @@ public static class JadeTransferService
         {
             Id = Guid.Parse("2f3dcb4f-0adb-4dfc-bf95-72d11b3761e4"),
             Call = "JA1ABC",
-            MyCall = "N0CALL",
+            StationCallSign = "N0CALL",
             QsoDate = DateTime.SpecifyKind(new DateTime(2026, 5, 2, 18, 30, 15), DateTimeKind.Utc),
             Band = "20M",
             Freq = 14.074m,
@@ -125,14 +125,14 @@ public static class JadeTransferService
             throw new FileNotFoundException("JADE file was not found.", fullPath);
 
         var json = await File.ReadAllTextAsync(fullPath, cancellationToken);
-        var records = ParseRecords(json);
+        var importOptions = ResolveOptions(options);
+        var records = ParseRecords(json, importOptions.DefaultStationCallSign);
         if (records.Count == 0)
             return 0;
 
         var qsos = records.Select((record, index) => FromJadeRecord(record, index + 1)).ToList();
         PrepareForPersistence(qsos);
 
-        var importOptions = ResolveOptions(options);
         await using var db = HamBusLogDbContextFactory.Create(importOptions.Provider, importOptions.ConnectionString);
         await db.Database.EnsureCreatedAsync(cancellationToken);
         var duplicateFilter = await QsoImportDuplicateDetector.FilterNewQsosAsync(db, qsos, cancellationToken);
@@ -145,7 +145,7 @@ public static class JadeTransferService
         return duplicateFilter.Accepted.Count;
     }
 
-    private static List<Dictionary<string, string>> ParseRecords(string json)
+    private static List<Dictionary<string, string>> ParseRecords(string json, string fallbackStationCallSign)
     {
         JsonNode? root;
         try
@@ -191,6 +191,9 @@ public static class JadeTransferService
                 fields[pair.Key] = pair.Value.ToString();
             }
 
+            if (!HasValue(fields, "STATION_CALLSIGN") && !string.IsNullOrWhiteSpace(fallbackStationCallSign))
+                fields["STATION_CALLSIGN"] = fallbackStationCallSign.Trim().ToUpperInvariant();
+
             ValidateRecord(fields, recordNumber, errors);
             list.Add(fields);
         }
@@ -215,8 +218,8 @@ public static class JadeTransferService
         if (!HasValue(fields, "CALL"))
             errors.Add($"Record {recordNumber}: CALL is required.");
 
-        if (!HasValue(fields, "MY_CALL"))
-            errors.Add($"Record {recordNumber}: MY_CALL is required.");
+        if (!HasValue(fields, "STATION_CALLSIGN"))
+            errors.Add($"Record {recordNumber}: STATION_CALLSIGN is required.");
 
         if (!fields.TryGetValue("QSO_DATE", out var qsoDate) || string.IsNullOrWhiteSpace(qsoDate))
         {
@@ -279,7 +282,7 @@ public static class JadeTransferService
         {
             ["UUID"] = qso.Id.ToString(),
             ["CALL"] = qso.Call,
-            ["MY_CALL"] = qso.MyCall,
+            ["STATION_CALLSIGN"] = qso.StationCallSign,
             ["QSO_DATE"] = qso.QsoDate.ToUniversalTime().ToString("yyyyMMdd", CultureInfo.InvariantCulture),
             ["TIME_ON"] = qso.QsoDate.ToUniversalTime().ToString("HHmmss", CultureInfo.InvariantCulture),
             ["BAND"] = qso.Band,
@@ -293,7 +296,7 @@ public static class JadeTransferService
             ["CONTEST-ID"] = qso.ContestId
         };
 
-        foreach (var detail in qso.Details)
+        foreach (var detail in qso.Details ?? [])
         {
             if (string.IsNullOrWhiteSpace(detail.FieldName) || string.IsNullOrWhiteSpace(detail.FieldValue))
                 continue;
@@ -303,7 +306,7 @@ public static class JadeTransferService
                 record[key] = detail.FieldValue;
         }
 
-        foreach (var qsl in qso.QslInfo)
+        foreach (var qsl in qso.QslInfo ?? [])
         {
             var service = qsl.QslService?.Trim().ToUpperInvariant();
             if (string.IsNullOrWhiteSpace(service))
@@ -359,7 +362,7 @@ public static class JadeTransferService
                         qso.Id = parsedId;
                     break;
                 case "CALL": qso.Call = value; break;
-                case "MY_CALL": qso.MyCall = value; break;
+                case "STATION_CALLSIGN": qso.StationCallSign = value; break;
                 case "BAND": qso.Band = value; break;
                 case "MODE": qso.Mode = value; break;
                 case "COUNTRY": qso.Country = value; break;
@@ -444,9 +447,15 @@ public static class JadeTransferService
             ? "Data Source=hambuslog.db"
             : profile.ConnectionString;
 
-        return new AdifImportOptions(options?.Provider ?? DatabaseProvider.Sqlite, connectionString);
+        var defaultStationCallSign = string.IsNullOrWhiteSpace(options?.DefaultStationCallSign)
+            ? profile.StationCallSign
+            : options!.Value.DefaultStationCallSign;
+
+        return new AdifImportOptions(options?.Provider ?? DatabaseProvider.Sqlite, connectionString, defaultStationCallSign);
     }
 }
+
+
 
 
 

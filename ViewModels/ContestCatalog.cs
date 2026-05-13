@@ -2,6 +2,7 @@ namespace HamBusLog.ViewModels;
 
 public static class ContestFieldKeys
 {
+    public const string Exchange = "exchange";
     public const string RstSent = "rst_sent";
     public const string RstRecv = "rst_recv";
     public const string Country = "country";

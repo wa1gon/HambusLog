@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ContestLicenseTool SHA256 Sample" type="DotNetProject" factoryName=".NET Project">
+    <option name="PROJECT_FILE_PATH" value="$PROJECT_DIR$/ContestLicenseTool/ContestLicenseTool.csproj" />
+    <option name="PROGRAM_PARAMETERS" value="sha256 --fields name=Name;state=State" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="PASS_PARENT_ENVS" value="true" />
+    <envs />
+    <method v="2" />
+  </configuration>
+</component>
+
+

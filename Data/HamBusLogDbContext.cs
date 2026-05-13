@@ -26,7 +26,7 @@ public sealed class HamBusLogDbContext : DbContext
 
             qso.Property(q => q.Id).ValueGeneratedOnAdd();
             qso.Property(q => q.Call).HasMaxLength(20).IsRequired();
-            qso.Property(q => q.MyCall).HasMaxLength(20);
+            qso.Property(q => q.StationCallSign).HasMaxLength(20);
             qso.Property(q => q.Band).HasMaxLength(10);
             qso.Property(q => q.Mode).HasMaxLength(20);
             qso.Property(q => q.Freq).HasPrecision(12, 6);

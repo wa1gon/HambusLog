@@ -1,0 +1,21 @@
+{
+  "contests": [
+    {
+      "key": "ARQP",
+      "group": {
+        "key": "ARQP",
+        "name": "Arkansas QSO Party"
+      },
+      "displayName": "Arkansas QSO Party (Unified In/Out)",
+      "adifContestId": "AR-QSO-PARTY",
+      "exchangeType": "normal",
+      "licenseKey": "full:REPLACE_WITH_SHARED_FULL_LICENSE",
+      "requiredFields": {
+        "rst_sent": "RST Sent",
+        "rst_recv": "RST Rec",
+        "exchange": "State/Province or Arkansas County"
+      }
+    }
+  ]
+}
+

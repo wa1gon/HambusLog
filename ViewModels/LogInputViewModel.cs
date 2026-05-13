@@ -23,6 +23,8 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _inputName    = string.Empty;
     private string _inputState   = string.Empty;
     private string _inputCounty  = string.Empty;
+    private string _inputOperator = string.Empty;
+    private string _inputExchange = string.Empty;
     private string _selectedContestKey = ContestCatalog.NormalKey;
 
     // ----- field day fields -----
@@ -45,8 +47,9 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _selectedProfile = "default";
 
     // ----- station / operator config -----
-    private string _myCall = string.Empty;
+    private string _stationCallSign = string.Empty;
     private string _myLocation = string.Empty;
+    private string _myStateProvince = string.Empty;
     private string _myGridSquare = string.Empty;
     private string _myLatitude = string.Empty;
     private string _myLongitude = string.Empty;
@@ -61,7 +64,6 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _activeRigMode = string.Empty;
     private string _activeRigFrequency = string.Empty;
     private bool _isActiveRigConnected;
-    private bool _keepInitialSpotValues;
     private ObservableCollection<ConnectedRadioOption> _availableConnectedRadios = [];
     private ConnectedRadioOption? _selectedConnectedRadio;
 
@@ -185,16 +187,54 @@ public sealed class LogInputViewModel : ViewModelBase
         OnPropertyChanged(nameof(SelectedContestDefinition));
         OnPropertyChanged(nameof(IsFieldDay));
         OnPropertyChanged(nameof(IsNormalContest));
+        OnPropertyChanged(nameof(UsesUnifiedExchange));
+        OnPropertyChanged(nameof(ShowLegacyNormalExchangeFields));
+        OnPropertyChanged(nameof(ShowUnifiedExchangeField));
         OnPropertyChanged(nameof(CurrentContestDefinition));
         OnPropertyChanged(nameof(CurrentContestDisplayName));
         OnPropertyChanged(nameof(CurrentContestAdifId));
+        OnPropertyChanged(nameof(ShowExchange));
+        OnPropertyChanged(nameof(ExchangeLabel));
+        OnPropertyChanged(nameof(ExchangeHelpText));
+        OnPropertyChanged(nameof(ShowExchangeHelp));
+        OnPropertyChanged(nameof(ExchangeWatermark));
+        OnPropertyChanged(nameof(ShowRstSent));
+        OnPropertyChanged(nameof(ShowRstRecv));
+        OnPropertyChanged(nameof(ShowCountry));
+        OnPropertyChanged(nameof(ShowName));
+        OnPropertyChanged(nameof(ShowState));
+        OnPropertyChanged(nameof(ShowCounty));
+        OnPropertyChanged(nameof(ShowFieldDaySection));
+        OnPropertyChanged(nameof(ShowFieldDayClass));
+        EnforceArkansasCountyRule();
     }
 
     public bool IsNormalContest => CurrentContestDefinition.UsesNormalExchange;
     public bool IsFieldDay => CurrentContestDefinition.UsesFieldDayExchange;
+    public IReadOnlyList<ContestFieldRequirement> EffectiveRequiredFields
+        => IsArkansasQsoParty ? ArkansasQsoPartyRequiredFields : CurrentContestDefinition.RequiredFields;
+    public bool UsesUnifiedExchange => EffectiveRequiredFields
+        .Any(x => string.Equals(x.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase));
+    public bool ShowLegacyNormalExchangeFields => IsNormalContest && !UsesUnifiedExchange;
+    public bool ShowUnifiedExchangeField => UsesUnifiedExchange;
+    public bool ShowExchange => ShowUnifiedExchangeField;
+    public bool ShowRstSent => HasRequiredField(ContestFieldKeys.RstSent);
+    public bool ShowRstRecv => HasRequiredField(ContestFieldKeys.RstRecv);
+    public bool ShowCountry => HasRequiredField(ContestFieldKeys.Country);
+    public bool ShowName => HasRequiredField(ContestFieldKeys.Name);
+    public bool ShowState => HasRequiredField(ContestFieldKeys.State) && ShowLegacyNormalExchangeFields;
+    public bool ShowCounty => HasRequiredField(ContestFieldKeys.County) && ShowLegacyNormalExchangeFields;
+    public bool ShowFieldDaySection => HasRequiredField(ContestFieldKeys.FieldDaySection);
+    public bool ShowFieldDayClass => HasRequiredField(ContestFieldKeys.FieldDayClass);
     public ContestDefinition CurrentContestDefinition => ContestCatalog.GetByKey(_selectedContestKey) ?? ContestCatalog.Get(ContestType.Normal);
     public string CurrentContestDisplayName => CurrentContestDefinition.DisplayName;
     public string CurrentContestAdifId => CurrentContestDefinition.AdifContestId;
+    public string ExchangeLabel => IsArkansasQsoParty
+        ? (IsArkansasStation ? "County" : "State")
+        : "Exchange";
+    public string ExchangeHelpText => BuildExchangeHelpText();
+    public bool ShowExchangeHelp => IsArkansasQsoParty && ShowUnifiedExchangeField;
+    public string ExchangeWatermark => BuildExchangeWatermark();
 
     public string InputCall
     {
@@ -210,8 +250,29 @@ public sealed class LogInputViewModel : ViewModelBase
     public string InputRec     { get => _inputRec;     set => SetProperty(ref _inputRec,     value); }
     public string InputCountry { get => _inputCountry; set => SetProperty(ref _inputCountry, (value ?? string.Empty).ToUpperInvariant()); }
     public string InputName    { get => _inputName;    set => SetProperty(ref _inputName,    value ?? string.Empty); }
-    public string InputState   { get => _inputState;   set => SetProperty(ref _inputState,   (value ?? string.Empty).ToUpperInvariant()); }
-    public string InputCounty  { get => _inputCounty;  set => SetProperty(ref _inputCounty,  (value ?? string.Empty).ToUpperInvariant()); }
+    public string InputState
+    {
+        get => _inputState;
+        set
+        {
+            if (SetProperty(ref _inputState, (value ?? string.Empty).ToUpperInvariant()))
+                EnforceArkansasCountyRule();
+        }
+    }
+
+    public string InputCounty
+    {
+        get => _inputCounty;
+        set
+        {
+            if (SetProperty(ref _inputCounty, (value ?? string.Empty).ToUpperInvariant()))
+                EnforceArkansasCountyRule();
+        }
+    }
+
+    public string InputOperator { get => _inputOperator; set => SetProperty(ref _inputOperator, (value ?? string.Empty).ToUpperInvariant()); }
+    public string InputExchange { get => _inputExchange; set => SetProperty(ref _inputExchange, (value ?? string.Empty).ToUpperInvariant()); }
+    public string StationCallSign => _stationCallSign.Trim().ToUpperInvariant();
     public string InputFieldDaySection
     {
         get => _inputFieldDaySection;
@@ -322,17 +383,21 @@ public sealed class LogInputViewModel : ViewModelBase
         var freq = decimal.TryParse(InputFreq, System.Globalization.NumberStyles.Any,
                        System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : 0m;
 
+        var normalizedState = InputState.Trim().ToUpperInvariant();
+        if (UsesUnifiedExchange && TryParseUnifiedExchange(InputExchange, out var normalizedExchange, out var isCounty) && !isCounty)
+            normalizedState = normalizedExchange;
+
         var qso = new Qso
         {
             Call    = InputCall.Trim().ToUpperInvariant(),
-            MyCall = _myCall.Trim().ToUpperInvariant(),
+            StationCallSign = _stationCallSign.Trim().ToUpperInvariant(),
             QsoDate = qsoDate,
             Band    = band,
             Mode    = mode,
             ContestId = CurrentContestAdifId,
             Freq    = freq,
             Country = InputCountry.Trim().ToUpperInvariant(),
-            State   = InputState.Trim().ToUpperInvariant(),
+            State   = normalizedState,
             RstSent = IsFieldDay ? string.Empty : InputSent.Trim(),
             RstRcvd = IsFieldDay ? string.Empty : InputRec.Trim(),
             Details = new List<QsoDetail>()
@@ -341,6 +406,11 @@ public sealed class LogInputViewModel : ViewModelBase
         // copy detail rows
         foreach (var row in Details)
             qso.Details.Add(new QsoDetail { FieldName = row.FieldName, FieldValue = row.FieldValue });
+
+        var operatorCall = string.IsNullOrWhiteSpace(InputOperator)
+            ? qso.StationCallSign
+            : InputOperator.Trim().ToUpperInvariant();
+        qso.Details.Add(new QsoDetail { FieldName = "OPERATOR", FieldValue = operatorCall });
 
         ApplyContestExchangeToQsoDetails(qso);
 
@@ -392,13 +462,13 @@ public sealed class LogInputViewModel : ViewModelBase
         if (!string.IsNullOrWhiteSpace(derivedMode))
             InputMode = derivedMode;
 
-        // Preserve the clicked spot values until the user explicitly applies rig values.
-        _keepInitialSpotValues = true;
+        // Always prefer live rig updates on the refresh cadence.
+        EnableAutoRadioPopulate();
     }
 
     public void EnableAutoRadioPopulate()
     {
-        _keepInitialSpotValues = false;
+        // No-op: live radio values are always applied when a connected rig is selected.
     }
 
     public void PrepareForNextLogEntry()
@@ -410,6 +480,8 @@ public sealed class LogInputViewModel : ViewModelBase
         InputName = string.Empty;
         InputState = string.Empty;
         InputCounty = string.Empty;
+        InputOperator = StationCallSign;
+        InputExchange = string.Empty;
         InputFieldDaySection = string.Empty;
         InputFieldDayClass = string.Empty;
     }
@@ -424,16 +496,17 @@ public sealed class LogInputViewModel : ViewModelBase
     public void RefreshSelectedRadioInputs()
     {
         RefreshActiveRigSnapshot();
-        if (_keepInitialSpotValues)
-            return;
-
         ApplySelectedRadioToInputs();
+    }
+
+    public void RefreshAutoFields()
+    {
+        RefreshSelectedRadioInputs();
+        InputTimeOn = DateTime.UtcNow.ToString("HHmm");
     }
 
     public void ApplySelectedRadioToInputs()
     {
-        if (_keepInitialSpotValues)
-            return;
 
         var state = SelectedConnectedRadio?.State;
         if (state is null || !state.IsConnected)
@@ -459,8 +532,47 @@ public sealed class LogInputViewModel : ViewModelBase
 
     private bool TryValidateContestRequiredFields(out string errorMessage)
     {
-        foreach (var requirement in CurrentContestDefinition.RequiredFields)
+        foreach (var requirement in EffectiveRequiredFields)
         {
+            if (IsArkansasQsoParty
+                && string.Equals(requirement.Key, ContestFieldKeys.County, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!IsInputStateArkansas())
+                    continue;
+
+                var county = InputCounty.Trim().ToUpperInvariant();
+                if (string.IsNullOrWhiteSpace(county))
+                {
+                    errorMessage = "County is required when State is AR.";
+                    return false;
+                }
+
+                if (!IsValidArkansasCountyCode(county))
+                {
+                    errorMessage = "County must be 4 letters (A-Z).";
+                    return false;
+                }
+
+                continue;
+            }
+
+            if (string.Equals(requirement.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase))
+            {
+                if (IsArkansasQsoParty)
+                {
+                    if (!TryValidateArkansasQsoPartyExchange(out errorMessage))
+                        return false;
+
+                    continue;
+                }
+
+                if (TryParseUnifiedExchange(InputExchange, out _, out _))
+                    continue;
+
+                errorMessage = "Exchange must be 2 letters (outside Arkansas) or 3 letters (Arkansas county).";
+                return false;
+            }
+
             if (!string.IsNullOrWhiteSpace(GetContestFieldValue(requirement.Key)))
                 continue;
 
@@ -476,6 +588,7 @@ public sealed class LogInputViewModel : ViewModelBase
     {
         return key switch
         {
+            ContestFieldKeys.Exchange => InputExchange.Trim(),
             ContestFieldKeys.RstSent => InputSent.Trim(),
             ContestFieldKeys.RstRecv => InputRec.Trim(),
             ContestFieldKeys.Country => InputCountry.Trim(),
@@ -488,10 +601,33 @@ public sealed class LogInputViewModel : ViewModelBase
         };
     }
 
+    private bool HasRequiredField(string key)
+    {
+        return EffectiveRequiredFields.Any(x => string.Equals(x.Key, key, StringComparison.OrdinalIgnoreCase));
+    }
+
     private void ApplyContestExchangeToQsoDetails(Qso qso)
     {
-        foreach (var requirement in CurrentContestDefinition.RequiredFields)
+        foreach (var requirement in EffectiveRequiredFields)
         {
+            if (IsArkansasQsoParty
+                && string.Equals(requirement.Key, ContestFieldKeys.County, StringComparison.OrdinalIgnoreCase))
+            {
+                var county = InputCounty.Trim().ToUpperInvariant();
+                if (!string.IsNullOrWhiteSpace(county))
+                    qso.Details.Add(new QsoDetail { FieldName = "County", FieldValue = county });
+
+                continue;
+            }
+
+            if (string.Equals(requirement.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase))
+            {
+                if (TryParseUnifiedExchange(InputExchange, out var normalizedExchange, out var isCounty) && isCounty)
+                    qso.Details.Add(new QsoDetail { FieldName = "County", FieldValue = normalizedExchange });
+
+                continue;
+            }
+
             if (string.IsNullOrWhiteSpace(requirement.DetailFieldName))
                 continue;
 
@@ -502,6 +638,21 @@ public sealed class LogInputViewModel : ViewModelBase
             var normalized = requirement.Key == ContestFieldKeys.Name ? value : value.ToUpperInvariant();
             qso.Details.Add(new QsoDetail { FieldName = requirement.DetailFieldName, FieldValue = normalized });
         }
+    }
+
+    private static bool TryParseUnifiedExchange(string? rawExchange, out string normalized, out bool isCounty)
+    {
+        normalized = (rawExchange ?? string.Empty).Trim().ToUpperInvariant();
+        isCounty = false;
+
+        if (normalized.Length != 2 && normalized.Length != 3)
+            return false;
+
+        if (!normalized.All(char.IsLetter))
+            return false;
+
+        isCounty = normalized.Length == 3;
+        return true;
     }
 
     private void ValidateBand()
@@ -540,8 +691,9 @@ public sealed class LogInputViewModel : ViewModelBase
     private void LoadStationConfig()
     {
         var p = ActiveConfigProfile();
-        _myCall             = p.MyCall;
+        _stationCallSign    = p.StationCallSign;
         _myLocation         = p.MyLocation;
+        _myStateProvince    = p.MyStateProvince;
         _myGridSquare       = p.MyGridSquare;
         _myLatitude         = p.MyLatitude;
         _myLongitude        = p.MyLongitude;
@@ -549,6 +701,99 @@ public sealed class LogInputViewModel : ViewModelBase
         _myCqZone           = p.MyCqZone;
         _myFieldDaySection  = p.MyFieldDaySection;
         _myFieldDayClass    = p.MyFieldDayClass;
+        InputOperator = StationCallSign;
+        OnPropertyChanged(nameof(StationCallSign));
+    }
+
+    private bool IsArkansasQsoParty
+        => IsContestKeyMatch("AR-QSO-PARTY") || IsContestKeyMatch("ARQP");
+
+    private bool IsArkansasStation
+        => string.Equals(_myStateProvince.Trim(), "AR", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsInputStateArkansas()
+        => string.Equals(_inputState.Trim(), "AR", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsContestKeyMatch(string key)
+    {
+        return string.Equals(CurrentContestDefinition.Key, key, StringComparison.OrdinalIgnoreCase)
+               || string.Equals(CurrentContestDefinition.AdifContestId, key, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool TryValidateArkansasQsoPartyExchange(out string errorMessage)
+    {
+        if (!TryParseUnifiedExchange(InputExchange, out var normalized, out _))
+        {
+            errorMessage = "Exchange must be 2 letters (state/province) or 3 letters (Arkansas county).";
+            return false;
+        }
+
+        if (IsArkansasStation)
+        {
+            if (normalized.Length != 3)
+            {
+                errorMessage = "In-state exchange must be a 3-letter Arkansas county.";
+                return false;
+            }
+
+            errorMessage = string.Empty;
+            return true;
+        }
+
+        if (normalized.Length != 2)
+        {
+            errorMessage = "Out-of-state exchange must be a 2-letter state/province.";
+            return false;
+        }
+
+        errorMessage = string.Empty;
+        return true;
+    }
+
+    private static readonly IReadOnlyList<ContestFieldRequirement> ArkansasQsoPartyRequiredFields =
+    [
+        new ContestFieldRequirement(ContestFieldKeys.RstSent, "RST Sent"),
+        new ContestFieldRequirement(ContestFieldKeys.RstRecv, "RST Rec"),
+        new ContestFieldRequirement(ContestFieldKeys.State, "State"),
+        new ContestFieldRequirement(ContestFieldKeys.County, "County")
+    ];
+
+    private string BuildExchangeHelpText()
+    {
+        if (!IsArkansasQsoParty)
+            return string.Empty;
+
+        return IsArkansasStation
+            ? "In-state exchange: Arkansas county (3 letters, e.g., PUL)."
+            : "Out-of-state exchange: state/province (2 letters, e.g., MA).";
+    }
+
+    private string BuildExchangeWatermark()
+    {
+        if (!IsArkansasQsoParty)
+            return "MA or PUL";
+
+        return IsArkansasStation ? "PUL" : "MA";
+    }
+
+    private void EnforceArkansasCountyRule()
+    {
+        if (!IsArkansasQsoParty)
+            return;
+
+        if (IsInputStateArkansas())
+            return;
+
+        if (string.IsNullOrWhiteSpace(_inputCounty))
+            return;
+
+        _inputCounty = string.Empty;
+        OnPropertyChanged(nameof(InputCounty));
+    }
+
+    private static bool IsValidArkansasCountyCode(string county)
+    {
+        return county.Length == 4 && county.All(char.IsLetter);
     }
 
     private ConfigProfile ActiveConfigProfile()

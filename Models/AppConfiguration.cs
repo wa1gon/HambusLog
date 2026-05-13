@@ -50,11 +50,13 @@ public sealed class ConfigProfile
     public string InputSelectionBackgroundColor { get; set; } = "#1D4ED8";
     public string InputSelectionForegroundColor { get; set; } = "#FFFFFF";
     public string MutedForegroundColor { get; set; } = "#94A3B8";
+    public string HoverFontColor { get; set; } = "#FFFFFF";
     public string ConnectionString { get; set; } = "Data Source=hambuslog.db";
 
     // ── Station / operator info ──────────────────────────────────────
-    public string MyCall { get; set; } = string.Empty;
+    public string StationCallSign { get; set; } = string.Empty;
     public string MyLocation { get; set; } = string.Empty;
+    public string MyStateProvince { get; set; } = string.Empty;
     public string MyGridSquare { get; set; } = string.Empty;
     public string MyLatitude { get; set; } = string.Empty;
     public string MyLongitude { get; set; } = string.Empty;

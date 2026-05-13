@@ -290,6 +290,15 @@ public static class AppConfigurationStore
         if (normalized.Count == 0)
             normalized = BuildDefaultContests();
 
+        var defaults = BuildDefaultContests();
+        foreach (var contest in defaults)
+        {
+            if (seenKeys.Contains(contest.Key))
+                continue;
+
+            normalized.Add(contest);
+        }
+
         config.Contests = normalized;
     }
 
@@ -316,9 +325,24 @@ public static class AppConfigurationStore
             },
             new ContestDefinitionConfig
             {
+                Key = "AR-QSO-PARTY",
+                DisplayName = "AR-QSO-PARTY Arkansas QSO Party",
+                AdifContestId = "AR-QSO-PARTY",
+                LicenseKey = string.Empty,
+                ExchangeType = "normal",
+                RequiredFields =
+                [
+                    new ContestFieldRequirementConfig { Key = "rst_sent", Label = "RST Sent" },
+                    new ContestFieldRequirementConfig { Key = "rst_recv", Label = "RST Rec" },
+                    new ContestFieldRequirementConfig { Key = "state", Label = "State" },
+                    new ContestFieldRequirementConfig { Key = "county", Label = "County", DetailFieldName = "County" }
+                ]
+            },
+            new ContestDefinitionConfig
+            {
                 Key = "ARRL-FD",
                 DisplayName = "ARRL Field Day",
-                AdifContestId = "ARRL-FD",
+                AdifContestId = "ARRL-FIELD-DAY",
                 LicenseKey = string.Empty,
                 ExchangeType = "fieldday",
                 RequiredFields =

@@ -2,13 +2,13 @@
 
 using Avalonia.Media;
 using Avalonia.Threading;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
     public MenuNode[] MenuItems { get; } =
     [
-        new MenuNode("Grid"),
-        new MenuNode("Add New Contact"),
         new MenuNode("File", false, // Set default to collapsed
             new MenuNode("Open/Reopen Grid"),
             new MenuNode("Import ADIF"),
@@ -20,14 +20,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             new MenuNode("Export JADE Example"),
             new MenuNode("Remove Dups"),
             new MenuNode("Watch List")),
+        new MenuNode("Grid"),
         new MenuNode("DX Cluster"),
         new MenuNode("Configuration"),
-        new MenuNode("Callbook"),
         new MenuNode("Awards"),
         new MenuNode("eLogs"),
-        new MenuNode("RecCall"),
-        new MenuNode("Net View"),
-        new MenuNode("Help")
+        new MenuNode("Help", false,
+            new MenuNode("About"),
+            new MenuNode("Credits"))
     ];
 
     private MenuNode? _selectedMenuItem;
@@ -126,16 +126,27 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                     ControlMode = string.IsNullOrWhiteSpace(value.Mode) || value.Mode == "-"
                         ? string.Empty
                         : value.Mode;
+
+                    var nextFrequency = string.IsNullOrWhiteSpace(value.FrequencyMhz) || value.FrequencyMhz == "-"
+                        ? string.Empty
+                        : value.FrequencyMhz;
+                    ControlFrequencyMhz = NormalizeFrequencyForEditor(nextFrequency);
                 }
                 else
                 {
                     if (string.IsNullOrWhiteSpace(_controlMode) && !string.IsNullOrWhiteSpace(value.Mode) && value.Mode != "-")
                         ControlMode = value.Mode;
+
+                    if (string.IsNullOrWhiteSpace(_controlFrequencyMhz)
+                        && !string.IsNullOrWhiteSpace(value.FrequencyMhz)
+                        && value.FrequencyMhz != "-")
+                        ControlFrequencyMhz = NormalizeFrequencyForEditor(value.FrequencyMhz);
                 }
             }
             else if (selectedRadioChanged)
             {
                 ControlMode = string.Empty;
+                ControlFrequencyMhz = string.Empty;
             }
 
             var newCanControl = value?.IsConnected == true;
@@ -208,27 +219,25 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             .ToDictionary(x => x.Key, x => x.Last(), StringComparer.OrdinalIgnoreCase);
 
         var activeRadios = rigctld.Radios.Where(r => r.IsActive).ToList();
-        var activeRadioNames = new HashSet<string>(activeRadios.Select(r => r.RadioName), StringComparer.OrdinalIgnoreCase);
 
         var rows = activeRadios
             .Select((radio, index) =>
             {
+                var rigModelNumber = GetRigModelNumberForRadio(rigctld, radio.RadioName);
                 if (snapshotByName.TryGetValue(radio.RadioName, out var state))
-                    return BuildStatusRow(index + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, radio.Port, state.Mode, state.IsConnected, state.Error);
+                    return BuildStatusRow(index + 1, state.Label, state.RadioName, rigModelNumber, radio.Port, state.FrequencyMhz, state.Mode, state.IsConnected, state.Error);
 
-                return BuildStatusRow(index + 1, radio.RadioName, radio.RadioName, rigctld.ActiveRigNum, radio.Port, null, false, $"Not connected ({radio.Host}:{radio.Port})");
+                return BuildStatusRow(index + 1, radio.RadioName, radio.RadioName, rigModelNumber, radio.Port, null, null, false, $"Not connected ({radio.Host}:{radio.Port})");
             })
             .ToList();
 
         foreach (var state in snapshot)
         {
-            if (!activeRadioNames.Contains(state.RadioName))
-                continue;
-
             if (rows.Any(x => string.Equals(x.RadioName, state.RadioName, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
-            rows.Add(BuildStatusRow(rows.Count + 1, state.Label, state.RadioName, rigctld.ActiveRigNum, null, state.Mode, state.IsConnected, state.Error));
+            var rigModelNumber = GetRigModelNumberForRadio(rigctld, state.RadioName);
+            rows.Add(BuildStatusRow(rows.Count + 1, state.Label, state.RadioName, rigModelNumber, null, state.FrequencyMhz, state.Mode, state.IsConnected, state.Error));
         }
 
         // Update items in-place to avoid resetting DataGrid selection and scroll position
@@ -304,10 +313,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         var mode = primary.Mode == "-" ? string.Empty : $" {primary.Mode}";
-        var model = primary.RigModel == "-" ? string.Empty : $" model {primary.RigModel}";
         var endpoint = primary.ListenPort == "-" ? string.Empty : $" port {primary.ListenPort}";
-        var summary = $"Rig: {primary.Label}{model}{endpoint}{mode} - {primary.Status}";
-        RadioStatusSummary = summary;
+        var frequency = primary.FrequencyMhz == "-" ? string.Empty : $" {primary.FrequencyMhz} MHz";
+        RadioStatusSummary = $"Rig: {primary.Label}{endpoint}{frequency}{mode} - {primary.Status}";
     }
 
     public async Task ApplyFrequencyToSelectedRadioAsync()
@@ -392,35 +400,53 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         await ApplyModeToSelectedRadioAsync(mode);
     }
 
+    private static string NormalizeFrequencyForEditor(string? frequencyText)
+    {
+        if (string.IsNullOrWhiteSpace(frequencyText) || frequencyText == "-")
+            return string.Empty;
+
+        if (decimal.TryParse(frequencyText, NumberStyles.Number, CultureInfo.InvariantCulture, out var mhz) && mhz > 0)
+            return FormatFrequencyForEditor(mhz);
+
+        return frequencyText.Trim();
+    }
+
     private static string FormatFrequencyForEditor(decimal? mhz)
         => mhz is decimal value && value > 0
             ? value.ToString("0.000", CultureInfo.InvariantCulture)
             : string.Empty;
 
-     private static RadioConnectionStatusViewModel BuildStatusRow(
-         int rowNumber,
-         string label,
-          string radioName,
-          int? rigModelNumber,
-          int? listenPort,
-         string? mode,
-         bool isConnected,
-         string? error)
-     {
-         return new RadioConnectionStatusViewModel(
-             rowNumber,
-             label,
-             radioName,
-             rigModelNumber,
-             listenPort,
-             NormalizeModeForDisplay(mode),
-             isConnected,
-             isConnected
-                 ? "Connected"
-                 : string.IsNullOrWhiteSpace(error)
-                     ? "Not connected"
-                     : "Not connected: " + error);
-     }
+    private static string FormatFrequencyForStatus(decimal? mhz)
+        => mhz is decimal value && value > 0
+            ? value.ToString("0.000", CultureInfo.InvariantCulture)
+            : "-";
+
+    private static RadioConnectionStatusViewModel BuildStatusRow(
+        int rowNumber,
+        string label,
+        string radioName,
+        int? rigModelNumber,
+        int? listenPort,
+        decimal? frequencyMhz,
+        string? mode,
+        bool isConnected,
+        string? error)
+    {
+        return new RadioConnectionStatusViewModel(
+            rowNumber,
+            label,
+            radioName,
+            rigModelNumber,
+            listenPort,
+            FormatFrequencyForStatus(frequencyMhz),
+            NormalizeModeForDisplay(mode),
+            isConnected,
+            isConnected
+                ? "Connected"
+                : string.IsNullOrWhiteSpace(error)
+                    ? "Not connected"
+                    : "Not connected: " + error);
+    }
 
     private static string NormalizeModeForDisplay(string? mode)
     {
@@ -435,6 +461,16 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         };
     }
 
+    private static int? GetRigModelNumberForRadio(RigctldConfiguration rigctld, string radioName)
+    {
+        if (string.IsNullOrWhiteSpace(rigctld.ActiveRadioName))
+            return null;
+
+        return string.Equals(radioName, rigctld.ActiveRadioName, StringComparison.OrdinalIgnoreCase)
+            ? rigctld.ActiveRigNum
+            : null;
+    }
+
     public void Dispose()
     {
         _rigCatalogStore.PropertyChanged -= OnRigCatalogStorePropertyChanged;
@@ -444,19 +480,20 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
 public sealed class RadioConnectionStatusViewModel
 {
-    public RadioConnectionStatusViewModel(int rowNumber, string label, string radioName, int? rigModelNumber, int? listenPort, string mode, bool isConnected, string status)
+    public RadioConnectionStatusViewModel(int rowNumber, string label, string radioName, int? rigModelNumber, int? listenPort, string frequencyMhz, string mode, bool isConnected, string status)
     {
         RowNumber = rowNumber;
         Label = label;
         RadioName = radioName;
         RigModel = rigModelNumber?.ToString(CultureInfo.InvariantCulture) ?? "-";
         ListenPort = listenPort?.ToString(CultureInfo.InvariantCulture) ?? "-";
+        FrequencyMhz = frequencyMhz;
         Mode = mode;
         IsConnected = isConnected;
         Status = status;
         RowBackground = isConnected
-            ? new SolidColorBrush(Color.Parse("#1E3A2F"))   // dark green tint
-            : new SolidColorBrush(Color.Parse("#3A1E1E"));  // dark red tint
+            ? new SolidColorBrush(Color.Parse("#1E3A2F"))
+            : new SolidColorBrush(Color.Parse("#3A1E1E"));
         RowForeground = new SolidColorBrush(Colors.White);
     }
 
@@ -465,6 +502,7 @@ public sealed class RadioConnectionStatusViewModel
     public string RadioName { get; }
     public string RigModel { get; }
     public string ListenPort { get; }
+    public string FrequencyMhz { get; }
     public string Mode { get; }
     public bool IsConnected { get; }
     public string Status { get; }
@@ -486,7 +524,7 @@ public sealed class ActiveRadioOption
     public override string ToString() => Display;
 }
 
-public sealed class MenuNode
+public sealed class MenuNode : INotifyPropertyChanged
 {
     public MenuNode(string title, params MenuNode[] children)
         : this(title, false, children)
@@ -496,12 +534,35 @@ public sealed class MenuNode
     public MenuNode(string title, bool isExpanded, params MenuNode[] children)
     {
         Title = title;
-        IsExpanded = isExpanded;
+        _isExpanded = isExpanded;
         Children = children;
     }
 
     public string Title { get; }
-    public bool IsExpanded { get; set; }
+    private bool _isExpanded;
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set
+        {
+            if (value == _isExpanded)
+                return;
+
+            _isExpanded = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsCollapsed));
+            OnPropertyChanged(nameof(ShowCollapsedCaret));
+            OnPropertyChanged(nameof(ShowExpandedCaret));
+        }
+    }
+    public bool IsCollapsed => !_isExpanded;
+    public bool ShowCollapsedCaret => HasChildren && IsCollapsed;
+    public bool ShowExpandedCaret => HasChildren && IsExpanded;
     public MenuNode[] Children { get; }
     public bool HasChildren => Children.Length > 0;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

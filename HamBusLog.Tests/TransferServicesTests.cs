@@ -54,7 +54,7 @@ public sealed class TransferServicesTests : IDisposable
             {
                 Id = qsoId,
                 Call = "JA1ABC",
-                MyCall = "N0CALL",
+                StationCallSign = "N0CALL",
                 QsoDate = DateTime.SpecifyKind(new DateTime(2026, 5, 1, 1, 2, 3), DateTimeKind.Utc),
                 Band = "20M",
                 Mode = "CW",
@@ -103,7 +103,7 @@ public sealed class TransferServicesTests : IDisposable
             {
                 Id = Guid.Parse("2f3dcb4f-0adb-4dfc-bf95-72d11b3761e4"),
                 Call = "JA1ABC",
-                MyCall = "N0CALL",
+                StationCallSign = "N0CALL",
                 QsoDate = DateTime.SpecifyKind(new DateTime(2026, 5, 1, 1, 2, 3), DateTimeKind.Utc),
                 Band = "20M",
                 Mode = "CW",
@@ -163,7 +163,7 @@ public sealed class TransferServicesTests : IDisposable
                 {
                   "UUID": "not-a-guid",
                   "CALL": "",
-                  "MY_CALL": "N0CALL",
+                  "STATION_CALLSIGN": "N0CALL",
                   "QSO_DATE": "2026-05-02",
                   "TIME_ON": "250000",
                   "FREQ": "abc"
@@ -203,7 +203,7 @@ public sealed class TransferServicesTests : IDisposable
         var required = root["schema"]!["required"]!.AsArray().Select(x => x!.ToString()).ToList();
         Assert.Contains("UUID", required);
         Assert.Contains("CALL", required);
-        Assert.Contains("MY_CALL", required);
+        Assert.Contains("STATION_CALLSIGN", required);
         Assert.Contains("QSO_DATE", required);
         Assert.Contains("BAND_OR_FREQ", required);
     }
@@ -224,7 +224,7 @@ public sealed class TransferServicesTests : IDisposable
 
         var record = records[0]!.AsObject();
         Assert.Equal("JA1ABC", record["CALL"]?.ToString());
-        Assert.Equal("N0CALL", record["MY_CALL"]?.ToString());
+        Assert.Equal("N0CALL", record["STATION_CALLSIGN"]?.ToString());
         Assert.Equal("20260502", record["QSO_DATE"]?.ToString());
         Assert.Equal("183015", record["TIME_ON"]?.ToString());
         Assert.Equal("20M", record["BAND"]?.ToString());
@@ -247,6 +247,8 @@ public sealed class TransferServicesTests : IDisposable
         }
     }
 }
+
+
 
 
 

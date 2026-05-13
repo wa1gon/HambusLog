@@ -1,3 +1,4 @@
+using Avalonia.Controls;
 using Avalonia.Threading;
 
 namespace HamBusLog.Views;
@@ -808,6 +809,44 @@ public partial class ConfigurationWindow
             _viewModel.AdifDirectory = folders[0].Path.LocalPath;
     }
 
+    public async void OnBrowseContestImportFileClicked(object? sender, RoutedEventArgs e)
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = "Select contest import file",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("JSON files") { Patterns = ["*.json"] },
+                new Avalonia.Platform.Storage.FilePickerFileType("All files") { Patterns = ["*"] }
+            ]
+        });
+
+        if (files.Count > 0)
+            _viewModel.ContestImportFilePath = files[0].Path.LocalPath;
+    }
+
+    public async void OnImportContestClicked(object? sender, RoutedEventArgs e)
+    {
+        var progressWindow = new OperationProgressWindow("Importing Contests", "Validating contest definitions...");
+        progressWindow.Show(this);
+        await Task.Yield();
+
+        var succeeded = _viewModel.ImportContestsFromFile();
+        progressWindow.Close();
+
+        if (succeeded)
+        {
+            App.Toasts.ShowSuccess("Contest import complete", _viewModel.ImportedContestsSummary);
+            return;
+        }
+
+        var details = string.IsNullOrWhiteSpace(_viewModel.ContestImportStatus)
+            ? "Contest import failed."
+            : _viewModel.ContestImportStatus;
+        App.Toasts.ShowError("Contest import failed", details);
+    }
+
     public async void OnBrowseDatabaseDirectoryClicked(object? sender, RoutedEventArgs e)
     {
         if (!StorageProvider.CanPickFolder)
@@ -877,5 +916,20 @@ public partial class ConfigurationWindow
         {
             _syncingActiveRadiosSelection = false;
         }
+    }
+
+    public void OnUppercaseInputChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox textBox)
+            return;
+
+        var current = textBox.Text ?? string.Empty;
+        var upper = current.ToUpperInvariant();
+        if (string.Equals(current, upper, StringComparison.Ordinal))
+            return;
+
+        var caret = textBox.CaretIndex;
+        textBox.Text = upper;
+        textBox.CaretIndex = Math.Min(caret, upper.Length);
     }
 }

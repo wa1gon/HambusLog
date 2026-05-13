@@ -3,6 +3,7 @@ namespace HamBusLog.ViewModels;
 public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 {
     private readonly HamBusLog.Hardware.ISerialPortCatalogService _serialPortCatalogService;
+    private readonly IContestImportService _contestImportService;
     private AppConfiguration _appConfig = new();
     private string _selectedProfile = "default";
     private Color _backgroundColor = DefaultBackgroundColor;
@@ -26,7 +27,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _databaseFolderPath = string.Empty;
     private string _databaseFileName = "hambuslog.db";
     private string _connectionString = "Data Source=hambuslog.db";
-    private string _myCall = string.Empty;
+    private string _stationCallSign = string.Empty;
     private string _myLocation = string.Empty;
     private string _myGridSquare = string.Empty;
     private string _myLatitude = string.Empty;
@@ -49,7 +50,10 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _statusMessage = string.Empty;
     private string _configFilePath = string.Empty;
     private string _newProfileName = string.Empty;
-    private string _contestDefinitionsJson = "[]";
+    private string _contestImportFilePath = string.Empty;
+    private string _contestImportLicenseKey = string.Empty;
+    private string _contestImportStatus = string.Empty;
+    private string _importedContestsSummary = "No contests imported.";
     private string _clusterHostname = "127.0.0.1";
     private int _clusterTcpPort = 7300;
     private string _clusterCallsign = string.Empty;
@@ -88,13 +92,14 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private static readonly Color DefaultHoverFontColor = Color.Parse("#FFFFFF");
 
     public ConfigurationViewModel()
-        : this(new HamBusLog.Hardware.SerialPortCatalogService())
+        : this(new HamBusLog.Hardware.SerialPortCatalogService(), new ContestImportService())
     {
     }
 
-    internal ConfigurationViewModel(HamBusLog.Hardware.ISerialPortCatalogService serialPortCatalogService)
+    internal ConfigurationViewModel(HamBusLog.Hardware.ISerialPortCatalogService serialPortCatalogService, IContestImportService? contestImportService = null)
     {
         _serialPortCatalogService = serialPortCatalogService;
+        _contestImportService = contestImportService ?? new ContestImportService();
         AvailableProfiles = new ObservableCollection<string>();
         AvailableSerialPorts = new ObservableCollection<string>();
         AvailableRigRadioOptions = new ObservableCollection<RigRadioOption>();
@@ -260,10 +265,10 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _adifDirectory, value ?? string.Empty);
     }
 
-    public string MyCall
+    public string StationCallSign
     {
-        get => _myCall;
-        set => SetProperty(ref _myCall, (value ?? string.Empty).ToUpperInvariant());
+        get => _stationCallSign;
+        set => SetProperty(ref _stationCallSign, (value ?? string.Empty).ToUpperInvariant());
     }
 
     public string MyLocation
@@ -453,10 +458,28 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _newProfileName, value);
     }
 
-    public string ContestDefinitionsJson
+    public string ContestImportFilePath
     {
-        get => _contestDefinitionsJson;
-        set => SetProperty(ref _contestDefinitionsJson, value ?? "[]");
+        get => _contestImportFilePath;
+        set => SetProperty(ref _contestImportFilePath, value ?? string.Empty);
+    }
+
+    public string ContestImportLicenseKey
+    {
+        get => _contestImportLicenseKey;
+        set => SetProperty(ref _contestImportLicenseKey, value ?? string.Empty);
+    }
+
+    public string ContestImportStatus
+    {
+        get => _contestImportStatus;
+        private set => SetProperty(ref _contestImportStatus, value);
+    }
+
+    public string ImportedContestsSummary
+    {
+        get => _importedContestsSummary;
+        private set => SetProperty(ref _importedContestsSummary, value);
     }
 
     public string ClusterHostname
@@ -503,7 +526,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     public string ClusterCallsign
     {
         get => _clusterCallsign;
-        set => SetProperty(ref _clusterCallsign, value ?? string.Empty);
+        set => SetProperty(ref _clusterCallsign, (value ?? string.Empty).ToUpperInvariant());
     }
 
     public string ClusterPassword
@@ -546,12 +569,9 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             var normalizedDatabaseFileName = normalizedLocation.FileName;
             var normalizedDatabaseFilePath = BuildDatabasePath(normalizedDatabaseFolderPath, normalizedDatabaseFileName);
             var resolvedConnectionString = BuildConnectionString(ConnectionString, normalizedDatabaseFilePath);
-            if (!TryParseContestDefinitionsJson(ContestDefinitionsJson, out var parsedContests, out var parseError))
-            {
-                StatusMessage = $"✗ Save failed: {parseError}";
-                return;
-            }
-
+            var previousConnectionString = _appConfig.Profiles.TryGetValue(_selectedProfile, out var existingProfile)
+                ? existingProfile.ConnectionString?.Trim() ?? string.Empty
+                : string.Empty;
             var profile = new ConfigProfile
             {
                 Name = _selectedProfile,
@@ -559,7 +579,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 BackgroundColor = ToHexRgb(BackgroundColor),
                 ForegroundColor = ToHexRgb(ForegroundColor),
                 AdifDirectory = AdifDirectory.Trim(),
-                MyCall = MyCall.Trim(),
+                StationCallSign = StationCallSign.Trim(),
                 MyLocation = MyLocation.Trim(),
                 MyGridSquare = MyGridSquare.Trim(),
                 MyLatitude = MyLatitude.Trim(),
@@ -586,12 +606,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 InputSelectionBackgroundColor = ToHexRgb(InputSelectionBackgroundColor),
                 InputSelectionForegroundColor = ToHexRgb(InputSelectionForegroundColor),
                 MutedForegroundColor = ToHexRgb(MutedForegroundColor),
+                HoverFontColor = ToHexRgb(HoverFontColor),
                 ConnectionString = resolvedConnectionString
             };
 
             _appConfig.Profiles[_selectedProfile] = profile;
             _appConfig.ActiveProfile = _selectedProfile;
-            _appConfig.Contests = parsedContests;
             var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
             rigctld.ReconnectIntervalSeconds = RigctldReconnectIntervalSeconds <= 0 ? 3 : Math.Min(RigctldReconnectIntervalSeconds, 300);
             var radio = ResolveRigRadio(rigctld, _selectedRigRadioId, SelectedRigRadioName);
@@ -645,8 +665,19 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             DatabaseFolderPath = normalizedDatabaseFolderPath;
             DatabaseFileName = normalizedDatabaseFileName;
             ConnectionString = resolvedConnectionString;
-            ContestDefinitionsJson = SerializeContestDefinitions(_appConfig.Contests);
             AppConfigurationStore.Save(_appConfig);
+
+            if (!string.Equals(previousConnectionString, resolvedConnectionString, StringComparison.Ordinal)
+                && !App.ReinitializeDbContext(resolvedConnectionString, out var dbSwitchError))
+            {
+                App.Toasts.ShowError("Database switch failed", dbSwitchError);
+                StatusMessage = $"✗ Save failed: Unable to switch database. {dbSwitchError}";
+                return;
+            }
+
+            if (!string.Equals(previousConnectionString, resolvedConnectionString, StringComparison.Ordinal))
+                App.Toasts.ShowSuccess("Database switched", $"Now using SQLite DB: {normalizedDatabaseFilePath}");
+
             PopulateAvailableRigRadios(rigctld);
             _activeRigRadioNames = rigctld.ActiveRadioNames
                 .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -689,7 +720,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             BackgroundColor = ToHexRgb(BackgroundColor),
             ForegroundColor = ToHexRgb(ForegroundColor),
             AdifDirectory = src.AdifDirectory,
-            MyCall = src.MyCall,
+            StationCallSign = src.StationCallSign,
             MyLocation = src.MyLocation,
             MyGridSquare = src.MyGridSquare,
             MyLatitude = src.MyLatitude,
@@ -716,6 +747,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             InputSelectionBackgroundColor = ToHexRgb(InputSelectionBackgroundColor),
             InputSelectionForegroundColor = ToHexRgb(InputSelectionForegroundColor),
             MutedForegroundColor = ToHexRgb(MutedForegroundColor),
+            HoverFontColor = ToHexRgb(HoverFontColor),
             ConnectionString = src.ConnectionString
         };
 
@@ -790,6 +822,16 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             MutedForegroundColor = DefaultMutedForegroundColor;
         }
 
+        if (!string.IsNullOrWhiteSpace(profile.HoverFontColor))
+        {
+            try { HoverFontColor = Color.Parse(profile.HoverFontColor); }
+            catch { HoverFontColor = DefaultHoverFontColor; }
+        }
+        else
+        {
+            HoverFontColor = DefaultHoverFontColor;
+        }
+
         ConnectionString = profile.ConnectionString;
         var configuredDatabasePath = !string.IsNullOrWhiteSpace(profile.DatabaseFilePath)
             ? profile.DatabaseFilePath
@@ -804,7 +846,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         DatabaseFileName = normalizedLocation.FileName;
 
         AdifDirectory = profile.AdifDirectory;
-        MyCall = profile.MyCall;
+        StationCallSign = profile.StationCallSign;
         MyLocation = profile.MyLocation;
         MyGridSquare = profile.MyGridSquare;
         MyLatitude = profile.MyLatitude;
@@ -875,7 +917,13 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
         OnPropertyChanged(nameof(SelectedProfile));
         LoadProfile(_selectedProfile);
-        ContestDefinitionsJson = SerializeContestDefinitions(_appConfig.Contests);
+        ContestImportLicenseKey = _appConfig.Contests
+            .Select(x => x.LicenseKey?.Trim())
+            .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x))
+            ?? _appConfig.LicenseKey?.Trim()
+            ?? string.Empty;
+        UpdateImportedContestsSummary();
+        ContestImportStatus = $"Loaded {_appConfig.Contests.Count} contest definitions from configuration.";
         ConfigFilePath = AppConfigurationStore.GetConfigFilePath();
     }
 
@@ -901,46 +949,67 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         HoverFontColor = DefaultHoverFontColor;
     }
 
-    private static string SerializeContestDefinitions(IReadOnlyList<ContestDefinitionConfig> contests)
-    {
-        return JsonSerializer.Serialize(contests, new JsonSerializerOptions { WriteIndented = true });
-    }
+    public bool ImportContestsFromFile()
+        => ImportContestsFromFile(ContestImportFilePath);
 
-    private static bool TryParseContestDefinitionsJson(string rawJson, out List<ContestDefinitionConfig> contests, out string errorMessage)
+    public bool ImportContestsFromFile(string? path)
     {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            ContestImportStatus = "✗ Contest import failed: choose a file first.";
+            return false;
+        }
+
+        if (!File.Exists(path))
+        {
+            ContestImportStatus = $"✗ Contest import failed: file not found ({path}).";
+            return false;
+        }
+
         try
         {
-            contests = JsonSerializer.Deserialize<List<ContestDefinitionConfig>>(rawJson ?? string.Empty) ?? [];
-            if (contests.Count == 0)
+            var payload = File.ReadAllText(path);
+            var result = _contestImportService.ImportContests(payload, ContestImportLicenseKey);
+            if (!result.Success)
             {
-                errorMessage = "Contest definition list cannot be empty.";
+                ContestImportStatus = $"✗ Contest import failed: {result.ErrorMessage}";
                 return false;
             }
 
-            foreach (var contest in contests)
-            {
-                if (string.IsNullOrWhiteSpace(contest.Key))
-                {
-                    errorMessage = "Each contest requires a non-empty Key.";
-                    return false;
-                }
+            _appConfig.Contests = result.Contests.ToList();
+            if (!string.IsNullOrWhiteSpace(ContestImportLicenseKey))
+                _appConfig.LicenseKey = ContestImportLicenseKey.Trim();
 
-                if (string.IsNullOrWhiteSpace(contest.AdifContestId))
-                {
-                    errorMessage = $"Contest '{contest.Key}' requires AdifContestId.";
-                    return false;
-                }
-            }
-
-            errorMessage = string.Empty;
+            UpdateImportedContestsSummary();
+            ContestImportStatus = $"✓ Imported {_appConfig.Contests.Count} contests from {Path.GetFileName(path)}.";
+            StatusMessage = ContestImportStatus;
             return true;
         }
         catch (Exception ex)
         {
-            contests = [];
-            errorMessage = "Contest JSON is invalid: " + ex.Message;
+            ContestImportStatus = $"✗ Contest import failed: {ex.Message}";
             return false;
         }
+    }
+
+    private void UpdateImportedContestsSummary()
+    {
+        if (_appConfig.Contests.Count == 0)
+        {
+            ImportedContestsSummary = "No contests imported.";
+            return;
+        }
+
+        var sample = _appConfig.Contests
+            .Take(5)
+            .Select(x => string.IsNullOrWhiteSpace(x.DisplayName) ? x.Key : x.DisplayName)
+            .ToList();
+
+        var suffix = _appConfig.Contests.Count > sample.Count
+            ? $" (+{_appConfig.Contests.Count - sample.Count} more)"
+            : string.Empty;
+
+        ImportedContestsSummary = $"{_appConfig.Contests.Count} contests loaded: {string.Join(", ", sample)}{suffix}";
     }
 
     private List<string> _activeRigRadioNames = [];

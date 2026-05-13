@@ -143,6 +143,7 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
                     member,
                     false,
                     null,
+                    null,
                     $"Not connected ({radio.Host}:{radio.Port})",
                     DateTime.UtcNow);
             }
@@ -209,7 +210,7 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
                 await client.OpenAsync();
 
                 // Connected — mark online immediately even before first successful query.
-                UpdateState(radio, true, null, null);
+                UpdateState(radio, true, null, null, null);
 
                 while (!ct.IsCancellationRequested)
                 {
@@ -219,6 +220,7 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
                     // A query error does NOT disconnect — we stay connected and keep
                     // the last-known value for that field.
                     string? mode = null;
+                    decimal? frequencyMhz = null;
                     string? queryError = null;
 
                     try
@@ -230,7 +232,18 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
                         queryError = ex.Message;
                     }
 
-                    UpdateState(radio, true, mode, queryError);
+                    try
+                    {
+                        var frequencyHz = await client.GetFreqAsync();
+                        if (frequencyHz > 0)
+                            frequencyMhz = frequencyHz / 1_000_000m;
+                    }
+                    catch (IOException ex) when (!IsConnectionLost(ex))
+                    {
+                        queryError ??= ex.Message;
+                    }
+
+                    UpdateState(radio, true, mode, frequencyMhz, queryError);
                     await Task.Delay(TimeSpan.FromSeconds(1), ct);
                 }
             }
@@ -241,7 +254,7 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
             catch (Exception ex)
             {
                 // TCP-level failure — mark offline and wait before reconnecting.
-                UpdateState(radio, false, null, ex.Message);
+                UpdateState(radio, false, null, null, ex.Message);
                 await Task.Delay(TimeSpan.FromSeconds(_reconnectIntervalSeconds), ct);
             }
         }
@@ -313,7 +326,7 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
         }
     }
 
-    private void UpdateState(RigRadioConfig radio, bool connected, string? mode, string? error)
+    private void UpdateState(RigRadioConfig radio, bool connected, string? mode, decimal? frequencyMhz, string? error)
     {
         var shouldNotify = false;
         lock (_gate)
@@ -333,12 +346,14 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
                     member,
                     connected,
                     mode,
+                    frequencyMhz,
                     error,
                     DateTime.UtcNow);
 
                 if (prev is null
                     || prev.IsConnected != next.IsConnected
                     || prev.Mode != next.Mode
+                    || prev.FrequencyMhz != next.FrequencyMhz
                     || prev.Error != next.Error)
                 {
                     shouldNotify = true;
@@ -469,10 +484,10 @@ public sealed record RadioRuntimeState(
     string Label,
     bool IsConnected,
     string? Mode,
+    decimal? FrequencyMhz,
     string? Error,
     DateTime LastUpdatedUtc)
 {
-    public decimal? FrequencyMhz => null;
 
     public string ModeDisplay => string.IsNullOrWhiteSpace(Mode) ? "-" : Mode!;
 }

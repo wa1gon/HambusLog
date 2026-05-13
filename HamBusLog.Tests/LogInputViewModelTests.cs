@@ -15,18 +15,18 @@ public sealed class LogInputViewModelTests
         viewModel.SelectedConnectedRadio = CreateOption("Slice A", "Flex Slice A", "USB", 14_074_000);
 
         Assert.Equal("USB", viewModel.InputMode);
-        // FrequencyMhz is not populated from radio state, so frequency remains empty
-        Assert.Equal(string.Empty, viewModel.InputFreq);
-        // Band cannot be derived without frequency
-        Assert.Equal(string.Empty, viewModel.InputBand);
+        Assert.Equal("14.074000", viewModel.InputFreq);
+        Assert.Equal("20M", viewModel.InputBand);
 
         viewModel.SelectedConnectedRadio = CreateOption("Slice B", "Flex Slice B", "CW", 7_030_000);
 
         Assert.Equal("CW", viewModel.InputMode);
+        Assert.Equal("7.030000", viewModel.InputFreq);
+        Assert.Equal("40M", viewModel.InputBand);
     }
 
     [Fact]
-    public void RefreshingSameSelectedRadio_DoesNotOverwriteEditedFields()
+    public void RefreshingSameSelectedRadio_OverwritesEditedFieldsFromActiveRadio()
     {
         var viewModel = new LogInputViewModel();
 
@@ -36,21 +36,36 @@ public sealed class LogInputViewModelTests
         viewModel.InputBand = "20M";
 
         viewModel.SelectedConnectedRadio = CreateOption("Slice B", "Flex Slice B", "AM", 3_885_000);
+        viewModel.ApplySelectedRadioToInputs();
 
-        Assert.Equal("DIGU", viewModel.InputMode);
-        Assert.Equal("14.095", viewModel.InputFreq);
-        Assert.Equal("20M", viewModel.InputBand);
+        Assert.Equal("AM", viewModel.InputMode);
+        Assert.Equal("3.885000", viewModel.InputFreq);
+        Assert.Equal("80M", viewModel.InputBand);
     }
 
     [Fact]
-    public void SelectingRadio_DoesNotOverwriteManuallyEnteredFrequency()
+    public void SelectingRadio_PopulatesFrequencyAndBandFromRigState()
     {
         var viewModel = new LogInputViewModel();
 
         viewModel.SelectedConnectedRadio = CreateOption("Slice C", "Flex Slice C", "USB", 14_280_100);
 
-        // FrequencyMhz is not populated from radio state
-        Assert.Equal(string.Empty, viewModel.InputFreq);
+        Assert.Equal("14.280100", viewModel.InputFreq);
+        Assert.Equal("20M", viewModel.InputBand);
+    }
+
+    [Fact]
+    public void RefreshAutoFields_UpdatesTimeOn()
+    {
+        var viewModel = new LogInputViewModel
+        {
+            InputTimeOn = "9999"
+        };
+
+        viewModel.RefreshAutoFields();
+
+        Assert.NotEqual("9999", viewModel.InputTimeOn);
+        Assert.Matches("^[0-9]{4}$", viewModel.InputTimeOn);
     }
 
     [Fact]
@@ -145,7 +160,7 @@ public sealed class LogInputViewModelTests
 
         Assert.NotNull(qso);
         Assert.Equal(string.Empty, error);
-        Assert.Equal("ARRL-FD", qso!.ContestId);
+        Assert.Equal("ARRL-FIELD-DAY", qso!.ContestId);
         Assert.Equal(string.Empty, qso!.RstSent);
         Assert.Equal(string.Empty, qso.RstRcvd);
         Assert.Contains(qso.Details, d => d.FieldName == "Section" && d.FieldValue == "EMA");
@@ -159,8 +174,8 @@ public sealed class LogInputViewModelTests
             label,
             true,
             mode,
+            frequencyHz / 1_000_000m,
             null,
             DateTime.UtcNow));
     }
 }
-

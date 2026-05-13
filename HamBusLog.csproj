@@ -13,6 +13,7 @@
     <Compile Remove="**/obj/**/*.cs" />
     <Compile Remove="**/bin/**/*.cs" />
     <Compile Remove="HamBusLog.Tests/**/*.cs" />
+    <Compile Remove="ContestLicenseTool/**/*.cs" />
     <Compile Remove="Wa1gonAbstracts/**/*.cs" />
     <Compile Remove="Wa1gonLib/**/*.cs" />
     <Compile Remove="Wa1gonLib.Tests/**/*.cs" />
