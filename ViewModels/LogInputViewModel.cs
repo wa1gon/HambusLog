@@ -198,19 +198,39 @@ public sealed class LogInputViewModel : ViewModelBase
         OnPropertyChanged(nameof(ExchangeHelpText));
         OnPropertyChanged(nameof(ShowExchangeHelp));
         OnPropertyChanged(nameof(ExchangeWatermark));
+        OnPropertyChanged(nameof(ShowRstSent));
+        OnPropertyChanged(nameof(ShowRstRecv));
+        OnPropertyChanged(nameof(ShowCountry));
+        OnPropertyChanged(nameof(ShowName));
+        OnPropertyChanged(nameof(ShowState));
+        OnPropertyChanged(nameof(ShowCounty));
+        OnPropertyChanged(nameof(ShowFieldDaySection));
+        OnPropertyChanged(nameof(ShowFieldDayClass));
     }
 
     public bool IsNormalContest => CurrentContestDefinition.UsesNormalExchange;
     public bool IsFieldDay => CurrentContestDefinition.UsesFieldDayExchange;
-    public bool UsesUnifiedExchange => CurrentContestDefinition.RequiredFields
+    public IReadOnlyList<ContestFieldRequirement> EffectiveRequiredFields
+        => IsArkansasQsoParty ? ArkansasQsoPartyRequiredFields : CurrentContestDefinition.RequiredFields;
+    public bool UsesUnifiedExchange => EffectiveRequiredFields
         .Any(x => string.Equals(x.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase));
     public bool ShowLegacyNormalExchangeFields => IsNormalContest && !UsesUnifiedExchange;
     public bool ShowUnifiedExchangeField => UsesUnifiedExchange;
     public bool ShowExchange => ShowUnifiedExchangeField;
+    public bool ShowRstSent => HasRequiredField(ContestFieldKeys.RstSent);
+    public bool ShowRstRecv => HasRequiredField(ContestFieldKeys.RstRecv);
+    public bool ShowCountry => HasRequiredField(ContestFieldKeys.Country);
+    public bool ShowName => HasRequiredField(ContestFieldKeys.Name);
+    public bool ShowState => HasRequiredField(ContestFieldKeys.State) && ShowLegacyNormalExchangeFields;
+    public bool ShowCounty => HasRequiredField(ContestFieldKeys.County) && ShowLegacyNormalExchangeFields;
+    public bool ShowFieldDaySection => HasRequiredField(ContestFieldKeys.FieldDaySection);
+    public bool ShowFieldDayClass => HasRequiredField(ContestFieldKeys.FieldDayClass);
     public ContestDefinition CurrentContestDefinition => ContestCatalog.GetByKey(_selectedContestKey) ?? ContestCatalog.Get(ContestType.Normal);
     public string CurrentContestDisplayName => CurrentContestDefinition.DisplayName;
     public string CurrentContestAdifId => CurrentContestDefinition.AdifContestId;
-    public string ExchangeLabel => IsArkansasQsoParty ? "State / County" : "Exchange";
+    public string ExchangeLabel => IsArkansasQsoParty
+        ? (IsArkansasStation ? "County" : "State")
+        : "Exchange";
     public string ExchangeHelpText => BuildExchangeHelpText();
     public bool ShowExchangeHelp => IsArkansasQsoParty && ShowUnifiedExchangeField;
     public string ExchangeWatermark => BuildExchangeWatermark();
@@ -493,7 +513,7 @@ public sealed class LogInputViewModel : ViewModelBase
 
     private bool TryValidateContestRequiredFields(out string errorMessage)
     {
-        foreach (var requirement in CurrentContestDefinition.RequiredFields)
+        foreach (var requirement in EffectiveRequiredFields)
         {
             if (string.Equals(requirement.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase))
             {
@@ -540,9 +560,14 @@ public sealed class LogInputViewModel : ViewModelBase
         };
     }
 
+    private bool HasRequiredField(string key)
+    {
+        return EffectiveRequiredFields.Any(x => string.Equals(x.Key, key, StringComparison.OrdinalIgnoreCase));
+    }
+
     private void ApplyContestExchangeToQsoDetails(Qso qso)
     {
-        foreach (var requirement in CurrentContestDefinition.RequiredFields)
+        foreach (var requirement in EffectiveRequiredFields)
         {
             if (string.Equals(requirement.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase))
             {
@@ -671,14 +696,21 @@ public sealed class LogInputViewModel : ViewModelBase
         return true;
     }
 
+    private static readonly IReadOnlyList<ContestFieldRequirement> ArkansasQsoPartyRequiredFields =
+    [
+        new ContestFieldRequirement(ContestFieldKeys.RstSent, "RST Sent"),
+        new ContestFieldRequirement(ContestFieldKeys.RstRecv, "RST Rec"),
+        new ContestFieldRequirement(ContestFieldKeys.Exchange, "Exchange")
+    ];
+
     private string BuildExchangeHelpText()
     {
         if (!IsArkansasQsoParty)
             return string.Empty;
 
         return IsArkansasStation
-            ? "In-state exchange: 3-letter Arkansas county (e.g., PUL)."
-            : "Out-of-state exchange: 2-letter state/province (e.g., MA).";
+            ? "In-state exchange: Arkansas county (3 letters, e.g., PUL)."
+            : "Out-of-state exchange: state/province (2 letters, e.g., MA).";
     }
 
     private string BuildExchangeWatermark()
