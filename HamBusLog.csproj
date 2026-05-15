@@ -35,6 +35,7 @@
     <Compile Include="Wa1gonLib/Models/OperatorProfile.cs" />
     <Compile Include="Wa1gonLib/Models/Qso.cs" />
     <Compile Include="Wa1gonLib/Models/QsoDetails.cs" />
+   <Compile Include="Wa1gonLib/Models/QsoDetailFieldFilters.cs" />
     <Compile Include="Wa1gonLib/Models/QsoQslnfo.cs" />
     <Compile Include="Wa1gonLib/zGlobal.cs" />
     <Compile Include="Wa1gonLib/RigControl/FrequencyRange.cs" />

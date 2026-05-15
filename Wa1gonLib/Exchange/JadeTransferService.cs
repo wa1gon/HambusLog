@@ -300,6 +300,8 @@ public static class JadeTransferService
         {
             if (string.IsNullOrWhiteSpace(detail.FieldName) || string.IsNullOrWhiteSpace(detail.FieldValue))
                 continue;
+            if (QsoDetailFieldFilters.IsExcluded(detail.FieldName))
+                continue;
 
             var key = detail.FieldName.Trim().ToUpperInvariant();
             if (!record.ContainsKey(key))
@@ -390,6 +392,8 @@ public static class JadeTransferService
                 case "QSL_SENT": GetOrCreateQsl("DIRECT")!.QslSent = value.Equals("Y", StringComparison.OrdinalIgnoreCase); break;
                 case "QSL_RCVD": GetOrCreateQsl("DIRECT")!.QslReceived = value.Equals("Y", StringComparison.OrdinalIgnoreCase); break;
                 default:
+                    if (QsoDetailFieldFilters.IsExcluded(name))
+                        break;
                     qso.Details.Add(new QsoDetail { FieldName = field.Key, FieldValue = value });
                     break;
             }
@@ -454,6 +458,8 @@ public static class JadeTransferService
         return new AdifImportOptions(options?.Provider ?? DatabaseProvider.Sqlite, connectionString, defaultStationCallSign);
     }
 }
+
+
 
 
 
