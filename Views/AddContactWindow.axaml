@@ -13,4 +13,3 @@
         WindowStartupLocation="CenterOwner">
     <views:AddContactView DataContext="{Binding}" />
 </Window>
-

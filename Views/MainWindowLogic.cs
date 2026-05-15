@@ -8,6 +8,7 @@ public partial class MainWindow
     private GridWindow? _gridWindow;
     private ConfigurationWindow? _configurationWindow;
     private DxSpotsWindow? _dxSpotsWindow;
+    private CabrilloExportWindow? _cabrilloExportWindow;
     private bool _isImportingAdif;
     private bool _isAppExitRequested;
     private bool _skipNextMenuSelectionChanged;
@@ -107,6 +108,8 @@ public partial class MainWindow
             await ExportJadeSchemaAsync();
         else if (node.Title == "Export JADE Example")
             await ExportJadeExampleAsync();
+        else if (node.Title == "Export Cabrillo")
+            OpenCabrilloExportWindow();
         else if (node.Title == "DX Spots" || node.Title == "DX Cluster")
             ToggleDxSpotsWindow();
         else if (node.Title == "Callbook")
@@ -200,6 +203,23 @@ public partial class MainWindow
         }
 
         ShowWithVisibleOwner(_dxSpotsWindow);
+    }
+
+    private void OpenCabrilloExportWindow()
+    {
+        if (_cabrilloExportWindow is { IsVisible: true })
+        {
+            _cabrilloExportWindow.Activate();
+            return;
+        }
+
+        if (_cabrilloExportWindow is null)
+        {
+            _cabrilloExportWindow = new CabrilloExportWindow();
+            _cabrilloExportWindow.Closed += (_, _) => _cabrilloExportWindow = null;
+        }
+
+        ShowWithVisibleOwner(_cabrilloExportWindow);
     }
 
     private void OpenNewContactWindow()
