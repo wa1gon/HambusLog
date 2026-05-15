@@ -52,9 +52,7 @@ public partial class CabrilloExportWindow : Window
         var settings = ViewModel.BuildSettings();
         try
         {
-            var exported = contest.IsArrlFieldDay()
-                ? await CabrilloExportService.ExportArrlFieldDayToFileAsync(path, settings)
-                : await CabrilloExportService.ExportArqpToFileAsync(path, settings);
+            var exported = await CabrilloExportService.ExportToFileAsync(path, contest.Definition, settings);
             RememberAdifDirectory(config, path);
             App.Toasts.ShowSuccess("Cabrillo export complete", $"Exported {exported} QSO record(s)." );
         }

@@ -4,11 +4,39 @@ namespace HamBusLog.Data;
 
 public static class CabrilloExportService
 {
-    private const string ArqpContestId = "AR-QSO-PARTY";
-    private const string ArrlFieldDayContestId = "ARRL-FIELD-DAY";
+    private const string ArqpExporterKey = "ARQP";
+    private const string ArrlFieldDayExporterKey = "ARRL-FD";
+
+    public static bool IsSupportedExporter(string? exporterKey)
+    {
+        if (string.IsNullOrWhiteSpace(exporterKey))
+            return false;
+
+        return string.Equals(exporterKey, ArqpExporterKey, StringComparison.OrdinalIgnoreCase)
+               || string.Equals(exporterKey, ArrlFieldDayExporterKey, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static Task<int> ExportToFileAsync(
+        string filePath,
+        CabrilloContestDefinition contest,
+        CabrilloExportSettings? settings = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (contest is null)
+            throw new ArgumentNullException(nameof(contest));
+
+        if (string.Equals(contest.ExporterKey, ArrlFieldDayExporterKey, StringComparison.OrdinalIgnoreCase))
+            return ExportArrlFieldDayToFileAsync(filePath, contest, settings, cancellationToken);
+
+        if (string.Equals(contest.ExporterKey, ArqpExporterKey, StringComparison.OrdinalIgnoreCase))
+            return ExportArqpToFileAsync(filePath, contest, settings, cancellationToken);
+
+        throw new InvalidOperationException($"No Cabrillo exporter is registered for '{contest.ExporterKey}'.");
+    }
 
     public static async Task<int> ExportArqpToFileAsync(
         string filePath,
+        CabrilloContestDefinition contest,
         CabrilloExportSettings? settings = null,
         CancellationToken cancellationToken = default)
     {
@@ -22,25 +50,30 @@ public static class CabrilloExportService
             ? "Data Source=hambuslog.db"
             : profile.ConnectionString;
 
-        var sinceUtc = DateTime.UtcNow.AddMonths(-6);
+        var sinceUtc = ResolveContestStart(settings) ?? DateTime.UtcNow.AddMonths(-6);
+        var untilUtc = ResolveContestEnd(settings);
+
+        var contestIds = NormalizeContestIds(contest);
 
         await using var db = HamBusLogDbContextFactory.Create(DatabaseProvider.Sqlite, connectionString);
         var qsos = await db.Qsos
             .Include(x => x.Details)
             .Where(x => x.QsoDate >= sinceUtc
                         && x.ContestId != null
-                        && (x.ContestId.ToUpper() == ArqpContestId || x.ContestId.ToUpper() == "ARQP"))
+                        && contestIds.Contains(x.ContestId.ToUpper())
+                        && (untilUtc == null || x.QsoDate <= untilUtc.Value))
             .OrderBy(x => x.QsoDate)
             .ThenBy(x => x.Call)
             .ToListAsync(cancellationToken);
 
-        var cabrillo = BuildArqpCabrillo(profile, settings, qsos);
+        var cabrillo = BuildArqpCabrillo(profile, contest.AdifContestId, settings, qsos);
         await File.WriteAllTextAsync(fullPath, cabrillo, cancellationToken);
         return qsos.Count;
     }
 
     public static async Task<int> ExportArrlFieldDayToFileAsync(
         string filePath,
+        CabrilloContestDefinition contest,
         CabrilloExportSettings? settings = null,
         CancellationToken cancellationToken = default)
     {
@@ -54,51 +87,55 @@ public static class CabrilloExportService
             ? "Data Source=hambuslog.db"
             : profile.ConnectionString;
 
-        var sinceUtc = DateTime.UtcNow.AddMonths(-6);
+        var sinceUtc = ResolveContestStart(settings) ?? DateTime.UtcNow.AddMonths(-6);
+        var untilUtc = ResolveContestEnd(settings);
+
+        var contestIds = NormalizeContestIds(contest);
 
         await using var db = HamBusLogDbContextFactory.Create(DatabaseProvider.Sqlite, connectionString);
         var qsos = await db.Qsos
             .Include(x => x.Details)
             .Where(x => x.QsoDate >= sinceUtc
                         && x.ContestId != null
-                        && (x.ContestId.ToUpper() == ArrlFieldDayContestId || x.ContestId.ToUpper() == "ARRL-FD"))
+                        && contestIds.Contains(x.ContestId.ToUpper())
+                        && (untilUtc == null || x.QsoDate <= untilUtc.Value))
             .OrderBy(x => x.QsoDate)
             .ThenBy(x => x.Call)
             .ToListAsync(cancellationToken);
 
-        var cabrillo = BuildArrlFieldDayCabrillo(profile, settings, qsos);
+        var cabrillo = BuildArrlFieldDayCabrillo(profile, contest.AdifContestId, settings, qsos);
         await File.WriteAllTextAsync(fullPath, cabrillo, cancellationToken);
         return qsos.Count;
     }
 
-    private static string BuildArqpCabrillo(ConfigProfile profile, CabrilloExportSettings? settings, IReadOnlyList<Qso> qsos)
+    private static string BuildArqpCabrillo(
+        ConfigProfile profile,
+        string contestId,
+        CabrilloExportSettings? settings,
+        IReadOnlyList<Qso> qsos)
     {
         var sb = new StringBuilder();
-        var callSign = ResolveHeaderValue(settings?.CallSign, profile.StationCallSign).ToUpperInvariant();
-        var location = ResolveHeaderValue(settings?.Location, profile.MyStateProvince).ToUpperInvariant();
+        var callSign = ResolveHeaderValue(settings, "CALLSIGN", profile.StationCallSign).ToUpperInvariant();
+        var location = ResolveHeaderValue(settings, "LOCATION", profile.MyStateProvince).ToUpperInvariant();
 
         AppendHeader(sb, "START-OF-LOG", "3.1");
         AppendHeader(sb, "CREATED-BY", "HamBusLog");
-        AppendHeader(sb, "CONTEST", ArqpContestId);
+        AppendHeader(sb, "CONTEST", contestId);
         AppendHeader(sb, "CALLSIGN", callSign);
-        AppendHeader(sb, "CATEGORY-OPERATOR", NormalizeHeader(settings?.CategoryOperator, "SINGLE-OP"));
-        AppendHeader(sb, "CATEGORY-ASSISTED", NormalizeHeader(settings?.CategoryAssisted, "NON-ASSISTED"));
-        AppendHeader(sb, "CATEGORY-BAND", NormalizeHeader(settings?.CategoryBand, "ALL"));
-        AppendHeader(sb, "CATEGORY-MODE", NormalizeHeader(settings?.CategoryMode, "MIXED"));
-        AppendHeader(sb, "CATEGORY-POWER", NormalizeHeader(settings?.CategoryPower, "LOW"));
-        AppendHeader(sb, "CATEGORY-TRANSMITTER", NormalizeHeader(settings?.CategoryTransmitter, "ONE"));
+        AppendHeader(sb, "CATEGORY-OPERATOR", NormalizeHeader(ResolveHeaderValue(settings, "CATEGORY-OPERATOR", "SINGLE-OP")));
+        AppendHeader(sb, "CATEGORY-ASSISTED", NormalizeHeader(ResolveHeaderValue(settings, "CATEGORY-ASSISTED", "NON-ASSISTED")));
+        AppendHeader(sb, "CATEGORY-BAND", NormalizeHeader(ResolveHeaderValue(settings, "CATEGORY-BAND", "ALL")));
+        AppendHeader(sb, "CATEGORY-MODE", NormalizeHeader(ResolveHeaderValue(settings, "CATEGORY-MODE", "MIXED")));
+        AppendHeader(sb, "CATEGORY-POWER", NormalizeHeader(ResolveHeaderValue(settings, "CATEGORY-POWER", "LOW")));
+        AppendHeader(sb, "CATEGORY-TRANSMITTER", NormalizeHeader(ResolveHeaderValue(settings, "CATEGORY-TRANSMITTER", "ONE")));
         AppendHeader(sb, "LOCATION", location);
-        AppendHeader(sb, "CLAIMED-SCORE", ResolveClaimedScore(settings?.ClaimedScore, qsos.Count));
-        AppendHeader(sb, "OPERATORS", ResolveHeaderValue(settings?.Operators, callSign));
-        AppendHeader(sb, "CLUB", settings?.Club);
-        AppendHeader(sb, "ADDRESS", settings?.Address);
-        AppendHeader(sb, "EMAIL", settings?.Email);
+        AppendHeader(sb, "CLAIMED-SCORE", ResolveClaimedScore(ResolveHeaderValue(settings, "CLAIMED-SCORE", null), qsos.Count));
+        AppendHeader(sb, "OPERATORS", ResolveHeaderValue(settings, "OPERATORS", callSign));
+        AppendHeader(sb, "CLUB", ResolveHeaderValue(settings, "CLUB", null));
+        AppendHeader(sb, "ADDRESS", ResolveHeaderValue(settings, "ADDRESS", null));
+        AppendHeader(sb, "EMAIL", ResolveHeaderValue(settings, "EMAIL", null));
 
-        if (!string.IsNullOrWhiteSpace(settings?.Soapbox))
-        {
-            foreach (var line in settings.Soapbox.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
-                AppendHeader(sb, "SOAPBOX", line.Trim());
-        }
+        AppendSoapbox(sb, ResolveHeaderValue(settings, "SOAPBOX", null));
 
         foreach (var qso in qsos)
             sb.AppendLine(FormatArqpQsoLine(profile, qso));
@@ -107,37 +144,37 @@ public static class CabrilloExportService
         return sb.ToString();
     }
 
-    private static string BuildArrlFieldDayCabrillo(ConfigProfile profile, CabrilloExportSettings? settings, IReadOnlyList<Qso> qsos)
+    private static string BuildArrlFieldDayCabrillo(
+        ConfigProfile profile,
+        string contestId,
+        CabrilloExportSettings? settings,
+        IReadOnlyList<Qso> qsos)
     {
         var sb = new StringBuilder();
-        var callSign = ResolveHeaderValue(settings?.CallSign, profile.StationCallSign).ToUpperInvariant();
-        var location = ResolveHeaderValue(settings?.Location, profile.MyStateProvince).ToUpperInvariant();
-        var category = ResolveHeaderValue(settings?.Category, profile.MyFieldDayClass).ToUpperInvariant();
-        var arrlSection = ResolveHeaderValue(settings?.ArrlSection, profile.MyFieldDaySection).ToUpperInvariant();
+        var callSign = ResolveHeaderValue(settings, "CALLSIGN", profile.StationCallSign).ToUpperInvariant();
+        var location = ResolveHeaderValue(settings, "LOCATION", profile.MyStateProvince).ToUpperInvariant();
+        var category = ResolveHeaderValue(settings, "CATEGORY", profile.MyFieldDayClass).ToUpperInvariant();
+        var arrlSection = ResolveHeaderValue(settings, "ARRL-SECTION", profile.MyFieldDaySection).ToUpperInvariant();
 
         AppendHeader(sb, "START-OF-LOG", "3.1");
         AppendHeader(sb, "CREATED-BY", "HamBusLog");
-        AppendHeader(sb, "CONTEST", ArrlFieldDayContestId);
+        AppendHeader(sb, "CONTEST", contestId);
         AppendHeader(sb, "CALLSIGN", callSign);
         AppendHeader(sb, "CATEGORY", category);
         AppendHeader(sb, "LOCATION", location);
         AppendHeader(sb, "ARRL-SECTION", arrlSection);
-        AppendHeader(sb, "CLAIMED-SCORE", ResolveClaimedScore(settings?.ClaimedScore, qsos.Count));
-        AppendHeader(sb, "OPERATORS", ResolveHeaderValue(settings?.Operators, callSign));
-        AppendHeader(sb, "NAME", settings?.Name);
-        AppendHeader(sb, "ADDRESS", settings?.Address);
-        AppendHeader(sb, "ADDRESS-CITY", settings?.AddressCity);
-        AppendHeader(sb, "ADDRESS-STATE-PROVINCE", settings?.AddressStateProvince);
-        AppendHeader(sb, "ADDRESS-POSTALCODE", settings?.AddressPostalCode);
-        AppendHeader(sb, "ADDRESS-COUNTRY", settings?.AddressCountry);
-        AppendHeader(sb, "CLUB", settings?.Club);
-        AppendHeader(sb, "EMAIL", settings?.Email);
+        AppendHeader(sb, "CLAIMED-SCORE", ResolveClaimedScore(ResolveHeaderValue(settings, "CLAIMED-SCORE", null), qsos.Count));
+        AppendHeader(sb, "OPERATORS", ResolveHeaderValue(settings, "OPERATORS", callSign));
+        AppendHeader(sb, "NAME", ResolveHeaderValue(settings, "NAME", null));
+        AppendHeader(sb, "ADDRESS", ResolveHeaderValue(settings, "ADDRESS", null));
+        AppendHeader(sb, "ADDRESS-CITY", ResolveHeaderValue(settings, "ADDRESS-CITY", null));
+        AppendHeader(sb, "ADDRESS-STATE-PROVINCE", ResolveHeaderValue(settings, "ADDRESS-STATE-PROVINCE", null));
+        AppendHeader(sb, "ADDRESS-POSTALCODE", ResolveHeaderValue(settings, "ADDRESS-POSTALCODE", null));
+        AppendHeader(sb, "ADDRESS-COUNTRY", ResolveHeaderValue(settings, "ADDRESS-COUNTRY", null));
+        AppendHeader(sb, "CLUB", ResolveHeaderValue(settings, "CLUB", null));
+        AppendHeader(sb, "EMAIL", ResolveHeaderValue(settings, "EMAIL", null));
 
-        if (!string.IsNullOrWhiteSpace(settings?.Soapbox))
-        {
-            foreach (var line in settings.Soapbox.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
-                AppendHeader(sb, "SOAPBOX", line.Trim());
-        }
+        AppendSoapbox(sb, ResolveHeaderValue(settings, "SOAPBOX", null));
 
         foreach (var qso in qsos)
             sb.AppendLine(FormatArrlFieldDayQsoLine(profile, settings, qso));
@@ -197,7 +234,7 @@ public static class CabrilloExportService
         var mode = NormalizeCabrilloMode(qso.Mode);
         var date = utc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         var time = utc.ToString("HHmm", CultureInfo.InvariantCulture);
-        var myCall = ResolveHeaderValue(settings?.CallSign, profile.StationCallSign).ToUpperInvariant();
+        var myCall = ResolveHeaderValue(settings, "CALLSIGN", profile.StationCallSign).ToUpperInvariant();
         var (myClass, mySection) = BuildFieldDaySentExchange(profile, settings);
         var (theirClass, theirSection) = BuildFieldDayReceivedExchange(qso);
         var hisCall = (qso.Call ?? string.Empty).Trim().ToUpperInvariant();
@@ -230,8 +267,8 @@ public static class CabrilloExportService
 
     private static (string Class, string Section) BuildFieldDaySentExchange(ConfigProfile profile, CabrilloExportSettings? settings)
     {
-        var cls = ResolveHeaderValue(settings?.Category, profile.MyFieldDayClass).Trim().ToUpperInvariant();
-        var section = ResolveHeaderValue(settings?.ArrlSection, profile.MyFieldDaySection).Trim().ToUpperInvariant();
+        var cls = ResolveHeaderValue(settings, "CATEGORY", profile.MyFieldDayClass).Trim().ToUpperInvariant();
+        var section = ResolveHeaderValue(settings, "ARRL-SECTION", profile.MyFieldDaySection).Trim().ToUpperInvariant();
         return (string.IsNullOrWhiteSpace(cls) ? "" : cls, string.IsNullOrWhiteSpace(section) ? "" : section);
     }
 
@@ -338,23 +375,69 @@ public static class CabrilloExportService
         return true;
     }
 
-    private static string ResolveHeaderValue(string? value, string? fallback)
+    private static string ResolveHeaderValue(CabrilloExportSettings? settings, string key, string? fallback)
     {
+        var value = settings?.GetHeaderValue(key);
         if (!string.IsNullOrWhiteSpace(value))
             return value.Trim();
 
         return string.IsNullOrWhiteSpace(fallback) ? string.Empty : fallback.Trim();
     }
 
-    private static string NormalizeHeader(string? value, string fallback)
+    private static string NormalizeHeader(string? value)
     {
-        var resolved = ResolveHeaderValue(value, fallback);
-        return resolved.ToUpperInvariant();
+        var resolved = value ?? string.Empty;
+        return resolved.Trim().ToUpperInvariant();
     }
 
     private static string ResolveClaimedScore(string? value, int fallback)
     {
         var trimmed = value?.Trim();
         return string.IsNullOrWhiteSpace(trimmed) ? fallback.ToString(CultureInfo.InvariantCulture) : trimmed;
+    }
+
+    private static void AppendSoapbox(StringBuilder sb, string? soapbox)
+    {
+        if (string.IsNullOrWhiteSpace(soapbox))
+            return;
+
+        foreach (var line in soapbox.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+            AppendHeader(sb, "SOAPBOX", line.Trim());
+    }
+
+    private static List<string> NormalizeContestIds(CabrilloContestDefinition contest)
+    {
+        var ids = contest.AdifContestIds.Count > 0
+            ? contest.AdifContestIds
+            : [contest.AdifContestId];
+
+        return ids
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim().ToUpperInvariant())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+    }
+
+    private static DateTime? ResolveContestStart(CabrilloExportSettings? settings)
+        => ParseContestDateTime(settings?.GetHeaderValue("CONTEST-START"));
+
+    private static DateTime? ResolveContestEnd(CabrilloExportSettings? settings)
+        => ParseContestDateTime(settings?.GetHeaderValue("CONTEST-END"));
+
+    private static DateTime? ParseContestDateTime(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var trimmed = value.Trim();
+        if (DateTime.TryParseExact(trimmed, "yyyy-MM-dd HHmm", CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed))
+            return parsed;
+
+        if (DateTime.TryParse(trimmed, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out parsed))
+            return parsed;
+
+        return null;
     }
 }

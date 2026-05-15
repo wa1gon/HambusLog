@@ -10,6 +10,10 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets/**" />
+    <Content Include="Assets/cabrillo-contests.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>cabrillo-contests.json</Link>
+    </Content>
     <Compile Remove="**/obj/**/*.cs" />
     <Compile Remove="**/bin/**/*.cs" />
     <Compile Remove="HamBusLog.Tests/**/*.cs" />
