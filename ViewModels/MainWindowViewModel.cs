@@ -18,6 +18,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             new MenuNode("Export JADE"),
             new MenuNode("Export JADE Schema"),
             new MenuNode("Export JADE Example"),
+            new MenuNode("Export Cabrillo"),
             new MenuNode("Remove Dups"),
             new MenuNode("Watch List")),
         new MenuNode("Grid"),
