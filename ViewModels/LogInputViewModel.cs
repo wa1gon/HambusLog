@@ -70,11 +70,15 @@ public sealed class LogInputViewModel : ViewModelBase
     public LogInputViewModel()
     {
         _appConfig = AppConfigurationStore.Load();
+        SelectActiveProfile();
         ContestDefinitions = ContestCatalog.GetAll().ToList();
         Details         = [];
         AvailableConnectedRadios = new ObservableCollection<ConnectedRadioOption>();
-        _selectedContestKey = ContestDefinitions.FirstOrDefault()?.Key ?? ContestCatalog.NormalKey;
-        SelectActiveProfile();
+        var storedContestKey = ActiveConfigProfile().LastContestKey;
+        var initialContestKey = string.IsNullOrWhiteSpace(storedContestKey)
+            ? ContestDefinitions.FirstOrDefault()?.Key ?? ContestCatalog.NormalKey
+            : storedContestKey;
+        SetSelectedContestKey(initialContestKey);
         LoadStationConfig();
         InputDate       = DateTime.UtcNow.ToString("yyyyMMdd");
         InputTimeOn     = DateTime.UtcNow.ToString("HHmm");
@@ -163,7 +167,7 @@ public sealed class LogInputViewModel : ViewModelBase
 
     public ContestDefinition? SelectedContestDefinition
     {
-        get => CurrentContestDefinition;
+        get => FindContestDefinition(_selectedContestKey);
         set
         {
             if (value is null)
@@ -178,6 +182,9 @@ public sealed class LogInputViewModel : ViewModelBase
         var normalized = string.IsNullOrWhiteSpace(contestKey)
             ? ContestCatalog.NormalKey
             : contestKey.Trim();
+
+        if (FindContestDefinition(normalized) is null)
+            normalized = ContestCatalog.NormalKey;
 
         if (string.Equals(_selectedContestKey, normalized, StringComparison.OrdinalIgnoreCase))
             return;
@@ -207,6 +214,13 @@ public sealed class LogInputViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowFieldDaySection));
         OnPropertyChanged(nameof(ShowFieldDayClass));
         EnforceArkansasCountyRule();
+
+        var profile = ActiveConfigProfile();
+        if (!string.Equals(profile.LastContestKey, normalized, StringComparison.OrdinalIgnoreCase))
+        {
+            profile.LastContestKey = normalized;
+            AppConfigurationStore.Save(_appConfig);
+        }
     }
 
     public bool IsNormalContest => CurrentContestDefinition.UsesNormalExchange;
@@ -226,7 +240,8 @@ public sealed class LogInputViewModel : ViewModelBase
     public bool ShowCounty => HasRequiredField(ContestFieldKeys.County) && ShowLegacyNormalExchangeFields;
     public bool ShowFieldDaySection => HasRequiredField(ContestFieldKeys.FieldDaySection);
     public bool ShowFieldDayClass => HasRequiredField(ContestFieldKeys.FieldDayClass);
-    public ContestDefinition CurrentContestDefinition => ContestCatalog.GetByKey(_selectedContestKey) ?? ContestCatalog.Get(ContestType.Normal);
+    public ContestDefinition CurrentContestDefinition => FindContestDefinition(_selectedContestKey)
+        ?? ContestCatalog.Get(ContestType.Normal);
     public string CurrentContestDisplayName => CurrentContestDefinition.DisplayName;
     public string CurrentContestAdifId => CurrentContestDefinition.AdifContestId;
     public string ExchangeLabel => IsArkansasQsoParty
@@ -704,6 +719,18 @@ public sealed class LogInputViewModel : ViewModelBase
     {
         return string.Equals(CurrentContestDefinition.Key, key, StringComparison.OrdinalIgnoreCase)
                || string.Equals(CurrentContestDefinition.AdifContestId, key, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private ContestDefinition? FindContestDefinition(string? key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+            return ContestDefinitions.FirstOrDefault(x =>
+                string.Equals(x.Key, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase));
+
+        var trimmed = key.Trim();
+        return ContestDefinitions.FirstOrDefault(x =>
+            string.Equals(x.Key, trimmed, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(x.AdifContestId, trimmed, StringComparison.OrdinalIgnoreCase));
     }
 
     private bool TryValidateArkansasQsoPartyExchange(out string errorMessage)

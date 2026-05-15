@@ -64,6 +64,7 @@ public sealed class ConfigProfile
     public string MyCqZone { get; set; } = string.Empty;
     public string MyFieldDaySection { get; set; } = string.Empty;
     public string MyFieldDayClass { get; set; } = string.Empty;
+    public string LastContestKey { get; set; } = string.Empty;
 }
 
 public sealed class ContestDefinitionConfig
