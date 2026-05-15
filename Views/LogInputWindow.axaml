@@ -204,7 +204,7 @@
                         <TextBox Grid.Row="5" Grid.Column="1" IsVisible="{Binding ShowExchange}" Text="{Binding InputExchange}" Watermark="{Binding ExchangeWatermark}" TextChanged="OnUppercaseInputChanged" />
 
                         <TextBlock Grid.Row="5" Grid.Column="3" IsVisible="{Binding ShowCounty}" Classes="FieldLabel" Text="County" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="5" Grid.Column="4" IsVisible="{Binding ShowCounty}" Text="{Binding InputCounty}" Watermark="PULK" TextChanged="OnUppercaseInputChanged" />
+                        <TextBox Grid.Row="5" Grid.Column="4" IsVisible="{Binding ShowCounty}" Text="{Binding InputCounty}" Watermark="PUL" TextChanged="OnUppercaseInputChanged" />
 
                         <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
                                    IsVisible="{Binding IsFieldDay}"

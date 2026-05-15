@@ -414,16 +414,6 @@ public sealed class LogInputViewModel : ViewModelBase
 
         ApplyContestExchangeToQsoDetails(qso);
 
-        // Attach selected connected rig metadata when available.
-        var activeRig = GetSelectedOrPrimaryRigState();
-        if (activeRig is not null)
-        {
-            qso.Details.Add(new QsoDetail { FieldName = "radio_name", FieldValue = activeRig.RadioName });
-            qso.Details.Add(new QsoDetail { FieldName = "radio_label", FieldValue = activeRig.Label });
-            if (!string.IsNullOrWhiteSpace(activeRig.Mode) && activeRig.Mode != "0")
-                qso.Details.Add(new QsoDetail { FieldName = "radio_mode", FieldValue = activeRig.Mode });
-        }
-
         errorMessage = string.Empty;
         return qso;
     }
@@ -535,6 +525,19 @@ public sealed class LogInputViewModel : ViewModelBase
         foreach (var requirement in EffectiveRequiredFields)
         {
             if (IsArkansasQsoParty
+                && string.Equals(requirement.Key, ContestFieldKeys.State, StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(_inputState) && !string.IsNullOrWhiteSpace(_inputCounty))
+                {
+                    _inputState = "AR";
+                    OnPropertyChanged(nameof(InputState));
+                }
+
+                if (IsArkansasStation || IsInputStateArkansas())
+                    continue;
+            }
+
+            if (IsArkansasQsoParty
                 && string.Equals(requirement.Key, ContestFieldKeys.County, StringComparison.OrdinalIgnoreCase))
             {
                 if (!IsInputStateArkansas())
@@ -549,28 +552,11 @@ public sealed class LogInputViewModel : ViewModelBase
 
                 if (!IsValidArkansasCountyCode(county))
                 {
-                    errorMessage = "County must be 4 letters (A-Z).";
+                    errorMessage = "County must be 3 letters (A-Z).";
                     return false;
                 }
 
                 continue;
-            }
-
-            if (string.Equals(requirement.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase))
-            {
-                if (IsArkansasQsoParty)
-                {
-                    if (!TryValidateArkansasQsoPartyExchange(out errorMessage))
-                        return false;
-
-                    continue;
-                }
-
-                if (TryParseUnifiedExchange(InputExchange, out _, out _))
-                    continue;
-
-                errorMessage = "Exchange must be 2 letters (outside Arkansas) or 3 letters (Arkansas county).";
-                return false;
             }
 
             if (!string.IsNullOrWhiteSpace(GetContestFieldValue(requirement.Key)))
@@ -781,7 +767,17 @@ public sealed class LogInputViewModel : ViewModelBase
         if (!IsArkansasQsoParty)
             return;
 
-        if (IsInputStateArkansas())
+        if (IsArkansasStation && string.IsNullOrWhiteSpace(_inputState))
+        {
+            _inputState = "AR";
+            OnPropertyChanged(nameof(InputState));
+        }
+
+        var state = _inputState.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(state) || state.Length < 2)
+            return;
+
+        if (string.Equals(state, "AR", StringComparison.OrdinalIgnoreCase))
             return;
 
         if (string.IsNullOrWhiteSpace(_inputCounty))
@@ -793,7 +789,7 @@ public sealed class LogInputViewModel : ViewModelBase
 
     private static bool IsValidArkansasCountyCode(string county)
     {
-        return county.Length == 4 && county.All(char.IsLetter);
+        return county.Length == 3 && county.All(char.IsLetter);
     }
 
     private ConfigProfile ActiveConfigProfile()
