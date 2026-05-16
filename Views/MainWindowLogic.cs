@@ -9,6 +9,7 @@ public partial class MainWindow
     private ConfigurationWindow? _configurationWindow;
     private DxSpotsWindow? _dxSpotsWindow;
     private CabrilloExportWindow? _cabrilloExportWindow;
+    private ArqpProgressWindow? _arqpProgressWindow;
     private bool _isImportingAdif;
     private bool _isAppExitRequested;
     private bool _skipNextMenuSelectionChanged;
@@ -112,9 +113,11 @@ public partial class MainWindow
             OpenCabrilloExportWindow();
         else if (node.Title == "DX Spots" || node.Title == "DX Cluster")
             ToggleDxSpotsWindow();
+        else if (node.Title == "ARQP Progress")
+            OpenArqpProgressWindow();
         else if (node.Title == "Callbook")
             ShowNotImplemented("Callbook");
-        else if (node.Title == "Awards")
+        else if (node.Title == "Awards" && !node.HasChildren)
             ShowNotImplemented("Awards");
         else if (node.Title == "eLogs")
             ShowNotImplemented("eLogs");
@@ -220,6 +223,23 @@ public partial class MainWindow
         }
 
         ShowWithVisibleOwner(_cabrilloExportWindow);
+    }
+
+    private void OpenArqpProgressWindow()
+    {
+        if (_arqpProgressWindow is { IsVisible: true })
+        {
+            _arqpProgressWindow.Activate();
+            return;
+        }
+
+        if (_arqpProgressWindow is null)
+        {
+            _arqpProgressWindow = App.FindOpenWindow<ArqpProgressWindow>() ?? new ArqpProgressWindow();
+            _arqpProgressWindow.Closed += (_, _) => _arqpProgressWindow = null;
+        }
+
+        ShowWithVisibleOwner(_arqpProgressWindow);
     }
 
     private void OpenNewContactWindow()
