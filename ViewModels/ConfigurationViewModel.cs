@@ -27,6 +27,8 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _databaseFolderPath = string.Empty;
     private string _databaseFileName = "hambuslog.db";
     private string _connectionString = "Data Source=hambuslog.db";
+    private string _applicationLogFolderPath = string.Empty;
+    private string _applicationLogFileName = "hambuslog.log";
     private string _stationCallSign = string.Empty;
     private string _myLocation = string.Empty;
     private string _myGridSquare = string.Empty;
@@ -235,7 +237,10 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set
         {
             if (SetProperty(ref _databaseFolderPath, value ?? string.Empty))
+            {
                 OnPropertyChanged(nameof(DatabaseFilePath));
+                OnPropertyChanged(nameof(ResolvedApplicationLogFolderPath));
+            }
         }
     }
 
@@ -257,6 +262,50 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             var (folderPath, fileName) = SplitDatabasePath(value);
             DatabaseFolderPath = folderPath;
             DatabaseFileName = fileName;
+        }
+    }
+
+    public string ApplicationLogFolderPath
+    {
+        get => _applicationLogFolderPath;
+        set
+        {
+            if (SetProperty(ref _applicationLogFolderPath, value ?? string.Empty))
+            {
+                OnPropertyChanged(nameof(ApplicationLogFilePath));
+                OnPropertyChanged(nameof(ResolvedApplicationLogFolderPath));
+            }
+        }
+    }
+
+    public string ApplicationLogFileName
+    {
+        get => _applicationLogFileName;
+        set
+        {
+            if (SetProperty(ref _applicationLogFileName, value ?? string.Empty))
+                OnPropertyChanged(nameof(ApplicationLogFilePath));
+        }
+    }
+
+    public string ApplicationLogFilePath
+    {
+        get => BuildLogPath(ApplicationLogFolderPath, ApplicationLogFileName);
+        set
+        {
+            var (folderPath, fileName) = SplitLogPath(value);
+            ApplicationLogFolderPath = folderPath;
+            ApplicationLogFileName = fileName;
+        }
+    }
+
+    public string ResolvedApplicationLogFolderPath
+    {
+        get
+        {
+            return string.IsNullOrWhiteSpace(ApplicationLogFolderPath)
+                ? GetDefaultLogFolderPath(DatabaseFolderPath)
+                : ApplicationLogFolderPath;
         }
     }
 
@@ -584,6 +633,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             var normalizedDatabaseFolderPath = normalizedLocation.FolderPath;
             var normalizedDatabaseFileName = normalizedLocation.FileName;
             var normalizedDatabaseFilePath = BuildDatabasePath(normalizedDatabaseFolderPath, normalizedDatabaseFileName);
+            var normalizedLogLocation = NormalizeLogLocation(ApplicationLogFolderPath, ApplicationLogFileName, ApplicationLogFilePath);
+            var normalizedLogFolderPath = normalizedLogLocation.FolderPath;
+            var normalizedLogFileName = normalizedLogLocation.FileName;
+            if (string.IsNullOrWhiteSpace(normalizedLogFolderPath))
+                normalizedLogFolderPath = GetDefaultLogFolderPath(normalizedDatabaseFolderPath);
+            var normalizedLogFilePath = BuildLogPath(normalizedLogFolderPath, normalizedLogFileName);
             var resolvedConnectionString = BuildConnectionString(ConnectionString, normalizedDatabaseFilePath);
             var previousConnectionString = _appConfig.Profiles.TryGetValue(_selectedProfile, out var existingProfile)
                 ? existingProfile.ConnectionString?.Trim() ?? string.Empty
@@ -607,6 +662,9 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 DatabaseFolderPath = normalizedDatabaseFolderPath,
                 DatabaseFileName = normalizedDatabaseFileName,
                 DatabaseFilePath = normalizedDatabaseFilePath,
+                ApplicationLogFolderPath = normalizedLogFolderPath,
+                ApplicationLogFileName = normalizedLogFileName,
+                ApplicationLogFilePath = normalizedLogFilePath,
                 MenuBackgroundColor = ToHexRgb(MenuBackgroundColor),
                 MenuForegroundColor = ToHexRgb(MenuForegroundColor),
                 ButtonNormalColor = ToHexRgb(ButtonNormalColor),
@@ -680,6 +738,8 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
             DatabaseFolderPath = normalizedDatabaseFolderPath;
             DatabaseFileName = normalizedDatabaseFileName;
+            ApplicationLogFolderPath = normalizedLogFolderPath;
+            ApplicationLogFileName = normalizedLogFileName;
             ConnectionString = resolvedConnectionString;
             UpdateContestTimeWindows();
             AppConfigurationStore.Save(_appConfig);
@@ -749,6 +809,9 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             DatabaseFolderPath = src.DatabaseFolderPath,
             DatabaseFileName = src.DatabaseFileName,
             DatabaseFilePath = src.DatabaseFilePath,
+            ApplicationLogFolderPath = src.ApplicationLogFolderPath,
+            ApplicationLogFileName = src.ApplicationLogFileName,
+            ApplicationLogFilePath = src.ApplicationLogFilePath,
             MenuBackgroundColor = ToHexRgb(MenuBackgroundColor),
             MenuForegroundColor = ToHexRgb(MenuForegroundColor),
             ButtonNormalColor = ToHexRgb(ButtonNormalColor),
@@ -861,6 +924,16 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
         DatabaseFolderPath = normalizedLocation.FolderPath;
         DatabaseFileName = normalizedLocation.FileName;
+
+        var normalizedLogLocation = NormalizeLogLocation(
+            profile.ApplicationLogFolderPath,
+            profile.ApplicationLogFileName,
+            profile.ApplicationLogFilePath);
+        var logFolderPath = string.IsNullOrWhiteSpace(normalizedLogLocation.FolderPath)
+            ? GetDefaultLogFolderPath(DatabaseFolderPath)
+            : normalizedLogLocation.FolderPath;
+        ApplicationLogFolderPath = logFolderPath;
+        ApplicationLogFileName = normalizedLogLocation.FileName;
 
         AdifDirectory = profile.AdifDirectory;
         StationCallSign = profile.StationCallSign;
@@ -1388,6 +1461,109 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         return extension.Equals(".db", StringComparison.OrdinalIgnoreCase)
             || extension.Equals(".sqlite", StringComparison.OrdinalIgnoreCase)
             || extension.Equals(".sqlite3", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string BuildLogPath(string? folderPath, string? fileName)
+    {
+        var normalizedFileName = NormalizeLogFileName(fileName);
+        if (string.IsNullOrWhiteSpace(folderPath))
+            return normalizedFileName;
+
+        return Path.Combine(folderPath.Trim(), normalizedFileName);
+    }
+
+    private static (string FolderPath, string FileName) SplitLogPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return (string.Empty, "hambuslog.log");
+
+        var trimmed = path.Trim();
+        var fileName = Path.GetFileName(trimmed);
+        var directory = Path.GetDirectoryName(trimmed) ?? string.Empty;
+
+        return (directory, string.IsNullOrWhiteSpace(fileName) ? "hambuslog.log" : fileName);
+    }
+
+    private static string NormalizeLogFolderPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return string.Empty;
+
+        var trimmed = path.Trim();
+        if (IsLikelyLogFilePath(trimmed))
+        {
+            var fileDirectory = Path.GetDirectoryName(trimmed);
+            if (string.IsNullOrWhiteSpace(fileDirectory))
+                return string.Empty;
+
+            return Path.GetFullPath(fileDirectory);
+        }
+
+        return Path.GetFullPath(trimmed);
+    }
+
+    private static string NormalizeLogFileName(string? fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return "hambuslog.log";
+
+        var trimmed = fileName.Trim();
+        var normalized = Path.GetFileName(trimmed);
+        return string.IsNullOrWhiteSpace(normalized) ? "hambuslog.log" : normalized;
+    }
+
+    private static (string FolderPath, string FileName) NormalizeLogLocation(string? folderPath, string? fileName, string? fallbackPath)
+    {
+        var trimmedFolder = folderPath?.Trim() ?? string.Empty;
+        var trimmedFile = fileName?.Trim() ?? string.Empty;
+
+        if (IsLikelyLogFilePath(trimmedFolder))
+        {
+            var extractedFile = Path.GetFileName(trimmedFolder);
+            var extractedFolder = Path.GetDirectoryName(trimmedFolder);
+
+            if (!string.IsNullOrWhiteSpace(extractedFolder))
+                trimmedFolder = extractedFolder;
+
+            if (string.IsNullOrWhiteSpace(trimmedFile)
+                || trimmedFile.Contains(Path.DirectorySeparatorChar)
+                || trimmedFile.Contains(Path.AltDirectorySeparatorChar))
+            {
+                trimmedFile = extractedFile;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(trimmedFolder) || string.IsNullOrWhiteSpace(trimmedFile))
+        {
+            var fallback = fallbackPath?.Trim() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(fallback))
+            {
+                if (string.IsNullOrWhiteSpace(trimmedFolder))
+                    trimmedFolder = Path.GetDirectoryName(fallback) ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(trimmedFile))
+                    trimmedFile = Path.GetFileName(fallback);
+            }
+        }
+
+        return (NormalizeLogFolderPath(trimmedFolder), NormalizeLogFileName(trimmedFile));
+    }
+
+    private static bool IsLikelyLogFilePath(string? candidate)
+    {
+        if (string.IsNullOrWhiteSpace(candidate))
+            return false;
+
+        var trimmed = candidate.Trim();
+        return Path.HasExtension(trimmed) && !trimmed.EndsWith(Path.DirectorySeparatorChar) && !trimmed.EndsWith(Path.AltDirectorySeparatorChar);
+    }
+
+    private static string GetDefaultLogFolderPath(string? databaseFolderPath)
+    {
+        var baseDir = string.IsNullOrWhiteSpace(databaseFolderPath)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "HamBusLog")
+            : databaseFolderPath.Trim();
+        return Path.Combine(baseDir, "logs");
     }
 
     private void PersistRigRadioSettings(int? radioId, string? radioName)

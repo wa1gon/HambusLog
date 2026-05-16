@@ -15,13 +15,6 @@ public sealed class DxClusterSpotPublisher : IDxClusterSpotPublisher
         var host = string.IsNullOrWhiteSpace(cluster.Hostname) ? "127.0.0.1" : cluster.Hostname.Trim();
         var port = cluster.TcpPort <= 0 ? 7300 : cluster.TcpPort;
 
-        var spotter = string.IsNullOrWhiteSpace(request.SpotterCall)
-            ? (cluster.Callsign ?? string.Empty).Trim()
-            : request.SpotterCall.Trim();
-
-        if (string.IsNullOrWhiteSpace(spotter))
-            return "Set a DX cluster callsign in Configuration before spotting.";
-
         var target = (request.TargetCall ?? string.Empty).Trim().ToUpperInvariant();
         if (string.IsNullOrWhiteSpace(target))
             return "Enter a callsign to spot.";
@@ -31,11 +24,15 @@ public sealed class DxClusterSpotPublisher : IDxClusterSpotPublisher
 
         var frequencyKHz = request.FrequencyMhz * 1000m;
         var freqText = frequencyKHz.ToString("0.0", CultureInfo.InvariantCulture);
-        var comment = string.IsNullOrWhiteSpace(request.Comment) ? "HamBusLog" : request.Comment.Trim();
-        var spotLine = $"DX de {spotter} {freqText} {target} {comment}";
+        var comment = string.IsNullOrWhiteSpace(request.Comment) ? string.Empty : request.Comment.Trim();
+        var spotLine = string.IsNullOrWhiteSpace(comment)
+            ? $"DX {target} {freqText}"
+            : $"DX {target} {freqText} {comment}";
 
         try
         {
+            App.LogDxClusterNonSpot("OUT", spotLine);
+
             using var client = new TcpClient();
             await client.ConnectAsync(host, port, ct);
 
@@ -43,20 +40,17 @@ public sealed class DxClusterSpotPublisher : IDxClusterSpotPublisher
             using var reader = new StreamReader(stream, Encoding.ASCII, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
             await using var writer = new StreamWriter(stream, Encoding.ASCII, leaveOpen: true) { AutoFlush = true };
 
-            var callsign = (cluster.Callsign ?? string.Empty).Trim();
-            var password = cluster.Password ?? string.Empty;
-            var command = (cluster.Command ?? string.Empty).Trim();
-
-            if (!string.IsNullOrWhiteSpace(callsign))
-                await writer.WriteLineAsync(callsign);
-            if (!string.IsNullOrWhiteSpace(password))
-                await writer.WriteLineAsync(password);
-            if (!string.IsNullOrWhiteSpace(command))
-                await writer.WriteLineAsync(command);
-
             await writer.WriteLineAsync(spotLine);
 
-            _ = reader.ReadLineAsync(ct);
+            var responseTask = reader.ReadLineAsync(ct).AsTask();
+            var completed = await Task.WhenAny(responseTask, Task.Delay(TimeSpan.FromSeconds(2), ct));
+            if (completed == responseTask)
+            {
+                var response = await responseTask;
+                if (!string.IsNullOrWhiteSpace(response))
+                    App.LogDxClusterNonSpot("IN", $"Spot response: {response}");
+            }
+
             return request.IsSelfSpot
                 ? $"Self-spot sent for {target} at {freqText} kHz."
                 : $"Spot sent for {target} at {freqText} kHz.";
@@ -75,4 +69,3 @@ public sealed class DxClusterSpotPublisher : IDxClusterSpotPublisher
         }
     }
 }
-

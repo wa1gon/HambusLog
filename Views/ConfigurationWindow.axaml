@@ -567,8 +567,8 @@
                 </ScrollViewer>
             </TabItem>
 
-            <!-- ── Database Tab ──────────────────────────────────── -->
-            <TabItem Header="Database">
+            <!-- ── File Locations Tab ──────────────────────────────────── -->
+            <TabItem Header="File Locations">
                 <ScrollViewer Margin="12" VerticalScrollBarVisibility="Auto">
                     <StackPanel Spacing="10">
 
@@ -579,7 +579,7 @@
                                 <TextBlock Classes="CardHeading" Text="Database Location (SQLite)" />
                                 <TextBlock Text="Choose a folder and filename. These values are stored in config and used to build the SQLite connection string."
                                            Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
-                                <Grid ColumnDefinitions="80,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="8">
+                                <Grid ColumnDefinitions="80,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Folder" VerticalAlignment="Center"
                                                FontWeight="SemiBold" FontSize="12"
                                                Foreground="{DynamicResource AppMutedForegroundBrush}" />
@@ -605,6 +605,51 @@
                                                    Foreground="{DynamicResource AppMutedForegroundBrush}"
                                                    FontSize="12" MaxWidth="360" />
                                     </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="14" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="CardHeading" Text="Application Logs" />
+                                <TextBlock Text="Choose where HamBusLog writes application log files (including DX cluster traffic logs)."
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                                <Grid ColumnDefinitions="80,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Folder" VerticalAlignment="Center"
+                                               FontWeight="SemiBold" FontSize="12"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                        <TextBox Text="{Binding ApplicationLogFolderPath}"
+                                                 Watermark="/home/you/.local/share/hambuslog/logs"
+                                                 Width="500" Padding="8,7" />
+                                        <Button Content="Browse..." Click="OnBrowseApplicationLogDirectoryClicked"
+                                                Padding="12,7"
+                                                Background="{DynamicResource AppButtonCautionBrush}"
+                                                Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="File" VerticalAlignment="Center"
+                                               FontWeight="SemiBold" FontSize="12"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                                        <TextBox Text="{Binding ApplicationLogFileName}"
+                                                 Watermark="hambuslog.log"
+                                                 Width="200" Padding="8,7" />
+                                        <TextBlock Text="{Binding ApplicationLogFilePath}"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                                   FontSize="12" MaxWidth="360" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Resolved" VerticalAlignment="Center"
+                                               FontWeight="SemiBold" FontSize="12"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ResolvedApplicationLogFolderPath}"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                               FontSize="12" MaxWidth="520" />
                                 </Grid>
                             </StackPanel>
                         </Border>

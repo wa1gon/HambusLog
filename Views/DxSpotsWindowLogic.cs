@@ -92,6 +92,14 @@ public partial class DxSpotsWindow
         App.Toasts.ShowError("DX spot filters", errorMessage);
     }
 
+    private void OnStayOnTopChanged(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not CheckBox checkBox)
+            return;
+
+        Topmost = checkBox.IsChecked == true;
+    }
+
     private static decimal ConvertSpotFrequencyToMhz(double spotFrequency)
     {
         if (spotFrequency <= 0)

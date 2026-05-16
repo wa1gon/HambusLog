@@ -31,6 +31,7 @@ public partial class LogInputWindow
         InitializeComponent();
         App.TrackWindowPlacement(this, nameof(LogInputWindow));
         App.Toasts.RegisterWindow(this);
+        ApplyStayOnTopSetting();
         _viewModel = new LogInputViewModel();
         _viewModel.SetInitialSpot(initialCallsign, initialFrequencyMhz, initialSpotInfo);
         DataContext = _viewModel;
@@ -130,22 +131,14 @@ public partial class LogInputWindow
             return;
         }
 
+        App.LogDxClusterNonSpot("SYS", $"Spot failed: {result}");
         App.Toasts.ShowError("DX cluster spot", result);
     }
 
     private string BuildSpotComment(bool isSelfSpot)
     {
-        var mode = _viewModel.InputMode?.Trim().ToUpperInvariant() ?? string.Empty;
-        var band = _viewModel.InputBand?.Trim().ToUpperInvariant() ?? string.Empty;
-        var tag = isSelfSpot ? "SELF-SPOT" : "SPOT";
-
-        var parts = new List<string> { tag };
-        if (!string.IsNullOrWhiteSpace(mode))
-            parts.Add(mode);
-        if (!string.IsNullOrWhiteSpace(band))
-            parts.Add(band);
-
-        return string.Join(" ", parts);
+        var remark = _viewModel.SpotRemark?.Trim() ?? string.Empty;
+        return remark;
     }
 
     private void SetStatus(string message)
@@ -165,5 +158,40 @@ public partial class LogInputWindow
         _activeRigRefreshTimer.Tick -= OnActiveRigRefreshTick;
         _activeRigRefreshTimer.Stop();
         Closed -= OnWindowClosed;
+    }
+
+    private void ApplyStayOnTopSetting()
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        Topmost = profile.StayOnTopLogInputWindow;
+
+        var checkBox = this.FindControl<CheckBox>("StayOnTopCheckBox");
+        if (checkBox is not null)
+            checkBox.IsChecked = Topmost;
+    }
+
+    private void SaveStayOnTopSetting(bool isEnabled)
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        profile.StayOnTopLogInputWindow = isEnabled;
+        AppConfigurationStore.Save(config);
+    }
+
+    private void UpdateStayOnTop(bool isEnabled)
+    {
+        Topmost = isEnabled;
+        SaveStayOnTopSetting(isEnabled);
+    }
+
+    private void OnStayOnTopChecked(object? sender, RoutedEventArgs e)
+    {
+        UpdateStayOnTop(true);
+    }
+
+    private void OnStayOnTopUnchecked(object? sender, RoutedEventArgs e)
+    {
+        UpdateStayOnTop(false);
     }
 }

@@ -12,6 +12,7 @@ public partial class App
     private static HamBusLogDbContext? _dbContext;
     private static string _dbConnectionString = string.Empty;
     private static readonly object _dbContextSync = new();
+    private static readonly object _dxClusterLogSync = new();
     public static event EventHandler? DbContextReinitialized;
     public static event EventHandler<Qso>? QsoSaved;
 
@@ -135,6 +136,8 @@ public partial class App
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
             DisableAvaloniaDataAnnotationValidation();
             RigCatalogStore.InitializeFromConfiguration();
+            ClearDxClusterLogs();
+            LogDxClusterNonSpot("SYS", "Application started");
             _ = RigctldConnectionManager.RefreshActiveConnectionsAsync();
             _ = DxClusterReader.StartAsync();
             desktop.Exit += (_, _) =>
@@ -472,6 +475,78 @@ public partial class App
         foreach (var plugin in dataValidationPluginsToRemove)
         {
             BindingPlugins.DataValidators.Remove(plugin);
+        }
+    }
+
+    public static string GetDataDirectoryPath()
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        var baseDir = string.IsNullOrWhiteSpace(profile.ApplicationLogFolderPath)
+            ? (string.IsNullOrWhiteSpace(profile.DatabaseFolderPath)
+                ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "HamBusLog")
+                : profile.DatabaseFolderPath)
+            : profile.ApplicationLogFolderPath;
+
+        var logDir = string.IsNullOrWhiteSpace(profile.ApplicationLogFolderPath)
+            ? Path.Combine(baseDir, "logs")
+            : baseDir;
+        Directory.CreateDirectory(logDir);
+        return logDir;
+    }
+
+    public static void LogDxClusterNonSpot(string direction, string line)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+            return;
+
+        try
+        {
+            var dataDir = GetDataDirectoryPath();
+            var fileName = $"dxcluster-nonspots-{DateTime.UtcNow:yyyyMMdd}.log";
+            var path = Path.Combine(dataDir, fileName);
+            var entry = $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}Z [{direction}] {line}";
+            lock (_dxClusterLogSync)
+            {
+                using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                using var writer = new StreamWriter(stream, Encoding.UTF8);
+                writer.WriteLine(entry);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"DX cluster log error: {ex.Message}");
+        }
+    }
+
+    private static void ClearDxClusterLogs()
+    {
+        try
+        {
+            var dataDir = GetDataDirectoryPath();
+            var patterns = new[]
+            {
+                "dxcluster-*.log",
+                "dxcluster-nonspots-*.log"
+            };
+            foreach (var pattern in patterns)
+            {
+                foreach (var file in Directory.EnumerateFiles(dataDir, pattern, SearchOption.TopDirectoryOnly))
+                {
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"DX cluster log cleanup error: {ex.Message}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"DX cluster log cleanup error: {ex.Message}");
         }
     }
 }

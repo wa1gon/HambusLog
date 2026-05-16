@@ -17,8 +17,44 @@ public partial class MainWindow
     public MainWindow()
     {
         InitializeComponent();
+        ApplyStayOnTopSetting();
         // MainWindow placement tracking is disabled to avoid close-button hangs on Linux.
         App.Toasts.RegisterWindow(this);
+    }
+
+    private void ApplyStayOnTopSetting()
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        Topmost = profile.StayOnTopMainWindow;
+
+        var checkBox = this.FindControl<CheckBox>("StayOnTopCheckBox");
+        if (checkBox is not null)
+            checkBox.IsChecked = Topmost;
+    }
+
+    private void SaveStayOnTopSetting(bool isEnabled)
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        profile.StayOnTopMainWindow = isEnabled;
+        AppConfigurationStore.Save(config);
+    }
+
+    private void UpdateStayOnTop(bool isEnabled)
+    {
+        Topmost = isEnabled;
+        SaveStayOnTopSetting(isEnabled);
+    }
+
+    private void OnStayOnTopChecked(object? sender, RoutedEventArgs e)
+    {
+        UpdateStayOnTop(true);
+    }
+
+    private void OnStayOnTopUnchecked(object? sender, RoutedEventArgs e)
+    {
+        UpdateStayOnTop(false);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)

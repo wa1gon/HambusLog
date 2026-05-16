@@ -33,6 +33,9 @@ public sealed class ConfigProfile
     public string DatabaseFolderPath { get; set; } = string.Empty;
     public string DatabaseFileName { get; set; } = "hambuslog.db";
     public string DatabaseFilePath { get; set; } = string.Empty;
+    public string ApplicationLogFolderPath { get; set; } = string.Empty;
+    public string ApplicationLogFileName { get; set; } = "hambuslog.log";
+    public string ApplicationLogFilePath { get; set; } = string.Empty;
     public string BackgroundColor { get; set; } = "#0F172A";
     public string ForegroundColor { get; set; } = "#E5E7EB";
     public string MenuBackgroundColor { get; set; } = "#111827";
@@ -65,6 +68,9 @@ public sealed class ConfigProfile
     public string MyFieldDaySection { get; set; } = string.Empty;
     public string MyFieldDayClass { get; set; } = string.Empty;
     public string LastContestKey { get; set; } = string.Empty;
+    public bool StayOnTopMainWindow { get; set; }
+    public bool StayOnTopLogInputWindow { get; set; }
+    public bool StayOnTopAddContactWindow { get; set; }
 }
 
 public sealed class ContestDefinitionConfig

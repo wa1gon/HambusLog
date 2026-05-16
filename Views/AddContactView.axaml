@@ -51,8 +51,15 @@
 
                 <TextBlock Grid.Row="10" Grid.Column="0" VerticalAlignment="Center" Text="Field Day Class" />
                 <TextBox Grid.Row="10" Grid.Column="1" Text="{Binding InputFieldDayClass, Mode=TwoWay}" Watermark="1D" />
+
+                <CheckBox Content="Stay on top"
+                          Margin="10,0,0,0"
+                          VerticalAlignment="Center"
+                          Foreground="{DynamicResource AppMutedForegroundBrush}"
+                          Checked="OnStayOnTopChecked"
+                          Unchecked="OnStayOnTopUnchecked"
+                          Name="StayOnTopCheckBox" />
             </Grid>
         </Border>
     </ScrollViewer>
 </UserControl>
-

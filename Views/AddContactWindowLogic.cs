@@ -13,6 +13,9 @@ public partial class AddContactWindow
         App.Toasts.RegisterWindow(this);
         _viewModel = new AddContactViewModel();
         DataContext = _viewModel;
-        Content = new AddContactView { DataContext = _viewModel };
     }
+
+    private void OnStayOnTopChecked(object? sender, RoutedEventArgs e) => Topmost = true;
+
+    private void OnStayOnTopUnchecked(object? sender, RoutedEventArgs e) => Topmost = false;
 }

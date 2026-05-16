@@ -85,15 +85,20 @@ public sealed class DxClusterTcpReader : IDxClusterTcpReader
     {
         while (!ct.IsCancellationRequested)
         {
+            var connected = false;
+            var host = "127.0.0.1";
+            var port = 7300;
             try
             {
                 var config = AppConfigurationStore.Load();
                 var cluster = config.Cluster ?? new ClusterConfig();
-                var host = string.IsNullOrWhiteSpace(cluster.Hostname) ? "127.0.0.1" : cluster.Hostname.Trim();
-                var port = cluster.TcpPort <= 0 ? 7300 : cluster.TcpPort;
+                host = string.IsNullOrWhiteSpace(cluster.Hostname) ? "127.0.0.1" : cluster.Hostname.Trim();
+                port = cluster.TcpPort <= 0 ? 7300 : cluster.TcpPort;
 
                 using var client = new TcpClient();
                 await client.ConnectAsync(host, port, ct);
+                connected = true;
+                App.LogDxClusterNonSpot("SYS", $"Connected to {host}:{port}");
 
                 using var stream = client.GetStream();
                 using var reader = new StreamReader(stream, Encoding.ASCII, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
@@ -109,13 +114,28 @@ public sealed class DxClusterTcpReader : IDxClusterTcpReader
 
                 if (!string.IsNullOrWhiteSpace(callsign))
                 {
-                    await writer.WriteLineAsync(callsign);
+                    await writer.WriteLineAsync(callsign).ConfigureAwait(false);
+                    App.LogDxClusterNonSpot("OUT", callsign);
                     loginSent = true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(password))
+                {
+                    await writer.WriteLineAsync(password).ConfigureAwait(false);
+                    App.LogDxClusterNonSpot("OUT", "PASSWORD [redacted]");
+                    passwordSent = true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(command) && loginSent)
+                {
+                    await writer.WriteLineAsync(command).ConfigureAwait(false);
+                    App.LogDxClusterNonSpot("OUT", command);
+                    commandSent = true;
                 }
 
                 while (!ct.IsCancellationRequested)
                 {
-                    var line = await reader.ReadLineAsync(ct);
+                    var line = await reader.ReadLineAsync(ct).ConfigureAwait(false);
                     if (line is null)
                         break;
 
@@ -125,6 +145,7 @@ public sealed class DxClusterTcpReader : IDxClusterTcpReader
                         && (lowered.Contains("login") || lowered.Contains("call:")))
                     {
                         await writer.WriteLineAsync(callsign);
+                        App.LogDxClusterNonSpot("OUT", callsign);
                         loginSent = true;
                         continue;
                     }
@@ -132,6 +153,7 @@ public sealed class DxClusterTcpReader : IDxClusterTcpReader
                     if (!passwordSent && !string.IsNullOrWhiteSpace(password) && lowered.Contains("password"))
                     {
                         await writer.WriteLineAsync(password);
+                        App.LogDxClusterNonSpot("OUT", "PASSWORD [redacted]");
                         passwordSent = true;
                         continue;
                     }
@@ -139,10 +161,13 @@ public sealed class DxClusterTcpReader : IDxClusterTcpReader
                     if (!commandSent && !string.IsNullOrWhiteSpace(command) && loginSent)
                     {
                         await writer.WriteLineAsync(command);
+                        App.LogDxClusterNonSpot("OUT", command);
                         commandSent = true;
                     }
 
-                    _ = App.DxSpotFeed.PublishLine(line);
+                    var published = App.DxSpotFeed.PublishLine(line);
+                    if (!IsDxSpotLine(line))
+                        App.LogDxClusterNonSpot("IN", line);
                 }
             }
             catch (OperationCanceledException)
@@ -152,6 +177,11 @@ public sealed class DxClusterTcpReader : IDxClusterTcpReader
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"DX cluster reader error: {ex.Message}");
+            }
+            finally
+            {
+                if (connected)
+                    App.LogDxClusterNonSpot("SYS", $"Disconnected from {host}:{port}");
             }
 
             try
@@ -163,6 +193,15 @@ public sealed class DxClusterTcpReader : IDxClusterTcpReader
                 break;
             }
         }
+    }
+
+    private static bool IsDxSpotLine(string? line)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+            return false;
+
+        var trimmed = line.TrimStart();
+        return trimmed.StartsWith("DX ", StringComparison.OrdinalIgnoreCase);
     }
 
     public void Dispose()
@@ -179,4 +218,3 @@ public sealed class DxClusterTcpReader : IDxClusterTcpReader
         _lifecycleGate.Dispose();
     }
 }
-
