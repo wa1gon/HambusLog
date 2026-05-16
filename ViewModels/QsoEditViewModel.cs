@@ -13,6 +13,7 @@ public sealed partial class QsoEditViewModel : ObservableObject
     [ObservableProperty] private string _qsoDateText = string.Empty;
     [ObservableProperty] private string _stationCallSign = string.Empty;
     [ObservableProperty] private string _operator = string.Empty;
+    [ObservableProperty] private string _state = string.Empty;
 
     [ObservableProperty] private string _newDetailField = string.Empty;
     [ObservableProperty] private string _newDetailValue = string.Empty;
@@ -34,6 +35,7 @@ public sealed partial class QsoEditViewModel : ObservableObject
             ?? StationCallSign;
         var dt = qso.QsoDate == default ? DateTime.Now : qso.QsoDate;
         QsoDateText = dt.ToString("yyyy-MM-dd HH:mm");
+        State = qso.State ?? string.Empty;
 
         Details.Clear();
         if (qso.Details is { Count: > 0 })
@@ -90,6 +92,7 @@ public sealed partial class QsoEditViewModel : ObservableObject
             Freq = freq,
             QsoDate = qsoDate,
             StationCallSign = (StationCallSign ?? string.Empty).Trim().ToUpperInvariant(),
+            State = (State ?? string.Empty).Trim().ToUpperInvariant(),
             Details = [],
             QslInfo = []
         };
@@ -120,5 +123,4 @@ public sealed partial class QsoEditViewModel : ObservableObject
         return copy;
     }
 }
-
 

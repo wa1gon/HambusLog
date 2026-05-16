@@ -43,6 +43,10 @@
                         <TextBlock Text="RST Rcvd" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
                         <TextBox Text="{Binding RstRcvd}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
                     </StackPanel>
+                    <StackPanel Grid.Column="3" Grid.Row="1" Spacing="3">
+                        <TextBlock Text="State/Prov" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
+                        <TextBox Text="{Binding State}" TextChanged="OnUppercaseInputChanged" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                    </StackPanel>
                     <StackPanel Grid.Column="0" Grid.Row="2" Spacing="3">
                         <TextBlock Text="Station Call" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
                         <TextBox Text="{Binding StationCallSign}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
@@ -88,5 +92,4 @@
         </Border>
     </Grid>
 </Window>
-
 

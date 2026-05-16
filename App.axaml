@@ -196,5 +196,22 @@
         <Style Selector="Button:pressed /template/ ContentPresenter">
             <Setter Property="TextElement.Foreground" Value="{DynamicResource AppHoverFontBrush}" />
         </Style>
+        <Style Selector="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
+            <Setter Property="Background" Value="{DynamicResource AppPanelBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+        </Style>
+        <Style Selector="CheckBox /template/ ContentPresenter">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource AppForegroundBrush}" />
+        </Style>
+        <Style Selector="CheckBox:checked">
+            <Setter Property="BorderBrush" Value="{DynamicResource AppButtonNormalBrush}" />
+        </Style>
+        <Style Selector="CheckBox:pointerover /template/ ContentPresenter">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource AppForegroundBrush}" />
+        </Style>
+        <Style Selector="CheckBox:pressed /template/ ContentPresenter">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource AppForegroundBrush}" />
+        </Style>
     </Application.Styles>
 </Application>

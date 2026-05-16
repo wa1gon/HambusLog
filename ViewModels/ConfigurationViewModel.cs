@@ -681,6 +681,10 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 InputSelectionForegroundColor = ToHexRgb(InputSelectionForegroundColor),
                 MutedForegroundColor = ToHexRgb(MutedForegroundColor),
                 HoverFontColor = ToHexRgb(HoverFontColor),
+                StayOnTopMainWindow = existingProfile?.StayOnTopMainWindow ?? false,
+                StayOnTopLogInputWindow = existingProfile?.StayOnTopLogInputWindow ?? false,
+                StayOnTopAddContactWindow = existingProfile?.StayOnTopAddContactWindow ?? false,
+                StayOnTopArqpProgressWindow = existingProfile?.StayOnTopArqpProgressWindow ?? false,
                 ConnectionString = resolvedConnectionString
             };
 
@@ -828,6 +832,10 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             InputSelectionForegroundColor = ToHexRgb(InputSelectionForegroundColor),
             MutedForegroundColor = ToHexRgb(MutedForegroundColor),
             HoverFontColor = ToHexRgb(HoverFontColor),
+            StayOnTopMainWindow = src.StayOnTopMainWindow,
+            StayOnTopLogInputWindow = src.StayOnTopLogInputWindow,
+            StayOnTopAddContactWindow = src.StayOnTopAddContactWindow,
+            StayOnTopArqpProgressWindow = src.StayOnTopArqpProgressWindow,
             ConnectionString = src.ConnectionString
         };
 
