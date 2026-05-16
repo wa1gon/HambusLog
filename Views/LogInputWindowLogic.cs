@@ -94,6 +94,60 @@ public partial class LogInputWindow
 
     public void OnCancelClicked(object? sender, RoutedEventArgs e) => Close();
 
+    public async void OnSpotClicked(object? sender, RoutedEventArgs e)
+    {
+        await SubmitSpotAsync(isSelfSpot: false);
+    }
+
+    public async void OnSelfSpotClicked(object? sender, RoutedEventArgs e)
+    {
+        await SubmitSpotAsync(isSelfSpot: true);
+    }
+
+    private async Task SubmitSpotAsync(bool isSelfSpot)
+    {
+        var target = isSelfSpot ? _viewModel.StationCallSign : _viewModel.InputCall;
+        var frequencyText = _viewModel.InputFreq?.Trim() ?? string.Empty;
+        if (!decimal.TryParse(frequencyText, NumberStyles.Number, CultureInfo.InvariantCulture, out var mhz) || mhz <= 0)
+        {
+            App.Toasts.ShowError("DX cluster spot", "Enter a valid frequency in MHz before spotting.");
+            return;
+        }
+
+        var comment = BuildSpotComment(isSelfSpot);
+        var request = new DxSpotRequest(
+            _viewModel.StationCallSign,
+            target,
+            mhz,
+            comment,
+            isSelfSpot);
+
+        var result = await App.DxClusterSpotPublisher.SendSpotAsync(request);
+        if (result.StartsWith("Spot sent", StringComparison.OrdinalIgnoreCase)
+            || result.StartsWith("Self-spot sent", StringComparison.OrdinalIgnoreCase))
+        {
+            App.Toasts.ShowSuccess("DX cluster spot", result);
+            return;
+        }
+
+        App.Toasts.ShowError("DX cluster spot", result);
+    }
+
+    private string BuildSpotComment(bool isSelfSpot)
+    {
+        var mode = _viewModel.InputMode?.Trim().ToUpperInvariant() ?? string.Empty;
+        var band = _viewModel.InputBand?.Trim().ToUpperInvariant() ?? string.Empty;
+        var tag = isSelfSpot ? "SELF-SPOT" : "SPOT";
+
+        var parts = new List<string> { tag };
+        if (!string.IsNullOrWhiteSpace(mode))
+            parts.Add(mode);
+        if (!string.IsNullOrWhiteSpace(band))
+            parts.Add(band);
+
+        return string.Join(" ", parts);
+    }
+
     private void SetStatus(string message)
     {
         var label = this.FindControl<TextBlock>("StatusLabel");

@@ -252,7 +252,7 @@
         <Border Grid.Row="2" Padding="0,10,0,0"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="0,1,0,0">
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
                 <Button Grid.Column="0"
                         Content="Log QSO"
                         Click="OnLogQsoClicked"
@@ -266,6 +266,18 @@
                            FontSize="12"
                            VerticalAlignment="Center" />
                 <Button Grid.Column="2"
+                        Content="Spot"
+                        Click="OnSpotClicked"
+                        Background="{DynamicResource AppButtonCautionBrush}"
+                        Foreground="{DynamicResource AppButtonCautionForegroundBrush}"
+                        Padding="16,9" CornerRadius="6" />
+                <Button Grid.Column="3"
+                        Content="Self-Spot"
+                        Click="OnSelfSpotClicked"
+                        Background="{DynamicResource AppButtonCautionBrush}"
+                        Foreground="{DynamicResource AppButtonCautionForegroundBrush}"
+                        Padding="16,9" CornerRadius="6" />
+                <Button Grid.Column="4"
                         Content="Cancel"
                         Click="OnCancelClicked"
                         Background="Transparent"

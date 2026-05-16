@@ -6,6 +6,7 @@ public partial class App
     public static IRigctldConnectionManager RigctldConnectionManager { get; } = new RigctldConnectionManager();
     public static IDxSpotFeed DxSpotFeed { get; } = new DxSpotFeed();
     public static IDxClusterTcpReader DxClusterReader { get; } = new DxClusterTcpReader();
+    public static IDxClusterSpotPublisher DxClusterSpotPublisher { get; } = new DxClusterSpotPublisher();
     public static IToastService Toasts { get; } = new ToastService();
 
     private static HamBusLogDbContext? _dbContext;
