@@ -74,6 +74,8 @@ public sealed class ContestDefinitionConfig
     public string AdifContestId { get; set; } = string.Empty;
     public string LicenseKey { get; set; } = string.Empty;
     public string ExchangeType { get; set; } = "normal";
+    public string StartUtc { get; set; } = string.Empty;
+    public string EndUtc { get; set; } = string.Empty;
     public List<ContestFieldRequirementConfig> RequiredFields { get; set; } = [];
 }
 

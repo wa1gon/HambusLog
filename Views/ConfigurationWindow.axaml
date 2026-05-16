@@ -187,6 +187,57 @@
                             </StackPanel>
                         </Border>
 
+                        <Border Padding="14" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="CardHeading" Text="Contest Schedule (UTC)" />
+                                <TextBlock Text="Set UTC start/end times used to allow log entries and filter log types."
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                                <Grid ColumnDefinitions="140,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               Text="Contest"
+                                               VerticalAlignment="Center"
+                                               FontWeight="SemiBold" />
+                                    <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3"
+                                              ItemsSource="{Binding ContestTimeWindows}"
+                                              SelectedItem="{Binding SelectedContestTimeWindow}"
+                                              MinWidth="300">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding DisplayName}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0"
+                                               Text="Start (UTC)"
+                                               VerticalAlignment="Center"
+                                               FontWeight="SemiBold" />
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                        <DatePicker SelectedDate="{Binding SelectedContestTimeWindow.StartDate}" />
+                                        <TimePicker SelectedTime="{Binding SelectedContestTimeWindow.StartTime}" />
+                                        <TextBlock Text="UTC" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0"
+                                               Text="End (UTC)"
+                                               VerticalAlignment="Center"
+                                               FontWeight="SemiBold" />
+                                    <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                        <DatePicker SelectedDate="{Binding SelectedContestTimeWindow.EndDate}" />
+                                        <TimePicker SelectedTime="{Binding SelectedContestTimeWindow.EndTime}" />
+                                        <TextBlock Text="UTC" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2"
+                                               Text="{Binding SelectedContestTimeWindow.WindowError}"
+                                               Foreground="{DynamicResource AppErrorBrush}"
+                                               FontSize="11"
+                                               IsVisible="{Binding SelectedContestTimeWindow.HasWindowError}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

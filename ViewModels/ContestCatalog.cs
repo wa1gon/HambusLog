@@ -21,7 +21,9 @@ public sealed record ContestDefinition(
     string AdifContestId,
     IReadOnlyList<ContestFieldRequirement> RequiredFields,
     bool UsesNormalExchange,
-    bool UsesFieldDayExchange);
+    bool UsesFieldDayExchange,
+    DateTime? StartUtc,
+    DateTime? EndUtc);
 
 public static class ContestCatalog
 {
@@ -67,6 +69,8 @@ public static class ContestCatalog
         var displayName = string.IsNullOrWhiteSpace(config.DisplayName) ? key : config.DisplayName.Trim();
         var adifId = string.IsNullOrWhiteSpace(config.AdifContestId) ? key : config.AdifContestId.Trim();
         var exchangeType = string.IsNullOrWhiteSpace(config.ExchangeType) ? "normal" : config.ExchangeType.Trim().ToLowerInvariant();
+        var startUtc = ParseUtc(config.StartUtc);
+        var endUtc = ParseUtc(config.EndUtc);
 
         var requiredFields = config.RequiredFields
             .Where(x => !string.IsNullOrWhiteSpace(x.Key))
@@ -76,10 +80,17 @@ public static class ContestCatalog
                 string.IsNullOrWhiteSpace(x.DetailFieldName) ? null : x.DetailFieldName.Trim()))
             .ToList();
 
-        return BuildFallback(key, displayName, exchangeType, requiredFields, adifId);
+        return BuildFallback(key, displayName, exchangeType, requiredFields, adifId, startUtc, endUtc);
     }
 
-    private static ContestDefinition BuildFallback(string key, string displayName, string exchangeType, IReadOnlyList<ContestFieldRequirement> requiredFields, string? adifId = null)
+    private static ContestDefinition BuildFallback(
+        string key,
+        string displayName,
+        string exchangeType,
+        IReadOnlyList<ContestFieldRequirement> requiredFields,
+        string? adifId = null,
+        DateTime? startUtc = null,
+        DateTime? endUtc = null)
     {
         return new ContestDefinition(
             key,
@@ -87,7 +98,26 @@ public static class ContestCatalog
             string.IsNullOrWhiteSpace(adifId) ? key : adifId,
             requiredFields,
             UsesNormalExchange: exchangeType == "normal",
-            UsesFieldDayExchange: exchangeType == "fieldday");
+            UsesFieldDayExchange: exchangeType == "fieldday",
+            StartUtc: startUtc,
+            EndUtc: endUtc);
+    }
+
+    private static DateTime? ParseUtc(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var trimmed = value.Trim();
+        if (DateTime.TryParseExact(trimmed, "yyyy-MM-dd HHmm", CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed))
+            return parsed;
+
+        if (DateTime.TryParse(trimmed, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out parsed))
+            return parsed;
+
+        return null;
     }
 }
 

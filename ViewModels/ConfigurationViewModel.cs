@@ -92,7 +92,8 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private static readonly Color DefaultHoverFontColor = Color.Parse("#FFFFFF");
 
     public ConfigurationViewModel()
-        : this(new HamBusLog.Hardware.SerialPortCatalogService(), new ContestImportService())
+        : this(new HamBusLog.Hardware.SerialPortCatalogService(),
+            new ContestImportService(new AlwaysValidContestLicenseValidationService()))
     {
     }
 
@@ -557,6 +558,21 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _hoverFontColor, value);
     }
 
+    private ObservableCollection<ContestTimeWindowViewModel> _contestTimeWindows = new();
+    private ContestTimeWindowViewModel? _selectedContestTimeWindow;
+
+    public ObservableCollection<ContestTimeWindowViewModel> ContestTimeWindows
+    {
+        get => _contestTimeWindows;
+        private set => SetProperty(ref _contestTimeWindows, value);
+    }
+
+    public ContestTimeWindowViewModel? SelectedContestTimeWindow
+    {
+        get => _selectedContestTimeWindow;
+        set => SetProperty(ref _selectedContestTimeWindow, value);
+    }
+
     public void Save()
     {
         try
@@ -665,6 +681,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             DatabaseFolderPath = normalizedDatabaseFolderPath;
             DatabaseFileName = normalizedDatabaseFileName;
             ConnectionString = resolvedConnectionString;
+            UpdateContestTimeWindows();
             AppConfigurationStore.Save(_appConfig);
 
             if (!string.Equals(previousConnectionString, resolvedConnectionString, StringComparison.Ordinal)
@@ -923,6 +940,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             ?? _appConfig.LicenseKey?.Trim()
             ?? string.Empty;
         UpdateImportedContestsSummary();
+        RefreshContestTimeWindows();
         ContestImportStatus = $"Loaded {_appConfig.Contests.Count} contest definitions from configuration.";
         ConfigFilePath = AppConfigurationStore.GetConfigFilePath();
     }
@@ -981,6 +999,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 _appConfig.LicenseKey = ContestImportLicenseKey.Trim();
 
             UpdateImportedContestsSummary();
+            RefreshContestTimeWindows();
             ContestImportStatus = $"✓ Imported {_appConfig.Contests.Count} contests from {Path.GetFileName(path)}.";
             StatusMessage = ContestImportStatus;
             return true;
@@ -1591,6 +1610,35 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         return DefaultRigctldPort;
     }
 
+    private void RefreshContestTimeWindows()
+    {
+        var next = new ObservableCollection<ContestTimeWindowViewModel>(
+            _appConfig.Contests
+                .Where(x => x is not null)
+                .OrderBy(x => string.IsNullOrWhiteSpace(x.DisplayName) ? x.Key : x.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .Select(x => ContestTimeWindowViewModel.FromConfig(x)));
+
+        ContestTimeWindows = next;
+        SelectedContestTimeWindow = ContestTimeWindows.FirstOrDefault();
+    }
+
+    private void UpdateContestTimeWindows()
+    {
+        if (_appConfig.Contests.Count == 0 || ContestTimeWindows.Count == 0)
+            return;
+
+        foreach (var window in ContestTimeWindows)
+        {
+            var contest = _appConfig.Contests.FirstOrDefault(x =>
+                string.Equals(x.Key, window.Key, StringComparison.OrdinalIgnoreCase));
+            if (contest is null)
+                continue;
+
+            contest.StartUtc = window.GetStartUtcString();
+            contest.EndUtc = window.GetEndUtcString();
+        }
+    }
+
     public void Dispose()
     {
         RigCatalog.Dispose();
@@ -1630,4 +1678,151 @@ public sealed class RigRadioOption : ObservableObject
     }
 
     public override string ToString() => Display;
+}
+
+public sealed class ContestTimeWindowViewModel : ViewModelBase
+{
+    private DateTimeOffset? _startDate;
+    private TimeSpan? _startTime;
+    private DateTimeOffset? _endDate;
+    private TimeSpan? _endTime;
+    private string _windowError = string.Empty;
+
+    public ContestTimeWindowViewModel(string key, string displayName)
+    {
+        Key = key;
+        DisplayName = displayName;
+    }
+
+    public string Key { get; }
+    public string DisplayName { get; }
+
+    public DateTimeOffset? StartDate
+    {
+        get => _startDate;
+        set
+        {
+            if (SetProperty(ref _startDate, value))
+                UpdateWindowError();
+        }
+    }
+
+    public TimeSpan? StartTime
+    {
+        get => _startTime;
+        set
+        {
+            if (SetProperty(ref _startTime, value))
+                UpdateWindowError();
+        }
+    }
+
+    public DateTimeOffset? EndDate
+    {
+        get => _endDate;
+        set
+        {
+            if (SetProperty(ref _endDate, value))
+                UpdateWindowError();
+        }
+    }
+
+    public TimeSpan? EndTime
+    {
+        get => _endTime;
+        set
+        {
+            if (SetProperty(ref _endTime, value))
+                UpdateWindowError();
+        }
+    }
+
+    public string WindowError
+    {
+        get => _windowError;
+        private set
+        {
+            if (SetProperty(ref _windowError, value))
+                OnPropertyChanged(nameof(HasWindowError));
+        }
+    }
+
+    public bool HasWindowError => !string.IsNullOrWhiteSpace(WindowError);
+
+    public static ContestTimeWindowViewModel FromConfig(ContestDefinitionConfig config)
+    {
+        var displayName = string.IsNullOrWhiteSpace(config.DisplayName) ? config.Key : config.DisplayName;
+        var vm = new ContestTimeWindowViewModel(config.Key, displayName);
+        if (TryParseUtc(config.StartUtc, out var startUtc))
+        {
+            vm.StartDate = startUtc.Date;
+            vm.StartTime = startUtc.UtcDateTime.TimeOfDay;
+        }
+
+        if (TryParseUtc(config.EndUtc, out var endUtc))
+        {
+            vm.EndDate = endUtc.Date;
+            vm.EndTime = endUtc.UtcDateTime.TimeOfDay;
+        }
+
+        vm.UpdateWindowError();
+        return vm;
+    }
+
+    public string GetStartUtcString() => FormatUtcString(StartDate, StartTime);
+
+    public string GetEndUtcString() => FormatUtcString(EndDate, EndTime);
+
+    private static string FormatUtcString(DateTimeOffset? date, TimeSpan? time)
+    {
+        if (date is null)
+            return string.Empty;
+
+        var timeValue = time ?? TimeSpan.Zero;
+        var utcDate = DateTime.SpecifyKind(date.Value.Date, DateTimeKind.Utc);
+        var combined = utcDate + timeValue;
+        return combined.ToString("yyyy-MM-dd HHmm", CultureInfo.InvariantCulture);
+    }
+
+    private static bool TryParseUtc(string? value, out DateTimeOffset parsed)
+    {
+        parsed = default;
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        if (DateTimeOffset.TryParseExact(value.Trim(), "yyyy-MM-dd HHmm", CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var exact))
+        {
+            parsed = exact;
+            return true;
+        }
+
+        if (DateTimeOffset.TryParse(value.Trim(), CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var fallback))
+        {
+            parsed = fallback;
+            return true;
+        }
+
+        return false;
+    }
+
+    private void UpdateWindowError()
+    {
+        if (StartDate is null || EndDate is null)
+        {
+            WindowError = string.Empty;
+            return;
+        }
+
+        var startUtc = DateTime.SpecifyKind(StartDate.Value.Date, DateTimeKind.Utc) + (StartTime ?? TimeSpan.Zero);
+        var endUtc = DateTime.SpecifyKind(EndDate.Value.Date, DateTimeKind.Utc) + (EndTime ?? TimeSpan.Zero);
+        if (endUtc < startUtc)
+        {
+            WindowError = "End time must be after start time (UTC).";
+            return;
+        }
+
+        WindowError = string.Empty;
+    }
 }
