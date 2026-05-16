@@ -31,6 +31,7 @@ public partial class LogInputWindow
         InitializeComponent();
         App.TrackWindowPlacement(this, nameof(LogInputWindow));
         App.Toasts.RegisterWindow(this);
+        ApplyStayOnTopSetting();
         _viewModel = new LogInputViewModel();
         _viewModel.SetInitialSpot(initialCallsign, initialFrequencyMhz, initialSpotInfo);
         DataContext = _viewModel;
@@ -94,6 +95,52 @@ public partial class LogInputWindow
 
     public void OnCancelClicked(object? sender, RoutedEventArgs e) => Close();
 
+    public async void OnSpotClicked(object? sender, RoutedEventArgs e)
+    {
+        await SubmitSpotAsync(isSelfSpot: false);
+    }
+
+    public async void OnSelfSpotClicked(object? sender, RoutedEventArgs e)
+    {
+        await SubmitSpotAsync(isSelfSpot: true);
+    }
+
+    private async Task SubmitSpotAsync(bool isSelfSpot)
+    {
+        var target = isSelfSpot ? _viewModel.StationCallSign : _viewModel.InputCall;
+        var frequencyText = _viewModel.InputFreq?.Trim() ?? string.Empty;
+        if (!decimal.TryParse(frequencyText, NumberStyles.Number, CultureInfo.InvariantCulture, out var mhz) || mhz <= 0)
+        {
+            App.Toasts.ShowError("DX cluster spot", "Enter a valid frequency in MHz before spotting.");
+            return;
+        }
+
+        var comment = BuildSpotComment(isSelfSpot);
+        var request = new DxSpotRequest(
+            _viewModel.StationCallSign,
+            target,
+            mhz,
+            comment,
+            isSelfSpot);
+
+        var result = await App.DxClusterSpotPublisher.SendSpotAsync(request);
+        if (result.StartsWith("Spot sent", StringComparison.OrdinalIgnoreCase)
+            || result.StartsWith("Self-spot sent", StringComparison.OrdinalIgnoreCase))
+        {
+            App.Toasts.ShowSuccess("DX cluster spot", result);
+            return;
+        }
+
+        App.LogDxClusterNonSpot("SYS", $"Spot failed: {result}");
+        App.Toasts.ShowError("DX cluster spot", result);
+    }
+
+    private string BuildSpotComment(bool isSelfSpot)
+    {
+        var remark = _viewModel.SpotRemark?.Trim() ?? string.Empty;
+        return remark;
+    }
+
     private void SetStatus(string message)
     {
         var label = this.FindControl<TextBlock>("StatusLabel");
@@ -111,5 +158,40 @@ public partial class LogInputWindow
         _activeRigRefreshTimer.Tick -= OnActiveRigRefreshTick;
         _activeRigRefreshTimer.Stop();
         Closed -= OnWindowClosed;
+    }
+
+    private void ApplyStayOnTopSetting()
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        Topmost = profile.StayOnTopLogInputWindow;
+
+        var checkBox = this.FindControl<CheckBox>("StayOnTopCheckBox");
+        if (checkBox is not null)
+            checkBox.IsChecked = Topmost;
+    }
+
+    private void SaveStayOnTopSetting(bool isEnabled)
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        profile.StayOnTopLogInputWindow = isEnabled;
+        AppConfigurationStore.Save(config);
+    }
+
+    private void UpdateStayOnTop(bool isEnabled)
+    {
+        Topmost = isEnabled;
+        SaveStayOnTopSetting(isEnabled);
+    }
+
+    private void OnStayOnTopChecked(object? sender, RoutedEventArgs e)
+    {
+        UpdateStayOnTop(true);
+    }
+
+    private void OnStayOnTopUnchecked(object? sender, RoutedEventArgs e)
+    {
+        UpdateStayOnTop(false);
     }
 }

@@ -11,5 +11,18 @@
         MinWidth="480"
         MinHeight="520"
         WindowStartupLocation="CenterOwner">
-    <views:AddContactView DataContext="{Binding}" />
+    <DockPanel>
+        <Border DockPanel.Dock="Top"
+                Padding="10,8"
+                Background="{DynamicResource AppPanelBackgroundBrush}"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="0,0,0,1">
+            <CheckBox Content="Stay on top"
+                      HorizontalAlignment="Right"
+                      Foreground="{DynamicResource AppMutedForegroundBrush}"
+                      Checked="OnStayOnTopChecked"
+                      Unchecked="OnStayOnTopUnchecked" />
+        </Border>
+        <views:AddContactView DataContext="{Binding}" />
+    </DockPanel>
 </Window>

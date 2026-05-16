@@ -864,6 +864,23 @@ public partial class ConfigurationWindow
             _viewModel.DatabaseFolderPath = folders[0].Path.LocalPath;
     }
 
+    public async void OnBrowseApplicationLogDirectoryClicked(object? sender, RoutedEventArgs e)
+    {
+        if (!StorageProvider.CanPickFolder)
+            return;
+
+        var suggestedStartLocation = await TryGetFolderFromPathAsync(_viewModel.ApplicationLogFolderPath);
+        var folders = await StorageProvider.OpenFolderPickerAsync(new Avalonia.Platform.Storage.FolderPickerOpenOptions
+        {
+            Title = "Select application log folder",
+            AllowMultiple = false,
+            SuggestedStartLocation = suggestedStartLocation
+        });
+
+        if (folders.Count > 0)
+            _viewModel.ApplicationLogFolderPath = folders[0].Path.LocalPath;
+    }
+
     private async Task<Avalonia.Platform.Storage.IStorageFolder?> TryGetFolderFromPathAsync(string? path)
     {
         if (string.IsNullOrWhiteSpace(path))

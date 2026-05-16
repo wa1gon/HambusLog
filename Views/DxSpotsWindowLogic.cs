@@ -81,6 +81,25 @@ public partial class DxSpotsWindow
         }
     }
 
+    private void OnOpenPrefixConfigClicked(object? sender, RoutedEventArgs e)
+    {
+        if (DxRegionPrefixCatalog.EnsureUserConfigExists(out var path, out var errorMessage))
+        {
+            App.Toasts.ShowInfo("DX spot filters", $"Edit prefix filters at: {path}");
+            return;
+        }
+
+        App.Toasts.ShowError("DX spot filters", errorMessage);
+    }
+
+    private void OnStayOnTopChanged(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not CheckBox checkBox)
+            return;
+
+        Topmost = checkBox.IsChecked == true;
+    }
+
     private static decimal ConvertSpotFrequencyToMhz(double spotFrequency)
     {
         if (spotFrequency <= 0)

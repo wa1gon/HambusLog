@@ -43,6 +43,7 @@ public sealed class LogInputViewModel : ViewModelBase
     // ----- detail row being edited -----
     private string _newDetailField = string.Empty;
     private string _newDetailValue = string.Empty;
+    private string _spotRemark = string.Empty;
     private QsoDetailRow? _selectedDetail;
     private AppConfiguration _appConfig = new();
     private string _selectedProfile = "default";
@@ -328,6 +329,7 @@ public sealed class LogInputViewModel : ViewModelBase
 
     public string NewDetailField { get => _newDetailField; set => SetProperty(ref _newDetailField, value); }
     public string NewDetailValue { get => _newDetailValue; set => SetProperty(ref _newDetailValue, value); }
+    public string SpotRemark { get => _spotRemark; set => SetProperty(ref _spotRemark, value ?? string.Empty); }
 
     public QsoDetailRow? SelectedDetail
     {
@@ -510,6 +512,7 @@ public sealed class LogInputViewModel : ViewModelBase
         InputExchange = string.Empty;
         InputFieldDaySection = string.Empty;
         InputFieldDayClass = string.Empty;
+        SpotRemark = string.Empty;
         EnsureRstDefaults();
     }
 
