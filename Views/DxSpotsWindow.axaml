@@ -25,9 +25,20 @@
         <Border Grid.Row="0" Padding="12" CornerRadius="8"
                 BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
                 Background="{DynamicResource AppPanelBackgroundBrush}">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
                 <TextBlock Grid.Column="0" Text="Live DX Spots" FontSize="20" FontWeight="Bold" />
-                <TextBlock Grid.Column="1" Text="{Binding SpotSummary}" VerticalAlignment="Center"
+                <ComboBox Grid.Column="1"
+                          ItemsSource="{Binding RegionFilters}"
+                          SelectedItem="{Binding SelectedRegion}"
+                          MinWidth="90"
+                          VerticalAlignment="Center" />
+                <Button Grid.Column="2"
+                        Content="Edit Prefixes"
+                        Click="OnOpenPrefixConfigClicked"
+                        Padding="12,6"
+                        Background="{DynamicResource AppButtonNormalBrush}"
+                        Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+                <TextBlock Grid.Column="3" Text="{Binding SpotSummary}" VerticalAlignment="Center"
                            Foreground="{DynamicResource AppMutedForegroundBrush}" />
             </Grid>
         </Border>

@@ -14,6 +14,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>cabrillo-contests.json</Link>
     </Content>
+    <Content Include="Assets/dx-region-prefixes.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>dx-region-prefixes.json</Link>
+    </Content>
     <Compile Remove="**/obj/**/*.cs" />
     <Compile Remove="**/bin/**/*.cs" />
     <Compile Remove="HamBusLog.Tests/**/*.cs" />

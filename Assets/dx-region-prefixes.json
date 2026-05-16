@@ -1,0 +1,47 @@
+{
+  "regions": [
+    {
+      "region": "NA",
+      "prefixes": [
+        "K", "W", "N", "AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL",
+        "KA", "KB", "KC", "KD", "KE", "KF", "KG", "KH", "KI", "KJ", "KK", "KL", "KM", "KN",
+        "KO", "KP", "KQ", "KR", "KS", "KT", "KU", "KV", "KW", "KX", "KY", "KZ",
+        "VE", "VA", "VO", "VY", "XE", "XF", "XJ", "XL", "XM", "XN", "XO", "XP", "XQ", "XR",
+        "CY", "CZ", "KP2", "KP4", "KP5", "KG4", "KH6", "KH7", "KH8"
+      ]
+    },
+    {
+      "region": "SA",
+      "prefixes": ["LU", "CX", "PY", "ZP", "CE", "OA", "YV", "HK", "HC", "HP", "TI"]
+    },
+    {
+      "region": "EU",
+      "prefixes": [
+        "G", "GM", "GW", "GI", "GD", "GJ", "GU", "EI", "F", "DL", "PA", "ON", "LX", "HB",
+        "I", "IS", "TF", "EA", "CT", "OK", "OM", "SP", "SM", "OH", "LA", "OZ", "OE", "9A",
+        "S5", "LZ", "YO", "SV", "SV9", "ER", "UR", "UA", "LY", "YL", "ES", "HA", "YU", "TK"
+      ]
+    },
+    {
+      "region": "AF",
+      "prefixes": ["ZS", "5H", "5R", "9J", "9X", "7P", "C5", "CN", "5N", "5X", "3V", "ET", "A5"]
+    },
+    {
+      "region": "AS",
+      "prefixes": [
+        "JA", "JR", "JS", "JE", "JG", "JD", "7J", "7K", "7L", "7M", "7N", "8J", "8N",
+        "BY", "BA", "BG", "BH", "BV", "VR", "HL", "DS", "HS", "9M2", "9M6", "9M8", "DU",
+        "YB", "YC", "YD", "YE", "A6", "A7", "A9", "VU", "9V", "9W", "4X", "4Z"
+      ]
+    },
+    {
+      "region": "OC",
+      "prefixes": ["VK", "ZL", "VK0", "VK9", "FK", "FO", "KH0", "KH2", "KH1", "KH3"]
+    },
+    {
+      "region": "AN",
+      "prefixes": ["VP8", "3Y", "FT", "LZ0", "RI1", "KC4"]
+    }
+  ]
+}
+
