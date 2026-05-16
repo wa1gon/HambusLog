@@ -1,0 +1,58 @@
+{
+  "contests": [
+    {
+      "key": "ARQP",
+      "displayName": "AR-QSO-PARTY Arkansas QSO Party",
+      "adifContestId": "AR-QSO-PARTY",
+      "adifContestIds": ["AR-QSO-PARTY", "ARQP"],
+      "exporterKey": "ARQP",
+      "headerFields": [
+        { "key": "CALLSIGN", "label": "Callsign", "defaultSource": "profile.stationCallSign", "isUppercase": true, "isRequired": true },
+        { "key": "CONTEST-START", "label": "Contest Start", "inputType": "datetime" },
+        { "key": "CONTEST-END", "label": "Contest End", "inputType": "datetime" },
+        { "key": "LOCATION", "label": "Location", "defaultSource": "profile.myStateProvince", "isUppercase": true },
+        { "key": "CATEGORY-OPERATOR", "label": "Category Operator", "defaultValue": "SINGLE-OP", "isUppercase": true },
+        { "key": "CATEGORY-ASSISTED", "label": "Category Assisted", "defaultValue": "NON-ASSISTED", "isUppercase": true },
+        { "key": "CATEGORY-BAND", "label": "Category Band", "defaultValue": "ALL", "isUppercase": true },
+        { "key": "CATEGORY-MODE", "label": "Category Mode", "defaultValue": "MIXED", "isUppercase": true },
+        { "key": "CATEGORY-POWER", "label": "Category Power", "defaultValue": "LOW", "isUppercase": true },
+        { "key": "CATEGORY-TRANSMITTER", "label": "Category Transmitter", "defaultValue": "ONE", "isUppercase": true },
+        { "key": "OPERATORS", "label": "Operators", "defaultSource": "profile.stationCallSign", "isUppercase": true },
+        { "key": "CLAIMED-SCORE", "label": "Claimed Score" },
+        { "key": "CLUB", "label": "Club" },
+        { "key": "ADDRESS", "label": "Address" },
+        { "key": "EMAIL", "label": "Email" },
+        { "key": "SOAPBOX", "label": "Soapbox", "isMultiline": true }
+      ]
+    },
+    {
+      "key": "ARRL-FD",
+      "displayName": "ARRL Field Day",
+      "adifContestId": "ARRL-FIELD-DAY",
+      "adifContestIds": ["ARRL-FIELD-DAY", "ARRL-FD"],
+      "exporterKey": "ARRL-FD",
+      "headerFields": [
+        { "key": "CALLSIGN", "label": "Callsign", "defaultSource": "profile.stationCallSign", "isUppercase": true, "isRequired": true },
+        { "key": "CONTEST-START", "label": "Contest Start", "inputType": "datetime" },
+        { "key": "CONTEST-END", "label": "Contest End", "inputType": "datetime" },
+        { "key": "CATEGORY", "label": "Field Day Category", "defaultSource": "profile.myFieldDayClass", "isUppercase": true },
+        { "key": "LOCATION", "label": "Location", "defaultSource": "profile.myStateProvince", "isUppercase": true },
+        { "key": "ARRL-SECTION", "label": "ARRL Section", "defaultSource": "profile.myFieldDaySection", "isUppercase": true },
+        { "key": "OPERATORS", "label": "Operators", "defaultSource": "profile.stationCallSign", "isUppercase": true },
+        { "key": "CLAIMED-SCORE", "label": "Claimed Score" },
+        { "key": "NAME", "label": "Name" },
+        { "key": "ADDRESS", "label": "Address" },
+        { "key": "ADDRESS-CITY", "label": "City" },
+        { "key": "ADDRESS-STATE-PROVINCE", "label": "State/Province", "isUppercase": true },
+        { "key": "ADDRESS-POSTALCODE", "label": "Postal Code" },
+        { "key": "ADDRESS-COUNTRY", "label": "Country", "isUppercase": true },
+        { "key": "EMAIL", "label": "Email" },
+        { "key": "CLUB", "label": "Club" },
+        { "key": "SOAPBOX", "label": "Soapbox", "isMultiline": true }
+      ]
+    }
+  ]
+}
+
+
+

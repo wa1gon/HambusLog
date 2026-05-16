@@ -9,6 +9,7 @@ public sealed class LogInputViewModel : ViewModelBase
     private readonly ModeValidator   _modeValidator   = new();
     private readonly SectionValidator _sectionValidator = new();
     private readonly ClassValidator  _classValidator  = new();
+    private bool _showAllContests;
 
     // ----- core fields -----
     private string _inputCall    = string.Empty;
@@ -70,19 +71,39 @@ public sealed class LogInputViewModel : ViewModelBase
     public LogInputViewModel()
     {
         _appConfig = AppConfigurationStore.Load();
-        ContestDefinitions = ContestCatalog.GetAll().ToList();
+        SelectActiveProfile();
+        _contestDefinitions = ContestCatalog.GetAll().ToList();
+        ApplyContestFilter();
         Details         = [];
         AvailableConnectedRadios = new ObservableCollection<ConnectedRadioOption>();
-        _selectedContestKey = ContestDefinitions.FirstOrDefault()?.Key ?? ContestCatalog.NormalKey;
-        SelectActiveProfile();
+        var storedContestKey = ActiveConfigProfile().LastContestKey;
+        var initialContestKey = ResolveInitialContestKey(storedContestKey);
+        SetSelectedContestKey(initialContestKey);
         LoadStationConfig();
+        EnsureRstDefaults();
         InputDate       = DateTime.UtcNow.ToString("yyyyMMdd");
         InputTimeOn     = DateTime.UtcNow.ToString("HHmm");
         ApplyActiveRigSnapshot();
     }
 
     // ── Properties ────────────────────────────────────────────────────
-    public List<ContestDefinition> ContestDefinitions { get; }
+    private readonly List<ContestDefinition> _contestDefinitions;
+    public IReadOnlyList<ContestDefinition> ContestDefinitions => _contestDefinitions;
+    public IReadOnlyList<ContestDefinition> FilteredContestDefinitions { get; private set; } = [];
+    public bool ShowAllContests
+    {
+        get => _showAllContests;
+        set
+        {
+            if (!SetProperty(ref _showAllContests, value))
+                return;
+
+            ApplyContestFilter();
+            var storedContestKey = ActiveConfigProfile().LastContestKey;
+            var initialContestKey = ResolveInitialContestKey(storedContestKey);
+            SetSelectedContestKey(initialContestKey);
+        }
+    }
     public ObservableCollection<QsoDetailRow> Details { get; }
 
     public ObservableCollection<ConnectedRadioOption> AvailableConnectedRadios
@@ -163,7 +184,7 @@ public sealed class LogInputViewModel : ViewModelBase
 
     public ContestDefinition? SelectedContestDefinition
     {
-        get => CurrentContestDefinition;
+        get => FindContestDefinition(_selectedContestKey);
         set
         {
             if (value is null)
@@ -178,6 +199,9 @@ public sealed class LogInputViewModel : ViewModelBase
         var normalized = string.IsNullOrWhiteSpace(contestKey)
             ? ContestCatalog.NormalKey
             : contestKey.Trim();
+
+        if (FindContestDefinition(normalized) is null)
+            normalized = ContestCatalog.NormalKey;
 
         if (string.Equals(_selectedContestKey, normalized, StringComparison.OrdinalIgnoreCase))
             return;
@@ -207,6 +231,14 @@ public sealed class LogInputViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowFieldDaySection));
         OnPropertyChanged(nameof(ShowFieldDayClass));
         EnforceArkansasCountyRule();
+        EnsureRstDefaults();
+
+        var profile = ActiveConfigProfile();
+        if (!string.Equals(profile.LastContestKey, normalized, StringComparison.OrdinalIgnoreCase))
+        {
+            profile.LastContestKey = normalized;
+            AppConfigurationStore.Save(_appConfig);
+        }
     }
 
     public bool IsNormalContest => CurrentContestDefinition.UsesNormalExchange;
@@ -226,7 +258,8 @@ public sealed class LogInputViewModel : ViewModelBase
     public bool ShowCounty => HasRequiredField(ContestFieldKeys.County) && ShowLegacyNormalExchangeFields;
     public bool ShowFieldDaySection => HasRequiredField(ContestFieldKeys.FieldDaySection);
     public bool ShowFieldDayClass => HasRequiredField(ContestFieldKeys.FieldDayClass);
-    public ContestDefinition CurrentContestDefinition => ContestCatalog.GetByKey(_selectedContestKey) ?? ContestCatalog.Get(ContestType.Normal);
+    public ContestDefinition CurrentContestDefinition => FindContestDefinition(_selectedContestKey)
+        ?? ContestCatalog.Get(ContestType.Normal);
     public string CurrentContestDisplayName => CurrentContestDefinition.DisplayName;
     public string CurrentContestAdifId => CurrentContestDefinition.AdifContestId;
     public string ExchangeLabel => IsArkansasQsoParty
@@ -375,10 +408,13 @@ public sealed class LogInputViewModel : ViewModelBase
             return null;
         }
 
-        var qsoDate = DateTime.TryParseExact(InputDate + " " + InputTimeOn, "yyyyMMdd HHmm",
-                          null, System.Globalization.DateTimeStyles.None, out var dt)
-                      ? dt
-                      : DateTime.UtcNow;
+        var qsoDateUtc = ResolveQsoDateUtc();
+        if (!IsWithinContestWindow(qsoDateUtc, CurrentContestDefinition, out var windowError))
+        {
+            ContestError = windowError;
+            errorMessage = windowError;
+            return null;
+        }
 
         var freq = decimal.TryParse(InputFreq, System.Globalization.NumberStyles.Any,
                        System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : 0m;
@@ -391,7 +427,7 @@ public sealed class LogInputViewModel : ViewModelBase
         {
             Call    = InputCall.Trim().ToUpperInvariant(),
             StationCallSign = _stationCallSign.Trim().ToUpperInvariant(),
-            QsoDate = qsoDate,
+            QsoDate = qsoDateUtc,
             Band    = band,
             Mode    = mode,
             ContestId = CurrentContestAdifId,
@@ -474,6 +510,7 @@ public sealed class LogInputViewModel : ViewModelBase
         InputExchange = string.Empty;
         InputFieldDaySection = string.Empty;
         InputFieldDayClass = string.Empty;
+        EnsureRstDefaults();
     }
 
     public void RefreshActiveRigSnapshot()
@@ -706,6 +743,69 @@ public sealed class LogInputViewModel : ViewModelBase
                || string.Equals(CurrentContestDefinition.AdifContestId, key, StringComparison.OrdinalIgnoreCase);
     }
 
+    private ContestDefinition? FindContestDefinition(string? key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+                return _contestDefinitions.FirstOrDefault(x =>
+                string.Equals(x.Key, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase));
+
+        var trimmed = key.Trim();
+        return _contestDefinitions.FirstOrDefault(x =>
+            string.Equals(x.Key, trimmed, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(x.AdifContestId, trimmed, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void ApplyContestFilter()
+    {
+        var filtered = _contestDefinitions.ToList();
+        if (!_showAllContests)
+        {
+            var nowUtc = DateTime.UtcNow;
+            filtered = filtered
+                .Where(x => IsContestActive(nowUtc, x))
+                .ToList();
+        }
+
+        if (filtered.Count == 0)
+            filtered = _contestDefinitions.ToList();
+
+        FilteredContestDefinitions = filtered;
+        OnPropertyChanged(nameof(FilteredContestDefinitions));
+    }
+
+    private string ResolveInitialContestKey(string? storedContestKey)
+    {
+        if (!string.IsNullOrWhiteSpace(storedContestKey))
+        {
+            var stored = storedContestKey.Trim();
+            if (FilteredContestDefinitions.Any(x =>
+                    string.Equals(x.Key, stored, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(x.AdifContestId, stored, StringComparison.OrdinalIgnoreCase)))
+                return stored;
+        }
+
+        return FilteredContestDefinitions.FirstOrDefault()?.Key
+               ?? _contestDefinitions.FirstOrDefault()?.Key
+               ?? ContestCatalog.NormalKey;
+    }
+
+    private static bool IsContestActive(DateTime nowUtc, ContestDefinition contest)
+    {
+        if (contest.StartUtc is DateTime startUtc && nowUtc < startUtc)
+            return false;
+        if (contest.EndUtc is DateTime endUtc && nowUtc > endUtc)
+            return false;
+        return true;
+    }
+
+    private void EnsureRstDefaults()
+    {
+        if (ShowRstSent && string.IsNullOrWhiteSpace(InputSent))
+            InputSent = "59";
+        if (ShowRstRecv && string.IsNullOrWhiteSpace(InputRec))
+            InputRec = "59";
+    }
+
     private bool TryValidateArkansasQsoPartyExchange(out string errorMessage)
     {
         if (!TryParseUnifiedExchange(InputExchange, out var normalized, out _))
@@ -760,6 +860,40 @@ public sealed class LogInputViewModel : ViewModelBase
             return "MA or PUL";
 
         return IsArkansasStation ? "PUL" : "MA";
+    }
+
+    private DateTime ResolveQsoDateUtc()
+    {
+        var raw = InputDate + " " + InputTimeOn;
+        if (DateTime.TryParseExact(raw, "yyyyMMdd HHmm", CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed))
+            return parsed;
+
+        return DateTime.UtcNow;
+    }
+
+    private static bool IsWithinContestWindow(DateTime qsoUtc, ContestDefinition contest, out string error)
+    {
+        if (contest.StartUtc is null && contest.EndUtc is null)
+        {
+            error = string.Empty;
+            return true;
+        }
+
+        if (contest.StartUtc is DateTime startUtc && qsoUtc < startUtc)
+        {
+            error = $"QSO time is before the contest start for {contest.DisplayName}.";
+            return false;
+        }
+
+        if (contest.EndUtc is DateTime endUtc && qsoUtc > endUtc)
+        {
+            error = $"QSO time is after the contest end for {contest.DisplayName}.";
+            return false;
+        }
+
+        error = string.Empty;
+        return true;
     }
 
     private void EnforceArkansasCountyRule()

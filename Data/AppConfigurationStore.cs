@@ -261,6 +261,8 @@ public static class AppConfigurationStore
             var exchangeType = string.IsNullOrWhiteSpace(contest.ExchangeType)
                 ? "normal"
                 : contest.ExchangeType.Trim().ToLowerInvariant();
+            var startUtc = contest.StartUtc?.Trim() ?? string.Empty;
+            var endUtc = contest.EndUtc?.Trim() ?? string.Empty;
 
             var fields = new List<ContestFieldRequirementConfig>();
             foreach (var field in contest.RequiredFields ?? [])
@@ -283,6 +285,8 @@ public static class AppConfigurationStore
                 AdifContestId = adifId,
                 LicenseKey = licenseKey,
                 ExchangeType = exchangeType,
+                StartUtc = startUtc,
+                EndUtc = endUtc,
                 RequiredFields = fields
             });
         }

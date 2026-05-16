@@ -121,7 +121,7 @@ public sealed class LogInputViewModelTests
         var qso = viewModel.TryBuildQso(out var error);
 
         Assert.Null(qso);
-        Assert.Contains("RST Sent", error, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Country", error, StringComparison.OrdinalIgnoreCase);
 
         viewModel.InputSent = "59";
         viewModel.InputRec = "59";

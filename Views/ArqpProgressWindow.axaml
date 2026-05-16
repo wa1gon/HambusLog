@@ -1,0 +1,137 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:HamBusLog.ViewModels"
+        x:Class="HamBusLog.Views.ArqpProgressWindow"
+        x:DataType="vm:ArqpProgressViewModel"
+        Title="ARQP Progress"
+        RequestedThemeVariant="Dark"
+        Background="{DynamicResource AppWindowBackgroundBrush}"
+        Foreground="{DynamicResource AppForegroundBrush}"
+        Width="960"
+        Height="720"
+        MinWidth="720"
+        MinHeight="520"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid RowDefinitions="Auto,*" Margin="16,14,16,12" RowSpacing="12">
+        <Border Grid.Row="0"
+                Padding="14"
+                CornerRadius="10"
+                Background="{DynamicResource AppPanelBackgroundBrush}"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <StackPanel Grid.Column="0" Spacing="6">
+                    <TextBlock Text="ARQP Worked States &amp; Counties" FontSize="18" FontWeight="Bold" />
+                    <TextBlock Text="{Binding StateSummary}" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                    <TextBlock Text="{Binding CountySummary}" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                    <TextBlock Text="{Binding LastUpdated}" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="11" />
+                </StackPanel>
+                <Button Grid.Column="1"
+                        Content="Refresh"
+                        Padding="16,8"
+                        Click="OnRefreshClicked"
+                        Background="{DynamicResource AppButtonNormalBrush}"
+                        Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12">
+            <Border Grid.Column="0"
+                    Padding="12"
+                    CornerRadius="10"
+                    Background="{DynamicResource AppPanelBackgroundBrush}"
+                    BorderBrush="{DynamicResource AppBorderBrush}"
+                    BorderThickness="1">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                    <TextBlock Text="States" FontSize="14" FontWeight="SemiBold" />
+                    <TextBlock Text="All U.S. states plus DC. Status is based on ARQP QSOs." Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="11" />
+
+                    <TextBlock Grid.Row="2"
+                               Text="No ARQP state QSOs yet."
+                               IsVisible="{Binding HasNoStates}"
+                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+
+                    <ScrollViewer Grid.Row="2" IsVisible="{Binding HasStates}">
+                        <ItemsControl ItemsSource="{Binding StateRows}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel ItemWidth="56" ItemHeight="32" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="6,4"
+                                            Margin="4"
+                                            CornerRadius="6"
+                                            Background="{Binding BackgroundBrush}"
+                                            Opacity="{Binding Opacity}"
+                                            BorderBrush="{DynamicResource AppBorderBrush}"
+                                            BorderThickness="1">
+                                        <TextBlock Text="{Binding Code}"
+                                                   Foreground="{Binding ForegroundBrush}"
+                                                   FontWeight="{Binding FontWeight}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1"
+                    Padding="12"
+                    CornerRadius="10"
+                    Background="{DynamicResource AppPanelBackgroundBrush}"
+                    BorderBrush="{DynamicResource AppBorderBrush}"
+                    BorderThickness="1">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                    <TextBlock Text="Counties" FontSize="14" FontWeight="SemiBold" />
+                    <TextBlock Text="All ARQP county codes (3-letter exchange)." Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="11" />
+
+                    <TextBlock Grid.Row="2"
+                               Text="No ARQP county QSOs yet."
+                               IsVisible="{Binding HasNoCounties}"
+                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+
+                    <ScrollViewer Grid.Row="2" IsVisible="{Binding HasCounties}">
+                        <ItemsControl ItemsSource="{Binding CountyRows}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel ItemWidth="56" ItemHeight="32" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="6,4"
+                                            Margin="4"
+                                            CornerRadius="6"
+                                            Background="{Binding BackgroundBrush}"
+                                            Opacity="{Binding Opacity}"
+                                            BorderBrush="{DynamicResource AppBorderBrush}"
+                                            BorderThickness="1">
+                                        <TextBlock Text="{Binding Code}"
+                                                   Foreground="{Binding ForegroundBrush}"
+                                                   FontWeight="{Binding FontWeight}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
+
+
+
+

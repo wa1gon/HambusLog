@@ -47,105 +47,37 @@
                         Background="{DynamicResource AppPanelBackgroundBrush}"
                         BorderBrush="{DynamicResource AppBorderBrush}"
                         BorderThickness="1">
-                    <Grid ColumnDefinitions="Auto,220,20,Auto,220"
-                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
-                          RowSpacing="10">
-                        <TextBlock Grid.Row="0" Grid.ColumnSpan="5"
-                                   Classes="SectionHeading"
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="SectionHeading"
                                    Text="CABRILLO HEADER" />
 
-                        <TextBlock Grid.Row="1" Grid.Column="0" Classes="FieldLabel" Text="Callsign" />
-                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding CallSign}" />
-
-                        <TextBlock Grid.Row="1" Grid.Column="3" Classes="FieldLabel" Text="Location" />
-                        <TextBox Grid.Row="1" Grid.Column="4" Text="{Binding Location}" />
-
-                        <TextBlock Grid.Row="2" Grid.Column="0" Classes="FieldLabel" Text="Category Operator"
-                                   IsVisible="{Binding ShowArqpCategoryFields}" />
-                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding CategoryOperator}"
-                                 IsVisible="{Binding ShowArqpCategoryFields}" />
-
-                        <TextBlock Grid.Row="2" Grid.Column="3" Classes="FieldLabel" Text="Category Assisted"
-                                   IsVisible="{Binding ShowArqpCategoryFields}" />
-                        <TextBox Grid.Row="2" Grid.Column="4" Text="{Binding CategoryAssisted}"
-                                 IsVisible="{Binding ShowArqpCategoryFields}" />
-
-                        <TextBlock Grid.Row="3" Grid.Column="0" Classes="FieldLabel" Text="Category Band"
-                                   IsVisible="{Binding ShowArqpCategoryFields}" />
-                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding CategoryBand}"
-                                 IsVisible="{Binding ShowArqpCategoryFields}" />
-
-                        <TextBlock Grid.Row="3" Grid.Column="3" Classes="FieldLabel" Text="Category Mode"
-                                   IsVisible="{Binding ShowArqpCategoryFields}" />
-                        <TextBox Grid.Row="3" Grid.Column="4" Text="{Binding CategoryMode}"
-                                 IsVisible="{Binding ShowArqpCategoryFields}" />
-
-                        <TextBlock Grid.Row="4" Grid.Column="0" Classes="FieldLabel" Text="Category Power"
-                                   IsVisible="{Binding ShowArqpCategoryFields}" />
-                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding CategoryPower}"
-                                 IsVisible="{Binding ShowArqpCategoryFields}" />
-
-                        <TextBlock Grid.Row="4" Grid.Column="3" Classes="FieldLabel" Text="Category Transmitter"
-                                   IsVisible="{Binding ShowArqpCategoryFields}" />
-                        <TextBox Grid.Row="4" Grid.Column="4" Text="{Binding CategoryTransmitter}"
-                                 IsVisible="{Binding ShowArqpCategoryFields}" />
-
-                        <TextBlock Grid.Row="5" Grid.Column="0" Classes="FieldLabel" Text="Operators" />
-                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Operators}" />
-
-                        <TextBlock Grid.Row="5" Grid.Column="3" Classes="FieldLabel" Text="Claimed Score" />
-                        <TextBox Grid.Row="5" Grid.Column="4" Text="{Binding ClaimedScore}" />
-
-                        <TextBlock Grid.Row="6" Grid.Column="0" Classes="FieldLabel" Text="Field Day Category"
-                                   IsVisible="{Binding ShowFieldDayCategoryFields}" />
-                        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Category}"
-                                 IsVisible="{Binding ShowFieldDayCategoryFields}" />
-
-                        <TextBlock Grid.Row="6" Grid.Column="3" Classes="FieldLabel" Text="ARRL Section"
-                                   IsVisible="{Binding ShowFieldDayCategoryFields}" />
-                        <TextBox Grid.Row="6" Grid.Column="4" Text="{Binding ArrlSection}"
-                                 IsVisible="{Binding ShowFieldDayCategoryFields}" />
-
-                        <TextBlock Grid.Row="7" Grid.Column="0" Classes="FieldLabel" Text="Name"
-                                   IsVisible="{Binding ShowFieldDayNameField}" />
-                        <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Name}"
-                                 IsVisible="{Binding ShowFieldDayNameField}" />
-
-                        <TextBlock Grid.Row="7" Grid.Column="3" Classes="FieldLabel" Text="Club" />
-                        <TextBox Grid.Row="7" Grid.Column="4" Text="{Binding Club}" />
-
-                        <TextBlock Grid.Row="8" Grid.Column="0" Classes="FieldLabel" Text="Address" />
-                        <TextBox Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="4" Text="{Binding Address}" />
-
-                        <TextBlock Grid.Row="9" Grid.Column="0" Classes="FieldLabel" Text="City"
-                                   IsVisible="{Binding ShowFieldDayAddressFields}" />
-                        <TextBox Grid.Row="9" Grid.Column="1" Text="{Binding AddressCity}"
-                                 IsVisible="{Binding ShowFieldDayAddressFields}" />
-
-                        <TextBlock Grid.Row="9" Grid.Column="3" Classes="FieldLabel" Text="State/Province"
-                                   IsVisible="{Binding ShowFieldDayAddressFields}" />
-                        <TextBox Grid.Row="9" Grid.Column="4" Text="{Binding AddressStateProvince}"
-                                 IsVisible="{Binding ShowFieldDayAddressFields}" />
-
-                        <TextBlock Grid.Row="10" Grid.Column="0" Classes="FieldLabel" Text="Postal Code"
-                                   IsVisible="{Binding ShowFieldDayAddressFields}" />
-                        <TextBox Grid.Row="10" Grid.Column="1" Text="{Binding AddressPostalCode}"
-                                 IsVisible="{Binding ShowFieldDayAddressFields}" />
-
-                        <TextBlock Grid.Row="10" Grid.Column="3" Classes="FieldLabel" Text="Country"
-                                   IsVisible="{Binding ShowFieldDayAddressFields}" />
-                        <TextBox Grid.Row="10" Grid.Column="4" Text="{Binding AddressCountry}"
-                                 IsVisible="{Binding ShowFieldDayAddressFields}" />
-
-                        <TextBlock Grid.Row="11" Grid.Column="0" Classes="FieldLabel" Text="Email" />
-                        <TextBox Grid.Row="11" Grid.Column="1" Text="{Binding Email}" />
-
-                        <TextBlock Grid.Row="12" Grid.Column="0" Classes="FieldLabel" Text="Soapbox" />
-                        <TextBox Grid.Row="12" Grid.Column="1" Grid.ColumnSpan="4" Text="{Binding Soapbox}" AcceptsReturn="True" Height="80" />
-                    </Grid>
+                        <ItemsControl ItemsSource="{Binding HeaderFields}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="220,*" RowDefinitions="Auto" RowSpacing="6">
+                                        <TextBlock Classes="FieldLabel" Text="{Binding DisplayLabel}" />
+                                        <StackPanel Grid.Column="1" Spacing="6">
+                                            <TextBox Text="{Binding Value}"
+                                                     AcceptsReturn="{Binding IsMultiline}"
+                                                     TextWrapping="Wrap"
+                                                     MinHeight="{Binding InputMinHeight}"
+                                                     VerticalAlignment="Top"
+                                                     IsVisible="{Binding IsTextInput}" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8"
+                                                        IsVisible="{Binding IsDateTime}">
+                                                <DatePicker SelectedDate="{Binding SelectedDateOffset}" />
+                                                <TimePicker SelectedTime="{Binding SelectedTime}"
+                                                            ClockIdentifier="24HourClock" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </Border>
 
-                <TextBlock Text="Only AR-QSO-PARTY and ARRL Field Day are supported right now. Other contests will be enabled later."
+                <TextBlock Text="Only contests with exporters can be exported right now."
                            TextWrapping="Wrap"
                            Foreground="{DynamicResource AppMutedForegroundBrush}" />
             </StackPanel>
@@ -162,4 +94,9 @@
         </StackPanel>
     </Grid>
 </Window>
+
+
+
+
+
 

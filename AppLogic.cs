@@ -12,6 +12,7 @@ public partial class App
     private static string _dbConnectionString = string.Empty;
     private static readonly object _dbContextSync = new();
     public static event EventHandler? DbContextReinitialized;
+    public static event EventHandler<Qso>? QsoSaved;
 
     public static HamBusLogDbContext DbContext
     {
@@ -68,6 +69,14 @@ public partial class App
             errorMessage = ex.Message;
             return false;
         }
+    }
+
+    public static void RaiseQsoSaved(Qso qso)
+    {
+        if (qso is null)
+            return;
+
+        QsoSaved?.Invoke(null, qso);
     }
 
     private static HamBusLogDbContext CreateDbContext(string connectionString)

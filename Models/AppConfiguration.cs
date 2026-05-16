@@ -64,6 +64,7 @@ public sealed class ConfigProfile
     public string MyCqZone { get; set; } = string.Empty;
     public string MyFieldDaySection { get; set; } = string.Empty;
     public string MyFieldDayClass { get; set; } = string.Empty;
+    public string LastContestKey { get; set; } = string.Empty;
 }
 
 public sealed class ContestDefinitionConfig
@@ -73,6 +74,8 @@ public sealed class ContestDefinitionConfig
     public string AdifContestId { get; set; } = string.Empty;
     public string LicenseKey { get; set; } = string.Empty;
     public string ExchangeType { get; set; } = "normal";
+    public string StartUtc { get; set; } = string.Empty;
+    public string EndUtc { get; set; } = string.Empty;
     public List<ContestFieldRequirementConfig> RequiredFields { get; set; } = [];
 }
 
