@@ -402,7 +402,7 @@
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource AppMutedForegroundBrush}"
                                        FontSize="12" />
-                            <TextBlock Text="• New Contact opens the log-entry window using the grid workflow."
+                            <TextBlock Text="• New Contact opens the log-entry window directly."
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource AppMutedForegroundBrush}"
                                        FontSize="12" />
