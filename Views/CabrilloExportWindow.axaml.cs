@@ -31,11 +31,11 @@ public partial class CabrilloExportWindow : Window
         var file = await StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
         {
             Title = $"Export {contest.DisplayName} Cabrillo",
-            SuggestedFileName = $"hambuslog-{contest.Key.ToLowerInvariant()}-{DateTime.UtcNow:yyyyMMdd-HHmmss}.log",
+            SuggestedFileName = $"hambuslog-{contest.Key.ToLowerInvariant()}-{DateTime.UtcNow:yyyyMMdd-HHmmss}.cab",
             SuggestedStartLocation = suggestedStartLocation,
             FileTypeChoices =
             [
-                new Avalonia.Platform.Storage.FilePickerFileType("Cabrillo files") { Patterns = ["*.log", "*.cbr"] }
+                new Avalonia.Platform.Storage.FilePickerFileType("Cabrillo files") { Patterns = ["*.cab"] }
             ]
         });
 

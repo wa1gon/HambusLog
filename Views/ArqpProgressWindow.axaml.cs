@@ -1,5 +1,6 @@
 namespace HamBusLog.Views;
 
+using Avalonia.Controls;
 using Avalonia.Threading;
 
 public partial class ArqpProgressWindow : Window
@@ -12,6 +13,7 @@ public partial class ArqpProgressWindow : Window
         App.DbContextReinitialized += OnDbContextReinitialized;
         App.QsoSaved += OnQsoSaved;
         Activated += OnWindowActivated;
+        ApplyStayOnTopSetting();
         ViewModel.Refresh();
     }
 
@@ -44,8 +46,39 @@ public partial class ArqpProgressWindow : Window
     {
         ViewModel.Refresh();
     }
+
+    private void ApplyStayOnTopSetting()
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        Topmost = profile.StayOnTopArqpProgressWindow;
+
+        var checkBox = this.FindControl<CheckBox>("StayOnTopCheckBox");
+        if (checkBox is not null)
+            checkBox.IsChecked = Topmost;
+    }
+
+    private void SaveStayOnTopSetting(bool isEnabled)
+    {
+        var config = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(config);
+        profile.StayOnTopArqpProgressWindow = isEnabled;
+        AppConfigurationStore.Save(config);
+    }
+
+    private void UpdateStayOnTop(bool isEnabled)
+    {
+        Topmost = isEnabled;
+        SaveStayOnTopSetting(isEnabled);
+    }
+
+    private void OnStayOnTopChecked(object? sender, RoutedEventArgs e)
+    {
+        UpdateStayOnTop(true);
+    }
+
+    private void OnStayOnTopUnchecked(object? sender, RoutedEventArgs e)
+    {
+        UpdateStayOnTop(false);
+    }
 }
-
-
-
-

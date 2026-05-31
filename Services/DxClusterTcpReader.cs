@@ -2,6 +2,7 @@ namespace HamBusLog.Services;
 
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 
 public sealed class DxClusterTcpReader : IDxClusterTcpReader
 {
@@ -195,13 +196,20 @@ public sealed class DxClusterTcpReader : IDxClusterTcpReader
         }
     }
 
+    private static readonly Regex SpotLinePattern = new(
+        @"^\s*\d{3,5}\.\d\s+\S+\s+\d{1,2}-[A-Za-z]{3}-\d{4}\s+\d{4}Z\b",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
     private static bool IsDxSpotLine(string? line)
     {
         if (string.IsNullOrWhiteSpace(line))
             return false;
 
         var trimmed = line.TrimStart();
-        return trimmed.StartsWith("DX ", StringComparison.OrdinalIgnoreCase);
+        if (trimmed.StartsWith("DX ", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return SpotLinePattern.IsMatch(trimmed);
     }
 
     public void Dispose()

@@ -20,14 +20,22 @@
                 Background="{DynamicResource AppPanelBackgroundBrush}"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="1">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                 <StackPanel Grid.Column="0" Spacing="6">
                     <TextBlock Text="ARQP Worked States &amp; Counties" FontSize="18" FontWeight="Bold" />
                     <TextBlock Text="{Binding StateSummary}" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                     <TextBlock Text="{Binding CountySummary}" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                     <TextBlock Text="{Binding LastUpdated}" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="11" />
                 </StackPanel>
-                <Button Grid.Column="1"
+                <CheckBox Grid.Column="1"
+                          Name="StayOnTopCheckBox"
+                          Content="Stay on top"
+                          VerticalAlignment="Center"
+                          Foreground="{DynamicResource AppForegroundBrush}"
+                          TextElement.Foreground="{DynamicResource AppForegroundBrush}"
+                          Checked="OnStayOnTopChecked"
+                          Unchecked="OnStayOnTopUnchecked" />
+                <Button Grid.Column="2"
                         Content="Refresh"
                         Padding="16,8"
                         Click="OnRefreshClicked"
@@ -131,7 +139,4 @@
         </Grid>
     </Grid>
 </Window>
-
-
-
 
