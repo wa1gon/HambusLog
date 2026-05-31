@@ -1,0 +1,7 @@
+Package: hambuslog
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Your Name <you@example.com>
+Description: HamBusLog application

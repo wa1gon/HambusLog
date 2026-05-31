@@ -25,6 +25,7 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _inputName    = string.Empty;
     private string _inputState   = string.Empty;
     private string _inputCounty  = string.Empty;
+    private string _inputGrid    = string.Empty;
     private string _inputOperator = string.Empty;
     private string _inputExchange = string.Empty;
     private string _selectedContestKey = ContestCatalog.NormalKey;
@@ -196,7 +197,7 @@ public sealed class LogInputViewModel : ViewModelBase
         }
     }
 
-    private void SetSelectedContestKey(string contestKey)
+    private void SetSelectedContestKey(string? contestKey)
     {
         var normalized = string.IsNullOrWhiteSpace(contestKey)
             ? ContestCatalog.NormalKey
@@ -230,8 +231,8 @@ public sealed class LogInputViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowName));
         OnPropertyChanged(nameof(ShowState));
         OnPropertyChanged(nameof(ShowCounty));
-        OnPropertyChanged(nameof(ShowFieldDaySection));
-        OnPropertyChanged(nameof(ShowFieldDayClass));
+        OnPropertyChanged(nameof(ShowGrid));
+        OnPropertyChanged(nameof(ShowLocationFields));
         EnforceArkansasCountyRule();
         EnsureRstDefaults();
 
@@ -254,10 +255,15 @@ public sealed class LogInputViewModel : ViewModelBase
     public bool ShowExchange => ShowUnifiedExchangeField;
     public bool ShowRstSent => HasRequiredField(ContestFieldKeys.RstSent);
     public bool ShowRstRecv => HasRequiredField(ContestFieldKeys.RstRecv);
-    public bool ShowCountry => HasRequiredField(ContestFieldKeys.Country);
+    public bool ShowLocationFields => IsNormalContest
+    || HasRequiredField(ContestFieldKeys.Country)
+    || HasRequiredField(ContestFieldKeys.State)
+    || HasRequiredField(ContestFieldKeys.County);
+    public bool ShowCountry => ShowLocationFields;
     public bool ShowName => HasRequiredField(ContestFieldKeys.Name);
-    public bool ShowState => HasRequiredField(ContestFieldKeys.State) && ShowLegacyNormalExchangeFields;
-    public bool ShowCounty => HasRequiredField(ContestFieldKeys.County) && ShowLegacyNormalExchangeFields;
+    public bool ShowState => ShowLocationFields && ShowLegacyNormalExchangeFields;
+    public bool ShowCounty => ShowLocationFields && ShowLegacyNormalExchangeFields;
+    public bool ShowGrid => ShowLocationFields;
     public bool ShowFieldDaySection => HasRequiredField(ContestFieldKeys.FieldDaySection);
     public bool ShowFieldDayClass => HasRequiredField(ContestFieldKeys.FieldDayClass);
     public ContestDefinition CurrentContestDefinition => FindContestDefinition(_selectedContestKey)
@@ -305,25 +311,34 @@ public sealed class LogInputViewModel : ViewModelBase
         }
     }
 
+    public string InputGrid
+    {
+        get => _inputGrid;
+        set => SetProperty(ref _inputGrid, (value ?? string.Empty).ToUpperInvariant());
+    }
+
     public void ApplyLookupResult(CallsignLookupResult result)
     {
         if (result is null)
             return;
 
-        if (!string.IsNullOrWhiteSpace(result.CallSign))
+        if (string.IsNullOrWhiteSpace(InputCall) && !string.IsNullOrWhiteSpace(result.CallSign))
             InputCall = result.CallSign;
 
-        if (!string.IsNullOrWhiteSpace(result.Country))
+        if (string.IsNullOrWhiteSpace(InputCountry) && !string.IsNullOrWhiteSpace(result.Country))
             InputCountry = result.Country;
 
-        if (!string.IsNullOrWhiteSpace(result.Name))
+        if (string.IsNullOrWhiteSpace(InputName) && !string.IsNullOrWhiteSpace(result.Name))
             InputName = result.Name;
 
-        if (!string.IsNullOrWhiteSpace(result.State))
+        if (string.IsNullOrWhiteSpace(InputState) && !string.IsNullOrWhiteSpace(result.State))
             InputState = result.State;
 
-        if (!string.IsNullOrWhiteSpace(result.County))
+        if (string.IsNullOrWhiteSpace(InputCounty) && !string.IsNullOrWhiteSpace(result.County))
             InputCounty = result.County;
+
+        if (string.IsNullOrWhiteSpace(InputGrid) && !string.IsNullOrWhiteSpace(result.Grid))
+            InputGrid = result.Grid;
     }
 
     public string InputOperator { get => _inputOperator; set => SetProperty(ref _inputOperator, (value ?? string.Empty).ToUpperInvariant()); }
@@ -473,6 +488,8 @@ public sealed class LogInputViewModel : ViewModelBase
         qso.Details.Add(new QsoDetail { FieldName = "OPERATOR", FieldValue = operatorCall });
 
         ApplyContestExchangeToQsoDetails(qso);
+        AddDetailIfMissing(qso.Details, "COUNTY", InputCounty);
+        AddDetailIfMissing(qso.Details, "GRID", InputGrid);
 
         errorMessage = string.Empty;
         return qso;
@@ -530,6 +547,7 @@ public sealed class LogInputViewModel : ViewModelBase
         InputName = string.Empty;
         InputState = string.Empty;
         InputCounty = string.Empty;
+        InputGrid = string.Empty;
         InputOperator = StationCallSign;
         InputExchange = string.Empty;
         InputFieldDaySection = string.Empty;
@@ -686,6 +704,20 @@ public sealed class LogInputViewModel : ViewModelBase
             var normalized = requirement.Key == ContestFieldKeys.Name ? value : value.ToUpperInvariant();
             qso.Details.Add(new QsoDetail { FieldName = requirement.DetailFieldName, FieldValue = normalized });
         }
+    }
+
+    private static void AddDetailIfMissing(ICollection<QsoDetail> details, string fieldName, string? value)
+    {
+        if (details is null || string.IsNullOrWhiteSpace(fieldName))
+            return;
+
+        var normalized = (value ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(normalized))
+            return;
+
+        var exists = details.Any(x => string.Equals(x.FieldName, fieldName, StringComparison.OrdinalIgnoreCase));
+        if (!exists)
+            details.Add(new QsoDetail { FieldName = fieldName, FieldValue = normalized.ToUpperInvariant() });
     }
 
     private static bool TryParseUnifiedExchange(string? rawExchange, out string normalized, out bool isCounty)
