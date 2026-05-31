@@ -260,7 +260,7 @@ public sealed class LogInputViewModel : ViewModelBase
     || HasRequiredField(ContestFieldKeys.State)
     || HasRequiredField(ContestFieldKeys.County);
     public bool ShowCountry => ShowLocationFields;
-    public bool ShowName => HasRequiredField(ContestFieldKeys.Name);
+    public bool ShowName => ShowLocationFields;
     public bool ShowState => ShowLocationFields && ShowLegacyNormalExchangeFields;
     public bool ShowCounty => ShowLocationFields && ShowLegacyNormalExchangeFields;
     public bool ShowGrid => ShowLocationFields;
