@@ -22,6 +22,8 @@ public static class AppConfigurationStore
             {
                 var fresh = new AppConfiguration();
                 EnsureRigConfiguration(fresh);
+                EnsureClusterConfiguration(fresh);
+                EnsureLookupConfiguration(fresh);
                 EnsureContestConfiguration(fresh);
                 return fresh;
             }
@@ -33,6 +35,7 @@ public static class AppConfigurationStore
             EnsureWindowPlacements(config);
             EnsureRigConfiguration(config);
             EnsureClusterConfiguration(config);
+            EnsureLookupConfiguration(config);
             EnsureContestConfiguration(config);
 
             if (!ContainsActiveProfileProperty(json) || !ContainsContestsProperty(json))
@@ -55,6 +58,7 @@ public static class AppConfigurationStore
             EnsureWindowPlacements(configuration);
             EnsureRigConfiguration(configuration);
             EnsureClusterConfiguration(configuration);
+            EnsureLookupConfiguration(configuration);
             EnsureContestConfiguration(configuration);
 
             var directory = Path.GetDirectoryName(ConfigFilePath);
@@ -222,6 +226,20 @@ public static class AppConfigurationStore
     {
         config.Cluster ??= new ClusterConfig();
         NormalizeCluster(config.Cluster);
+    }
+
+    private static void EnsureLookupConfiguration(AppConfiguration config)
+    {
+        config.CallsignLookup ??= new CallsignLookupConfiguration();
+        config.CallsignLookup.Qrz ??= new QrzLookupConfiguration();
+        config.CallsignLookup.Qrz.Username = config.CallsignLookup.Qrz.Username?.Trim() ?? string.Empty;
+        config.CallsignLookup.Qrz.Password = config.CallsignLookup.Qrz.Password?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(config.CallsignLookup.Qrz.Password)
+            && !string.IsNullOrWhiteSpace(config.CallsignLookup.Qrz.PasswordCiphertext))
+        {
+            config.CallsignLookup.Qrz.Password = WeakSecretProtector.Decrypt(config.CallsignLookup.Qrz.PasswordCiphertext);
+        }
     }
 
     private static void EnsureContestConfiguration(AppConfiguration config)
@@ -402,25 +420,28 @@ public static class AppConfigurationStore
         var id = 1;
         foreach (var radio in rigctld.Radios)
         {
-            if (radio.RadioId <= 0) radio.RadioId = id;
+            if (radio is null)
+            {
+                id++;
+                continue;
+            }
+
+            if (radio.RadioId <= 0)
+                radio.RadioId = id;
 
             var normalizedName = radio.RadioName?.Trim() ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(normalizedName))
+            if (string.IsNullOrWhiteSpace(normalizedName))
+                normalizedName = $"radio-{id}";
+
+            var baseName = normalizedName;
+            var suffix = 2;
+            while (!seenNames.Add(normalizedName))
             {
-                radio.RadioName = normalizedName;
-                var baseName = radio.RadioName;
-                var dupIdx = 2;
-                while (!seenNames.Add(radio.RadioName))
-                {
-                    radio.RadioName = $"{baseName}-{dupIdx}";
-                    dupIdx++;
-                }
-            }
-            else
-            {
-                radio.RadioName = string.Empty;
+                normalizedName = $"{baseName}-{suffix}";
+                suffix++;
             }
 
+            radio.RadioName = normalizedName;
             radio.Host = string.IsNullOrWhiteSpace(radio.Host) ? "127.0.0.1" : radio.Host.Trim();
             radio.Port = radio.Port <= 0 ? 4532 : radio.Port;
             radio.Executable = radio.Executable?.Trim() ?? string.Empty;
@@ -432,7 +453,9 @@ public static class AppConfigurationStore
 
         if (string.IsNullOrWhiteSpace(rigctld.ActiveRadioName) ||
             !rigctld.Radios.Any(x => string.Equals(x.RadioName, rigctld.ActiveRadioName, StringComparison.OrdinalIgnoreCase)))
+        {
             rigctld.ActiveRadioName = rigctld.Radios[0].RadioName;
+        }
 
         var validNames = rigctld.Radios.Select(x => x.RadioName).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var nameSet = rigctld.ActiveRadioNames
@@ -464,3 +487,4 @@ public static class AppConfigurationStore
         cluster.QueueLength = cluster.QueueLength <= 0 ? 500 : cluster.QueueLength;
     }
 }
+

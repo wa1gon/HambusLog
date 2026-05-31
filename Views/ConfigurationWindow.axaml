@@ -800,6 +800,51 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- ── Lookup Tab ─────────────────────────────────────── -->
+            <TabItem Header="Lookup">
+                <ScrollViewer Margin="12" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="10">
+
+                        <Border Padding="14" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="CardHeading" Text="Callsign Lookups" />
+                                <TextBlock Text="Configure third-party callsign lookup providers. QRZ credentials are stored in the config file."
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                            </StackPanel>
+                        </Border>
+
+                        <TabControl>
+                            <TabItem Header="QRZ.com">
+                                <Border Padding="14" CornerRadius="8" BorderThickness="1"
+                                        BorderBrush="{DynamicResource AppBorderBrush}"
+                                        Background="{DynamicResource AppPanelBackgroundBrush}">
+                                    <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Username" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 Text="{Binding QrzUserName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Watermark="QRZ username"
+                                                 Width="260" Padding="8,7" />
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Password" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                        <TextBox Grid.Row="1" Grid.Column="1"
+                                                 Text="{Binding QrzPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Width="260" Padding="8,7" />
+
+                                        <TextBlock Grid.Row="2" Grid.Column="1"
+                                                   Text="Leave blank to disable QRZ lookups."
+                                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                                   FontSize="11" />
+                                    </Grid>
+                                </Border>
+                            </TabItem>
+                        </TabControl>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
         </TabControl>
 
         <!-- ── Footer ────────────────────────────────────────────── -->

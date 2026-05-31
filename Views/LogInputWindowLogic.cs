@@ -1,5 +1,7 @@
 using Avalonia.Threading;
 using HamBusLog.Wa1gonLib.Models;
+using HamBusLog.Data;
+using HamBusLog.Services;
 
 namespace HamBusLog.Views;
 
@@ -103,6 +105,23 @@ public partial class LogInputWindow
     public async void OnSelfSpotClicked(object? sender, RoutedEventArgs e)
     {
         await SubmitSpotAsync(isSelfSpot: true);
+    }
+
+    public async void OnLookupClicked(object? sender, RoutedEventArgs e)
+    {
+        var config = AppConfigurationStore.Load();
+        var service = CallsignLookupService.CreateDefault(config);
+        var (result, errorMessage) = await service.LookupAsync(_viewModel.InputCall, CancellationToken.None);
+        if (result is null)
+        {
+            var message = string.IsNullOrWhiteSpace(errorMessage) ? "Lookup failed." : errorMessage;
+            SetStatus(message);
+            App.Toasts.ShowWarning("Callsign lookup", message);
+            return;
+        }
+
+        _viewModel.ApplyLookupResult(result);
+        App.Toasts.ShowSuccess("Callsign lookup", $"Found {result.CallSign} via {result.Provider}.");
     }
 
     private async Task SubmitSpotAsync(bool isSelfSpot)

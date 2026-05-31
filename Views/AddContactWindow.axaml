@@ -17,11 +17,19 @@
                 Background="{DynamicResource AppPanelBackgroundBrush}"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="0,0,0,1">
-            <CheckBox Content="Stay on top"
-                      HorizontalAlignment="Right"
-                      Foreground="{DynamicResource AppMutedForegroundBrush}"
-                      Checked="OnStayOnTopChecked"
-                      Unchecked="OnStayOnTopUnchecked" />
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="10">
+                <Button Content="Lookup"
+                        Padding="10,6"
+                        Background="{DynamicResource AppButtonNormalBrush}"
+                        Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
+                        Click="OnLookupClicked" />
+                <CheckBox Content="Stay on top"
+                          Foreground="{DynamicResource AppMutedForegroundBrush}"
+                          Checked="OnStayOnTopChecked"
+                          Unchecked="OnStayOnTopUnchecked" />
+            </StackPanel>
         </Border>
         <views:AddContactView DataContext="{Binding}" />
     </DockPanel>

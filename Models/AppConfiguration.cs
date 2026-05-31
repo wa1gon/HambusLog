@@ -17,6 +17,9 @@ public sealed class AppConfiguration
 
     /// <summary>System-wide DX cluster connection settings.</summary>
     public ClusterConfig Cluster { get; set; } = new();
+
+    /// <summary>Callsign lookup provider settings.</summary>
+    public CallsignLookupConfiguration CallsignLookup { get; set; } = new();
 }
 
 public sealed class WindowPlacement
@@ -148,4 +151,52 @@ public sealed class RigRadioConfig
     public int Port { get; set; } = 4532;
     public string SerialPortName { get; set; } = string.Empty;
     public bool IsActive { get; set; }
+}
+
+public sealed class CallsignLookupConfiguration
+{
+    public QrzLookupConfiguration Qrz { get; set; } = new();
+}
+
+public sealed class QrzLookupConfiguration
+{
+    // Current QRZ login fields.
+    public string Username { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+
+    // Legacy fields kept for migration from older config files.
+    public string PasswordCiphertext { get; set; } = string.Empty;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? AccountId
+    {
+        get => null;
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(Username))
+                Username = value.Trim();
+        }
+    }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ApiKey
+    {
+        get => null;
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(Password))
+                Password = value.Trim();
+        }
+    }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? UserId
+    {
+        get => null;
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(Username))
+                Username = value.Trim();
+        }
+    }
 }

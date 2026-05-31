@@ -1,6 +1,8 @@
 namespace HamBusLog.Views;
 
 using Avalonia.Controls;
+using HamBusLog.Data;
+using HamBusLog.Services;
 
 public partial class AddContactView : UserControl
 {
@@ -70,5 +72,24 @@ public partial class AddContactView : UserControl
     private void OnStayOnTopUnchecked(object? sender, RoutedEventArgs e)
     {
         UpdateStayOnTop(false);
+    }
+
+    public async void OnLookupClicked(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AddContactViewModel viewModel)
+            return;
+
+        var config = AppConfigurationStore.Load();
+        var service = CallsignLookupService.CreateDefault(config);
+        var (result, errorMessage) = await service.LookupAsync(viewModel.InputCall, CancellationToken.None);
+        if (result is null)
+        {
+            var message = string.IsNullOrWhiteSpace(errorMessage) ? "Lookup failed." : errorMessage;
+            App.Toasts.ShowWarning("Callsign lookup", message);
+            return;
+        }
+
+        viewModel.ApplyLookupResult(result);
+        App.Toasts.ShowSuccess("Callsign lookup", $"Found {result.CallSign} via {result.Provider}.");
     }
 }

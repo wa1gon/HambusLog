@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,7 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Wa1gonLib\Wa1gonLib.csproj" />
+    <ProjectReference Include="..\Wa1gonLib\Wa1gonLib.csproj" Aliases="Wa1gonLib" />
+    <ProjectReference Include="..\HamBusLog.csproj" Aliases="HamBusLog" />
   </ItemGroup>
 
 </Project>

@@ -1,3 +1,4 @@
+using HamBusLog.Models;
 using HamBusLog.Wa1gonLib.Models;
 
 namespace HamBusLog.ViewModels;
@@ -14,6 +15,8 @@ public sealed partial class QsoEditViewModel : ObservableObject
     [ObservableProperty] private string _stationCallSign = string.Empty;
     [ObservableProperty] private string _operator = string.Empty;
     [ObservableProperty] private string _state = string.Empty;
+    [ObservableProperty] private string _country = string.Empty;
+    [ObservableProperty] private string _name = string.Empty;
 
     [ObservableProperty] private string _newDetailField = string.Empty;
     [ObservableProperty] private string _newDetailValue = string.Empty;
@@ -36,6 +39,9 @@ public sealed partial class QsoEditViewModel : ObservableObject
         var dt = qso.QsoDate == default ? DateTime.Now : qso.QsoDate;
         QsoDateText = dt.ToString("yyyy-MM-dd HH:mm");
         State = qso.State ?? string.Empty;
+        Country = qso.Country ?? string.Empty;
+        Name = qso.Details?.FirstOrDefault(x => string.Equals(x.FieldName, "NAME", StringComparison.OrdinalIgnoreCase))?.FieldValue
+            ?? string.Empty;
 
         Details.Clear();
         if (qso.Details is { Count: > 0 })
@@ -93,6 +99,7 @@ public sealed partial class QsoEditViewModel : ObservableObject
             QsoDate = qsoDate,
             StationCallSign = (StationCallSign ?? string.Empty).Trim().ToUpperInvariant(),
             State = (State ?? string.Empty).Trim().ToUpperInvariant(),
+            Country = (Country ?? string.Empty).Trim().ToUpperInvariant(),
             Details = [],
             QslInfo = []
         };
@@ -112,6 +119,9 @@ public sealed partial class QsoEditViewModel : ObservableObject
             if (string.Equals(detail.FieldName, "OPERATOR", StringComparison.OrdinalIgnoreCase))
                 continue;
 
+            if (string.Equals(detail.FieldName, "NAME", StringComparison.OrdinalIgnoreCase))
+                continue;
+
             copy.Details.Add(new QsoDetail
             {
                 QsoId = id,
@@ -120,7 +130,67 @@ public sealed partial class QsoEditViewModel : ObservableObject
             });
         }
 
+        UpsertDetail(copy.Details, "NAME", Name);
+
         return copy;
     }
-}
 
+    public void ApplyLookupResult(CallsignLookupResult result)
+    {
+        if (result is null)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(result.CallSign))
+            Call = result.CallSign;
+
+        if (!string.IsNullOrWhiteSpace(result.State))
+            State = result.State;
+
+        if (!string.IsNullOrWhiteSpace(result.Country))
+            Country = result.Country;
+
+        if (!string.IsNullOrWhiteSpace(result.Name))
+            Name = result.Name;
+
+        UpsertDetailRow("COUNTY", result.County);
+        UpsertDetailRow("GRID", result.Grid);
+    }
+
+    private void UpsertDetailRow(string fieldName, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(fieldName) || string.IsNullOrWhiteSpace(value))
+            return;
+
+        var existing = Details.FirstOrDefault(x => string.Equals(x.FieldName, fieldName, StringComparison.OrdinalIgnoreCase));
+        if (existing is null)
+        {
+            Details.Add(new QsoDetail { FieldName = fieldName, FieldValue = value.Trim() });
+            return;
+        }
+
+        existing.FieldValue = value.Trim();
+    }
+
+    private static void UpsertDetail(ICollection<QsoDetail> details, string fieldName, string? value)
+    {
+        if (details is null || string.IsNullOrWhiteSpace(fieldName))
+            return;
+
+        var normalizedValue = (value ?? string.Empty).Trim();
+        var existing = details.FirstOrDefault(x => string.Equals(x.FieldName, fieldName, StringComparison.OrdinalIgnoreCase));
+        if (existing is null)
+        {
+            if (string.IsNullOrWhiteSpace(normalizedValue))
+                return;
+
+            details.Add(new QsoDetail
+            {
+                FieldName = fieldName,
+                FieldValue = normalizedValue
+            });
+            return;
+        }
+
+        existing.FieldValue = normalizedValue;
+    }
+}

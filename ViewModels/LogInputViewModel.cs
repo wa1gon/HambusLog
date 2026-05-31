@@ -1,6 +1,7 @@
 namespace HamBusLog.ViewModels;
 
 using HamBusLog.Hardware;
+using HamBusLog.Models;
 
 public sealed class LogInputViewModel : ViewModelBase
 {
@@ -302,6 +303,27 @@ public sealed class LogInputViewModel : ViewModelBase
             if (SetProperty(ref _inputCounty, (value ?? string.Empty).ToUpperInvariant()))
                 EnforceArkansasCountyRule();
         }
+    }
+
+    public void ApplyLookupResult(CallsignLookupResult result)
+    {
+        if (result is null)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(result.CallSign))
+            InputCall = result.CallSign;
+
+        if (!string.IsNullOrWhiteSpace(result.Country))
+            InputCountry = result.Country;
+
+        if (!string.IsNullOrWhiteSpace(result.Name))
+            InputName = result.Name;
+
+        if (!string.IsNullOrWhiteSpace(result.State))
+            InputState = result.State;
+
+        if (!string.IsNullOrWhiteSpace(result.County))
+            InputCounty = result.County;
     }
 
     public string InputOperator { get => _inputOperator; set => SetProperty(ref _inputOperator, (value ?? string.Empty).ToUpperInvariant()); }

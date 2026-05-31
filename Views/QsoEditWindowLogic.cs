@@ -1,3 +1,5 @@
+using HamBusLog.Data;
+using HamBusLog.Services;
 using HamBusLog.Wa1gonLib.Models;
 
 namespace HamBusLog.Views;
@@ -53,6 +55,22 @@ public partial class QsoEditWindow
         Close();
     }
 
+    public async void OnLookupClicked(object? sender, RoutedEventArgs e)
+    {
+        var config = AppConfigurationStore.Load();
+        var service = CallsignLookupService.CreateDefault(config);
+        var (result, errorMessage) = await service.LookupAsync(_viewModel.Call, CancellationToken.None);
+        if (result is null)
+        {
+            var message = string.IsNullOrWhiteSpace(errorMessage) ? "Lookup failed." : errorMessage;
+            SetStatus(message);
+            return;
+        }
+
+        _viewModel.ApplyLookupResult(result);
+        SetStatus($"Lookup succeeded via {result.Provider}.");
+    }
+
     private void SetStatus(string message)
     {
         var label = this.FindControl<TextBlock>("StatusLabel");
@@ -60,5 +78,3 @@ public partial class QsoEditWindow
             label.Text = message;
     }
 }
-
-

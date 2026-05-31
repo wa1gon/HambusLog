@@ -13,8 +13,8 @@
                 Background="{DynamicResource AppPanelBackgroundBrush}"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="1">
-            <Grid ColumnDefinitions="Auto,*"
-                  RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                   ColumnSpacing="12"
                   RowSpacing="10">
                 <TextBlock Grid.Row="0" Grid.ColumnSpan="2"
@@ -23,7 +23,20 @@
                            FontWeight="SemiBold" />
 
                 <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Call" />
-                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding InputCall, Mode=TwoWay}" Watermark="K1ABC" TextChanged="OnUppercaseInputChanged" />
+                <Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBox Grid.Column="0"
+                             Text="{Binding InputCall, Mode=TwoWay}"
+                             Watermark="K1ABC"
+                             TextChanged="OnUppercaseInputChanged"
+                             MinWidth="200" />
+                    <Button Grid.Column="1"
+                            Content="Lookup"
+                            Padding="10,6"
+                            MinWidth="80"
+                            Background="{DynamicResource AppButtonNormalBrush}"
+                            Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
+                            Click="OnLookupClicked" />
+                </Grid>
 
                 <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Date (YYYYMMDD)" />
                 <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding InputDate, Mode=TwoWay}" />
@@ -46,13 +59,29 @@
                 <TextBlock Grid.Row="8" Grid.Column="0" VerticalAlignment="Center" Text="Received" />
                 <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding InputRec, Mode=TwoWay}" />
 
-                <TextBlock Grid.Row="9" Grid.Column="0" VerticalAlignment="Center" Text="Field Day Section" />
-                <TextBox Grid.Row="9" Grid.Column="1" Text="{Binding InputFieldDaySection, Mode=TwoWay}" Watermark="EMA" />
+                <TextBlock Grid.Row="9" Grid.Column="0" VerticalAlignment="Center" Text="Country" />
+                <TextBox Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding InputCountry, Mode=TwoWay}" Watermark="USA" />
 
-                <TextBlock Grid.Row="10" Grid.Column="0" VerticalAlignment="Center" Text="Field Day Class" />
-                <TextBox Grid.Row="10" Grid.Column="1" Text="{Binding InputFieldDayClass, Mode=TwoWay}" Watermark="1D" />
+                <TextBlock Grid.Row="10" Grid.Column="0" VerticalAlignment="Center" Text="Name" />
+                <TextBox Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding InputName, Mode=TwoWay}" Watermark="Operator name" />
 
-                <CheckBox Content="Stay on top"
+                <TextBlock Grid.Row="11" Grid.Column="0" VerticalAlignment="Center" Text="State/Prov" />
+                <TextBox Grid.Row="11" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding InputState, Mode=TwoWay}" Watermark="AR" />
+
+                <TextBlock Grid.Row="12" Grid.Column="0" VerticalAlignment="Center" Text="County" />
+                <TextBox Grid.Row="12" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding InputCounty, Mode=TwoWay}" Watermark="Pulaski" />
+
+                <TextBlock Grid.Row="13" Grid.Column="0" VerticalAlignment="Center" Text="Grid" />
+                <TextBox Grid.Row="13" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding InputGrid, Mode=TwoWay}" Watermark="EM48" />
+
+                <TextBlock Grid.Row="14" Grid.Column="0" VerticalAlignment="Center" Text="Field Day Section" />
+                <TextBox Grid.Row="14" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding InputFieldDaySection, Mode=TwoWay}" Watermark="EMA" />
+
+                <TextBlock Grid.Row="15" Grid.Column="0" VerticalAlignment="Center" Text="Field Day Class" />
+                <TextBox Grid.Row="15" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding InputFieldDayClass, Mode=TwoWay}" Watermark="1D" />
+
+                <CheckBox Grid.Row="16" Grid.Column="1"
+                          Content="Stay on top"
                           Margin="10,0,0,0"
                           VerticalAlignment="Center"
                           Foreground="{DynamicResource AppMutedForegroundBrush}"
