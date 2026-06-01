@@ -97,6 +97,12 @@ public partial class LogInputWindow
 
     public void OnCancelClicked(object? sender, RoutedEventArgs e) => Close();
 
+    public void OnClearClicked(object? sender, RoutedEventArgs e)
+    {
+        _viewModel.PrepareForNextLogEntry();
+        SetStatus(string.Empty);
+    }
+
     public async void OnSpotClicked(object? sender, RoutedEventArgs e)
     {
         await SubmitSpotAsync(isSelfSpot: false);

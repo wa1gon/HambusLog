@@ -22,7 +22,7 @@ public sealed class QrzLookupProvider : ICallsignLookupProvider
 
     public bool IsConfigured
         => !string.IsNullOrWhiteSpace(_config.Username)
-           && !string.IsNullOrWhiteSpace(_config.Password);
+           && !string.IsNullOrWhiteSpace(WeakSecretProtector.Decrypt(_config.PasswordCiphertext));
 
     public async Task<CallsignLookupResult?> LookupAsync(string callSign, CancellationToken cancellationToken)
     {
@@ -85,7 +85,7 @@ public sealed class QrzLookupProvider : ICallsignLookupProvider
             return _sessionKey;
 
         var user = _config.Username?.Trim() ?? string.Empty;
-        var password = _config.Password?.Trim() ?? string.Empty;
+        var password = WeakSecretProtector.Decrypt(_config.PasswordCiphertext).Trim();
         if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password))
             throw new InvalidOperationException("QRZ credentials are missing.");
 

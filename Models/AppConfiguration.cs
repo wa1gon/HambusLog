@@ -162,20 +162,19 @@ public sealed class QrzLookupConfiguration
 {
     // Current QRZ login fields.
     public string Username { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
 
     // Legacy fields kept for migration from older config files.
     public string PasswordCiphertext { get; set; } = string.Empty;
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("Password")]
+    public string? LegacyPassword { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? AccountId
     {
         get => null;
-        set
-        {
-            if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(Username))
-                Username = value.Trim();
-        }
+        set { if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(Username)) Username = value!.Trim(); }
     }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -184,8 +183,12 @@ public sealed class QrzLookupConfiguration
         get => null;
         set
         {
-            if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(Password))
-                Password = value.Trim();
+            if (!string.IsNullOrWhiteSpace(value)
+                && string.IsNullOrWhiteSpace(PasswordCiphertext)
+                && string.IsNullOrWhiteSpace(LegacyPassword))
+            {
+                LegacyPassword = value.Trim();
+            }
         }
     }
 
@@ -193,10 +196,6 @@ public sealed class QrzLookupConfiguration
     public string? UserId
     {
         get => null;
-        set
-        {
-            if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(Username))
-                Username = value.Trim();
-        }
+        set { if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(Username)) Username = value.Trim(); }
     }
 }

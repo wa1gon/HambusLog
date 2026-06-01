@@ -760,7 +760,10 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             _appConfig.CallsignLookup ??= new CallsignLookupConfiguration();
             _appConfig.CallsignLookup.Qrz ??= new QrzLookupConfiguration();
             _appConfig.CallsignLookup.Qrz.Username = QrzUserName.Trim();
-            _appConfig.CallsignLookup.Qrz.Password = QrzPassword;
+            _appConfig.CallsignLookup.Qrz.PasswordCiphertext = string.IsNullOrWhiteSpace(QrzPassword)
+                ? string.Empty
+                : WeakSecretProtector.Encrypt(QrzPassword.Trim());
+            _appConfig.CallsignLookup.Qrz.LegacyPassword = null;
 
             DatabaseFolderPath = normalizedDatabaseFolderPath;
             DatabaseFileName = normalizedDatabaseFileName;
@@ -1021,9 +1024,10 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         var lookup = _appConfig.CallsignLookup ?? new CallsignLookupConfiguration();
         var qrz = lookup.Qrz ?? new QrzLookupConfiguration();
         QrzUserName = qrz.Username ?? string.Empty;
-        QrzPassword = string.IsNullOrWhiteSpace(qrz.Password)
-            ? WeakSecretProtector.Decrypt(qrz.PasswordCiphertext)
-            : qrz.Password;
+        var password = WeakSecretProtector.Decrypt(qrz.PasswordCiphertext);
+        if (string.IsNullOrWhiteSpace(password))
+            password = qrz.LegacyPassword ?? string.Empty;
+        QrzPassword = password;
     }
 
     private void Load()

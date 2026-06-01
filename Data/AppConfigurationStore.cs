@@ -60,6 +60,7 @@ public static class AppConfigurationStore
             EnsureClusterConfiguration(configuration);
             EnsureLookupConfiguration(configuration);
             EnsureContestConfiguration(configuration);
+            NormalizeLookupForSave(configuration);
 
             var directory = Path.GetDirectoryName(ConfigFilePath);
             if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
@@ -233,13 +234,28 @@ public static class AppConfigurationStore
         config.CallsignLookup ??= new CallsignLookupConfiguration();
         config.CallsignLookup.Qrz ??= new QrzLookupConfiguration();
         config.CallsignLookup.Qrz.Username = config.CallsignLookup.Qrz.Username?.Trim() ?? string.Empty;
-        config.CallsignLookup.Qrz.Password = config.CallsignLookup.Qrz.Password?.Trim() ?? string.Empty;
 
-        if (string.IsNullOrWhiteSpace(config.CallsignLookup.Qrz.Password)
-            && !string.IsNullOrWhiteSpace(config.CallsignLookup.Qrz.PasswordCiphertext))
+        var legacyPassword = config.CallsignLookup.Qrz.LegacyPassword?.Trim() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(legacyPassword)
+            && string.IsNullOrWhiteSpace(config.CallsignLookup.Qrz.PasswordCiphertext))
         {
-            config.CallsignLookup.Qrz.Password = WeakSecretProtector.Decrypt(config.CallsignLookup.Qrz.PasswordCiphertext);
+            config.CallsignLookup.Qrz.PasswordCiphertext = WeakSecretProtector.Encrypt(legacyPassword);
         }
+
+        config.CallsignLookup.Qrz.LegacyPassword = null;
+    }
+
+    private static void NormalizeLookupForSave(AppConfiguration config)
+    {
+        var qrz = config.CallsignLookup?.Qrz;
+        if (qrz is null)
+            return;
+
+        var ciphertext = qrz.PasswordCiphertext?.Trim() ?? string.Empty;
+        qrz.PasswordCiphertext = string.IsNullOrWhiteSpace(ciphertext)
+            ? string.Empty
+            : WeakSecretProtector.Encrypt(ciphertext);
+        qrz.LegacyPassword = null;
     }
 
     private static void EnsureContestConfiguration(AppConfiguration config)
@@ -487,4 +503,3 @@ public static class AppConfigurationStore
         cluster.QueueLength = cluster.QueueLength <= 0 ? 500 : cluster.QueueLength;
     }
 }
-
