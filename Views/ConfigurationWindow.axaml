@@ -825,7 +825,7 @@
                                         <Border Padding="14" CornerRadius="8" BorderThickness="1"
                                                 BorderBrush="{DynamicResource AppBorderBrush}"
                                                 Background="{DynamicResource AppPanelBackgroundBrush}">
-                                            <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                                            <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
                                                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Username" VerticalAlignment="Center" FontWeight="SemiBold" />
                                                 <TextBox Grid.Row="0" Grid.Column="1"
                                                          Text="{Binding QrzUserName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -835,9 +835,22 @@
                                                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Password" VerticalAlignment="Center" FontWeight="SemiBold" />
                                                 <TextBox Grid.Row="1" Grid.Column="1"
                                                          Text="{Binding QrzPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         PasswordChar="*"
                                                          Width="260" Padding="8,7" />
 
-                                                <TextBlock Grid.Row="2" Grid.Column="1"
+                                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Confirm" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                                <TextBox Grid.Row="2" Grid.Column="1"
+                                                         Text="{Binding QrzConfirmPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         PasswordChar="*"
+                                                         Width="260" Padding="8,7" />
+
+                                                <TextBlock Grid.Row="3" Grid.Column="1"
+                                                           Text="Passwords do not match."
+                                                           IsVisible="{Binding ShowQrzPasswordMismatch}"
+                                                           Foreground="{DynamicResource AppErrorBrush}"
+                                                           FontSize="11" />
+
+                                                <TextBlock Grid.Row="4" Grid.Column="1"
                                                            Text="Leave blank to disable QRZ lookups."
                                                            Foreground="{DynamicResource AppMutedForegroundBrush}"
                                                            FontSize="11" />

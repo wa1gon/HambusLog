@@ -67,6 +67,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private int _clusterQueueLength = 500;
     private string _qrzUserName = string.Empty;
     private string _qrzPassword = string.Empty;
+    private string _qrzConfirmPassword = string.Empty;
     private double _appFontSize = 12.0;
     private string _selectedFontSizePreset = PresetMedium;
     private bool _syncingFontSizePreset;
@@ -611,8 +612,34 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     public string QrzPassword
     {
         get => _qrzPassword;
-        set => SetProperty(ref _qrzPassword, value ?? string.Empty);
+        set
+        {
+            if (SetProperty(ref _qrzPassword, value ?? string.Empty))
+            {
+                OnPropertyChanged(nameof(QrzPasswordsMatch));
+                OnPropertyChanged(nameof(ShowQrzPasswordMismatch));
+            }
+        }
     }
+
+    public string QrzConfirmPassword
+    {
+        get => _qrzConfirmPassword;
+        set
+        {
+            if (SetProperty(ref _qrzConfirmPassword, value ?? string.Empty))
+            {
+                OnPropertyChanged(nameof(QrzPasswordsMatch));
+                OnPropertyChanged(nameof(ShowQrzPasswordMismatch));
+            }
+        }
+    }
+
+    public bool QrzPasswordsMatch => string.Equals(QrzPassword, QrzConfirmPassword, StringComparison.Ordinal);
+
+    public bool ShowQrzPasswordMismatch
+        => !QrzPasswordsMatch
+           && (!string.IsNullOrWhiteSpace(QrzPassword) || !string.IsNullOrWhiteSpace(QrzConfirmPassword));
 
     public RigCatalogViewModel RigCatalog { get; } = new();
 
@@ -643,6 +670,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     {
         try
         {
+            if (!QrzPasswordsMatch)
+            {
+                StatusMessage = "✗ Save failed: QRZ passwords do not match.";
+                return;
+            }
+
             // Ensure the currently edited radio fields are written back before profile serialization.
             PersistRigRadioSettings(_selectedRigRadioId, SelectedRigRadioName);
 
@@ -1028,6 +1061,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         if (string.IsNullOrWhiteSpace(password))
             password = qrz.LegacyPassword ?? string.Empty;
         QrzPassword = password;
+        QrzConfirmPassword = password;
     }
 
     private void Load()
