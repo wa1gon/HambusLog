@@ -1,11 +1,15 @@
 namespace HamBusLog.Views;
 
 using Avalonia.VisualTree;
+using HamBusLog.Data.Repositories.Sqlite;
+using HamBusLog.Wa1gonLib.Models;
 
 public partial class MainWindow
 {
     private MenuNode? _previousSelection;
     private GridWindow? _gridWindow;
+    private LogInputWindow? _logInputWindow;
+    private SqliteQsoRepository? _qsoRepository;
     private ConfigurationWindow? _configurationWindow;
     private DxSpotsWindow? _dxSpotsWindow;
     private CabrilloExportWindow? _cabrilloExportWindow;
@@ -280,20 +284,37 @@ public partial class MainWindow
 
     private void OpenNewContactWindow()
     {
-        EnsureGridWindowVisible();
-        _gridWindow?.OpenLogInputWindow();
-    }
-
-    private void EnsureGridWindowVisible()
-    {
-        if (_gridWindow is null)
+        if (_logInputWindow is { IsVisible: true })
         {
-            _gridWindow = new GridWindow();
-            _gridWindow.Closed += (_, _) => _gridWindow = null;
+            _logInputWindow.Activate();
+            return;
         }
 
-        if (!_gridWindow.IsVisible)
-            ShowWithVisibleOwner(_gridWindow);
+        if (App.ActivateOpenWindow<LogInputWindow>())
+            return;
+
+        _qsoRepository ??= new SqliteQsoRepository(App.DbContext);
+        _logInputWindow = new LogInputWindow();
+        _logInputWindow.Closed += (_, _) => _logInputWindow = null;
+        _logInputWindow.QsoLogged += async (_, qso) => await SaveQsoAsync(qso);
+        _logInputWindow.Show();
+        _logInputWindow.Activate();
+    }
+
+    private async Task SaveQsoAsync(Qso qso)
+    {
+        try
+        {
+            _qsoRepository ??= new SqliteQsoRepository(App.DbContext);
+            await _qsoRepository.AddAsync(qso);
+            await _qsoRepository.SaveChangesAsync();
+            App.Toasts.ShowSuccess("QSO saved", $"{qso.Call} logged on {qso.Band} {qso.Mode}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error saving QSO: {ex.Message}");
+            App.Toasts.ShowError("Save failed", ex.Message);
+        }
     }
 
     private void ShowWithVisibleOwner(Window window)

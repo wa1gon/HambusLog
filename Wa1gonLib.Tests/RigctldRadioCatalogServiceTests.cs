@@ -1,4 +1,9 @@
-﻿namespace Wa1gonLib.Tests;
+﻿extern alias Wa1gonLib;
+
+using RigctldRadioCatalogService = Wa1gonLib::Wa1gonLib.RigctldRadioCatalogService;
+using RigCatalogEntry = Wa1gonLib::Wa1gonLib.Models.RigCatalogEntry;
+
+namespace Wa1gonLib.Tests;
 
 public class RigctldRadioCatalogServiceTests
 {

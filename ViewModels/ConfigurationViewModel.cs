@@ -1,3 +1,6 @@
+using HamBusLog.Models;
+using HamBusLog.Services;
+
 namespace HamBusLog.ViewModels;
 
 public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
@@ -62,6 +65,9 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _clusterPassword = string.Empty;
     private string _clusterCommand = string.Empty;
     private int _clusterQueueLength = 500;
+    private string _qrzUserName = string.Empty;
+    private string _qrzPassword = string.Empty;
+    private string _qrzConfirmPassword = string.Empty;
     private double _appFontSize = 12.0;
     private string _selectedFontSizePreset = PresetMedium;
     private bool _syncingFontSizePreset;
@@ -597,6 +603,44 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _clusterQueueLength, value);
     }
 
+    public string QrzUserName
+    {
+        get => _qrzUserName;
+        set => SetProperty(ref _qrzUserName, value ?? string.Empty);
+    }
+
+    public string QrzPassword
+    {
+        get => _qrzPassword;
+        set
+        {
+            if (SetProperty(ref _qrzPassword, value ?? string.Empty))
+            {
+                OnPropertyChanged(nameof(QrzPasswordsMatch));
+                OnPropertyChanged(nameof(ShowQrzPasswordMismatch));
+            }
+        }
+    }
+
+    public string QrzConfirmPassword
+    {
+        get => _qrzConfirmPassword;
+        set
+        {
+            if (SetProperty(ref _qrzConfirmPassword, value ?? string.Empty))
+            {
+                OnPropertyChanged(nameof(QrzPasswordsMatch));
+                OnPropertyChanged(nameof(ShowQrzPasswordMismatch));
+            }
+        }
+    }
+
+    public bool QrzPasswordsMatch => string.Equals(QrzPassword, QrzConfirmPassword, StringComparison.Ordinal);
+
+    public bool ShowQrzPasswordMismatch
+        => !QrzPasswordsMatch
+           && (!string.IsNullOrWhiteSpace(QrzPassword) || !string.IsNullOrWhiteSpace(QrzConfirmPassword));
+
     public RigCatalogViewModel RigCatalog { get; } = new();
 
     private Color _hoverFontColor = Color.Parse("#FFFFFF");
@@ -626,6 +670,12 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     {
         try
         {
+            if (!QrzPasswordsMatch)
+            {
+                StatusMessage = "✗ Save failed: QRZ passwords do not match.";
+                return;
+            }
+
             // Ensure the currently edited radio fields are written back before profile serialization.
             PersistRigRadioSettings(_selectedRigRadioId, SelectedRigRadioName);
 
@@ -739,6 +789,14 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 Command = ClusterCommand.Trim(),
                 QueueLength = ClusterQueueLength <= 0 ? 500 : ClusterQueueLength
             };
+
+            _appConfig.CallsignLookup ??= new CallsignLookupConfiguration();
+            _appConfig.CallsignLookup.Qrz ??= new QrzLookupConfiguration();
+            _appConfig.CallsignLookup.Qrz.Username = QrzUserName.Trim();
+            _appConfig.CallsignLookup.Qrz.PasswordCiphertext = string.IsNullOrWhiteSpace(QrzPassword)
+                ? string.Empty
+                : WeakSecretProtector.Encrypt(QrzPassword.Trim());
+            _appConfig.CallsignLookup.Qrz.LegacyPassword = null;
 
             DatabaseFolderPath = normalizedDatabaseFolderPath;
             DatabaseFileName = normalizedDatabaseFileName;
@@ -962,6 +1020,8 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         ClusterCommand = cluster.Command ?? string.Empty;
         ClusterQueueLength = cluster.QueueLength <= 0 ? 500 : cluster.QueueLength;
 
+        LoadLookupSettings();
+
         var rigctld = AppConfigurationStore.GetRigctld(_appConfig);
         RigctldReconnectIntervalSeconds = rigctld.ReconnectIntervalSeconds <= 0 ? 3 : Math.Min(rigctld.ReconnectIntervalSeconds, 300);
         PopulateAvailableRigRadios(rigctld);
@@ -992,6 +1052,18 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(AvailableSerialPorts));
     }
 
+    private void LoadLookupSettings()
+    {
+        var lookup = _appConfig.CallsignLookup ?? new CallsignLookupConfiguration();
+        var qrz = lookup.Qrz ?? new QrzLookupConfiguration();
+        QrzUserName = qrz.Username ?? string.Empty;
+        var password = WeakSecretProtector.Decrypt(qrz.PasswordCiphertext);
+        if (string.IsNullOrWhiteSpace(password))
+            password = qrz.LegacyPassword ?? string.Empty;
+        QrzPassword = password;
+        QrzConfirmPassword = password;
+    }
+
     private void Load()
     {
         _appConfig = AppConfigurationStore.Load();
@@ -1015,6 +1087,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
 
         OnPropertyChanged(nameof(SelectedProfile));
         LoadProfile(_selectedProfile);
+        LoadLookupSettings();
         ContestImportLicenseKey = _appConfig.Contests
             .Select(x => x.LicenseKey?.Trim())
             .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x))

@@ -106,7 +106,7 @@ public sealed class LogInputViewModelTests
     }
 
     [Fact]
-    public void TryBuildQso_NormalContest_RequiresExtendedExchange()
+    public void TryBuildQso_NormalContest_UsesDefaultRstOnly()
     {
         var viewModel = new LogInputViewModel
         {
@@ -120,25 +120,11 @@ public sealed class LogInputViewModelTests
 
         var qso = viewModel.TryBuildQso(out var error);
 
-        Assert.Null(qso);
-        Assert.Contains("Country", error, StringComparison.OrdinalIgnoreCase);
-
-        viewModel.InputSent = "59";
-        viewModel.InputRec = "59";
-        viewModel.InputCountry = "USA";
-        viewModel.InputName = "Pat";
-        viewModel.InputState = "MA";
-        viewModel.InputCounty = "MIDDLESEX";
-
-        qso = viewModel.TryBuildQso(out error);
-
         Assert.NotNull(qso);
         Assert.Equal(string.Empty, error);
         Assert.Equal("NORMAL", qso!.ContestId);
-        Assert.Equal("USA", qso!.Country);
-        Assert.Equal("MA", qso.State);
-        Assert.Contains(qso.Details, d => d.FieldName == "Name" && d.FieldValue == "Pat");
-        Assert.Contains(qso.Details, d => d.FieldName == "County" && d.FieldValue == "MIDDLESEX");
+        Assert.Equal("59", qso.RstSent);
+        Assert.Equal("59", qso.RstRcvd);
     }
 
     [Fact]

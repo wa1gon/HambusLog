@@ -2,7 +2,7 @@ namespace HamBusLog.Data;
 
 using HamBusLog.Wa1gonLib.Models;
 
-internal static class QsoImportDuplicateDetector
+public static class QsoImportDuplicateDetector
 {
     public static async Task<QsoImportDuplicateFilterResult> FilterNewQsosAsync(
         HamBusLogDbContext db,
@@ -71,6 +71,4 @@ internal static class QsoImportDuplicateDetector
     private readonly record struct DuplicateProbe(string Call, string StationCallSign, DateTime QsoDate, string Band, string Mode, decimal Freq);
 }
 
-internal readonly record struct QsoImportDuplicateFilterResult(IReadOnlyList<Qso> Accepted, int DuplicateCount);
-
-
+public readonly record struct QsoImportDuplicateFilterResult(IReadOnlyList<Qso> Accepted, int DuplicateCount);

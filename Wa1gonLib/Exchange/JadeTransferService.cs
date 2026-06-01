@@ -1,8 +1,19 @@
+#if WA1GONLIB
+extern alias HamBusLog;
+#endif
+
 namespace HamBusLog.Wa1gonLib.Exchange;
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
-using HamBusLog.Data;
-using HamBusLog.Wa1gonLib.Models;
+using Microsoft.EntityFrameworkCore;
+#if WA1GONLIB
+using HamBusLogData = HamBusLog::HamBusLog.Data;
+using HamBusLogModels = HamBusLog::HamBusLog.Wa1gonLib.Models;
+#else
+using HamBusLogData = HamBusLog.Data;
+using HamBusLogModels = HamBusLog.Wa1gonLib.Models;
+#endif
 
 public static class JadeTransferService
 {
@@ -37,7 +48,7 @@ public static class JadeTransferService
 
     public static async Task<int> ExportToFileAsync(
         string filePath,
-        AdifImportOptions? options = null,
+        HamBusLogData.AdifImportOptions? options = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(filePath))
@@ -46,14 +57,14 @@ public static class JadeTransferService
         var fullPath = Path.GetFullPath(filePath);
         var importOptions = ResolveOptions(options);
 
-        await using var db = HamBusLogDbContextFactory.Create(importOptions.Provider, importOptions.ConnectionString);
+        await using var db = HamBusLogData.HamBusLogDbContextFactory.Create(importOptions.Provider, importOptions.ConnectionString);
         var qsos = await db.Qsos
             .Include(x => x.Details)
             .Include(x => x.QslInfo)
             .OrderBy(x => x.QsoDate)
             .ToListAsync(cancellationToken);
 
-        var records = qsos.Select(ToJadeRecord).ToList();
+        var records = qsos.Select(qso => ToJadeRecord(qso)).ToList();
         var recordArray = new JsonArray();
         foreach (var record in records)
             recordArray.Add(JsonNode.Parse(record));
@@ -92,9 +103,9 @@ public static class JadeTransferService
         };
     }
 
-    private static Qso CreateExampleQso()
+    private static HamBusLogModels.Qso CreateExampleQso()
     {
-        return new Qso
+        return new HamBusLogModels.Qso
         {
             Id = Guid.Parse("2f3dcb4f-0adb-4dfc-bf95-72d11b3761e4"),
             Call = "JA1ABC",
@@ -108,13 +119,13 @@ public static class JadeTransferService
             RstSent = "-10",
             RstRcvd = "-08",
             ContestId = string.Empty,
-            Details = [new QsoDetail { FieldName = "COMMENT", FieldValue = "Example JADE record" }]
+            Details = [new HamBusLogModels.QsoDetail { FieldName = "COMMENT", FieldValue = "Example JADE record" }]
         };
     }
 
     public static async Task<int> ImportFromFileAsync(
         string filePath,
-        AdifImportOptions? options = null,
+        HamBusLogData.AdifImportOptions? options = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(filePath))
@@ -133,9 +144,9 @@ public static class JadeTransferService
         var qsos = records.Select((record, index) => FromJadeRecord(record, index + 1)).ToList();
         PrepareForPersistence(qsos);
 
-        await using var db = HamBusLogDbContextFactory.Create(importOptions.Provider, importOptions.ConnectionString);
+        await using var db = HamBusLogData.HamBusLogDbContextFactory.Create(importOptions.Provider, importOptions.ConnectionString);
         await db.Database.EnsureCreatedAsync(cancellationToken);
-        var duplicateFilter = await QsoImportDuplicateDetector.FilterNewQsosAsync(db, qsos, cancellationToken);
+        var duplicateFilter = await HamBusLogData.QsoImportDuplicateDetector.FilterNewQsosAsync(db, qsos, cancellationToken);
         if (duplicateFilter.Accepted.Count > 0)
         {
             await db.Qsos.AddRangeAsync(duplicateFilter.Accepted, cancellationToken);
@@ -276,7 +287,7 @@ public static class JadeTransferService
         return true;
     }
 
-    private static string ToJadeRecord(Qso qso)
+    private static string ToJadeRecord(HamBusLogModels.Qso qso)
     {
         var record = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -300,7 +311,7 @@ public static class JadeTransferService
         {
             if (string.IsNullOrWhiteSpace(detail.FieldName) || string.IsNullOrWhiteSpace(detail.FieldValue))
                 continue;
-            if (QsoDetailFieldFilters.IsExcluded(detail.FieldName))
+            if (HamBusLogModels.QsoDetailFieldFilters.IsExcluded(detail.FieldName))
                 continue;
 
             var key = detail.FieldName.Trim().ToUpperInvariant();
@@ -334,10 +345,10 @@ public static class JadeTransferService
         return JsonSerializer.Serialize(record.Where(x => x.Value is not null).ToDictionary(x => x.Key, x => x.Value));
     }
 
-    private static Qso FromJadeRecord(Dictionary<string, string> fields, int recordNumber)
+    private static HamBusLogModels.Qso FromJadeRecord(Dictionary<string, string> fields, int recordNumber)
     {
-        var qso = new Qso();
-        var qslInfos = new Dictionary<string, QsoQslInfo>(StringComparer.OrdinalIgnoreCase);
+        var qso = new HamBusLogModels.Qso();
+        var qslInfos = new Dictionary<string, HamBusLogModels.QsoQslInfo>(StringComparer.OrdinalIgnoreCase);
         DateTime? qsoDate = null;
         TimeSpan? qsoTime = null;
 
@@ -346,12 +357,12 @@ public static class JadeTransferService
             var name = field.Key.ToUpperInvariant();
             var value = field.Value;
 
-            QsoQslInfo? GetOrCreateQsl(string service)
+            HamBusLogModels.QsoQslInfo? GetOrCreateQsl(string service)
             {
                 if (qslInfos.TryGetValue(service, out var existing))
                     return existing;
 
-                var created = new QsoQslInfo { QslService = service };
+                var created = new HamBusLogModels.QsoQslInfo { QslService = service };
                 qslInfos[service] = created;
                 return created;
             }
@@ -392,9 +403,9 @@ public static class JadeTransferService
                 case "QSL_SENT": GetOrCreateQsl("DIRECT")!.QslSent = value.Equals("Y", StringComparison.OrdinalIgnoreCase); break;
                 case "QSL_RCVD": GetOrCreateQsl("DIRECT")!.QslReceived = value.Equals("Y", StringComparison.OrdinalIgnoreCase); break;
                 default:
-                    if (QsoDetailFieldFilters.IsExcluded(name))
+                    if (HamBusLogModels.QsoDetailFieldFilters.IsExcluded(name))
                         break;
-                    qso.Details.Add(new QsoDetail { FieldName = field.Key, FieldValue = value });
+                    qso.Details.Add(new HamBusLogModels.QsoDetail { FieldName = field.Key, FieldValue = value });
                     break;
             }
         }
@@ -418,7 +429,7 @@ public static class JadeTransferService
         return qso;
     }
 
-    private static void PrepareForPersistence(IEnumerable<Qso> qsos)
+    private static void PrepareForPersistence(IEnumerable<HamBusLogModels.Qso> qsos)
     {
         var nowUtc = DateTime.UtcNow;
         foreach (var qso in qsos)
@@ -426,27 +437,28 @@ public static class JadeTransferService
             if (qso.Id == Guid.Empty)
                 qso.Id = Guid.NewGuid();
 
-            if (qso.LastUpdate == default)
-                qso.LastUpdate = nowUtc;
-
-            qso.Details ??= [];
-            qso.QslInfo ??= [];
+            if (qso.QsoDate == default)
+                qso.QsoDate = nowUtc;
 
             foreach (var detail in qso.Details)
+            {
                 detail.QsoId = qso.Id;
+            }
 
             foreach (var qsl in qso.QslInfo)
+            {
                 qsl.QsoId = qso.Id;
+            }
         }
     }
 
-    private static AdifImportOptions ResolveOptions(AdifImportOptions? options)
+    private static HamBusLogData.AdifImportOptions ResolveOptions(HamBusLogData.AdifImportOptions? options)
     {
         if (options is { ConnectionString: { Length: > 0 } })
             return options.Value;
 
-        var config = AppConfigurationStore.Load();
-        var profile = AppConfigurationStore.GetActiveProfile(config);
+        var config = HamBusLogData.AppConfigurationStore.Load();
+        var profile = HamBusLogData.AppConfigurationStore.GetActiveProfile(config);
         var connectionString = string.IsNullOrWhiteSpace(profile.ConnectionString)
             ? "Data Source=hambuslog.db"
             : profile.ConnectionString;
@@ -455,14 +467,8 @@ public static class JadeTransferService
             ? profile.StationCallSign
             : options!.Value.DefaultStationCallSign;
 
-        return new AdifImportOptions(options?.Provider ?? DatabaseProvider.Sqlite, connectionString, defaultStationCallSign);
+        return new HamBusLogData.AdifImportOptions(options?.Provider ?? HamBusLogData.DatabaseProvider.Sqlite, connectionString, defaultStationCallSign);
     }
 }
-
-
-
-
-
-
 
 
