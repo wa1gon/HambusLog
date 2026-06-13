@@ -12,19 +12,24 @@ public static class AppConfigurationStore
         ".config",
         "hambuslog.json");
 
+    private static readonly object ContestRepairNoticeSync = new();
+    private static bool _hasPendingContestRepairNotice;
+
     public static string GetConfigFilePath() => ConfigFilePath;
 
     public static AppConfiguration Load()
     {
         try
         {
+            var contestFieldsBackfilled = false;
+
             if (!File.Exists(ConfigFilePath))
             {
                 var fresh = new AppConfiguration();
                 EnsureRigConfiguration(fresh);
                 EnsureClusterConfiguration(fresh);
                 EnsureLookupConfiguration(fresh);
-                EnsureContestConfiguration(fresh);
+                EnsureContestConfiguration(fresh, out contestFieldsBackfilled);
                 return fresh;
             }
 
@@ -36,10 +41,16 @@ public static class AppConfigurationStore
             EnsureRigConfiguration(config);
             EnsureClusterConfiguration(config);
             EnsureLookupConfiguration(config);
-            EnsureContestConfiguration(config);
+            EnsureContestConfiguration(config, out contestFieldsBackfilled);
 
-            if (!ContainsActiveProfileProperty(json) || !ContainsContestsProperty(json))
+            if (!ContainsActiveProfileProperty(json) || !ContainsContestsProperty(json) || contestFieldsBackfilled)
                 Save(config);
+
+            if (contestFieldsBackfilled)
+            {
+                lock (ContestRepairNoticeSync)
+                    _hasPendingContestRepairNotice = true;
+            }
 
             return config;
         }
@@ -89,6 +100,16 @@ public static class AppConfigurationStore
         {
             System.Diagnostics.Debug.WriteLine($"AppConfigurationStore.Save error: {ex}");
             throw;
+        }
+    }
+
+    public static bool ConsumeContestRepairNotice()
+    {
+        lock (ContestRepairNoticeSync)
+        {
+            var hasNotice = _hasPendingContestRepairNotice;
+            _hasPendingContestRepairNotice = false;
+            return hasNotice;
         }
     }
 
@@ -260,6 +281,12 @@ public static class AppConfigurationStore
 
     private static void EnsureContestConfiguration(AppConfiguration config)
     {
+        EnsureContestConfiguration(config, out _);
+    }
+
+    private static void EnsureContestConfiguration(AppConfiguration config, out bool contestFieldsBackfilled)
+    {
+        contestFieldsBackfilled = false;
         config.Contests ??= [];
         if (config.Contests.Count == 0)
             config.Contests = BuildDefaultContests();
@@ -329,6 +356,82 @@ public static class AppConfigurationStore
             normalized = BuildDefaultContests();
 
         var defaults = BuildDefaultContests();
+
+        var defaultsLookup = new Dictionary<string, ContestDefinitionConfig>(StringComparer.OrdinalIgnoreCase);
+        foreach (var template in defaults)
+        {
+            if (!string.IsNullOrWhiteSpace(template.Key) && !defaultsLookup.ContainsKey(template.Key))
+                defaultsLookup[template.Key] = template;
+
+            if (!string.IsNullOrWhiteSpace(template.AdifContestId) && !defaultsLookup.ContainsKey(template.AdifContestId))
+                defaultsLookup[template.AdifContestId] = template;
+        }
+
+        foreach (var contest in normalized)
+        {
+            if (!defaultsLookup.TryGetValue(contest.Key, out var template)
+                && !defaultsLookup.TryGetValue(contest.AdifContestId, out template))
+            {
+                template = null;
+            }
+
+            var existingFieldKeys = contest.RequiredFields
+                .Where(x => !string.IsNullOrWhiteSpace(x.Key))
+                .Select(x => x.Key.Trim())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (template is not null)
+            {
+                foreach (var required in template.RequiredFields)
+                {
+                    if (string.IsNullOrWhiteSpace(required.Key))
+                        continue;
+
+                    var requiredKey = required.Key.Trim();
+                    if (existingFieldKeys.Contains(requiredKey))
+                        continue;
+
+                    contest.RequiredFields.Add(new ContestFieldRequirementConfig
+                    {
+                        Key = requiredKey,
+                        Label = required.Label,
+                        DetailFieldName = required.DetailFieldName
+                    });
+                    existingFieldKeys.Add(requiredKey);
+                    contestFieldsBackfilled = true;
+                }
+            }
+
+            // For any Field Day contest profile (including custom keys like "FD"),
+            // enforce required section/class fields used by LogInputViewModel.
+            if (string.Equals(contest.ExchangeType, "fieldday", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!existingFieldKeys.Contains("fd_section"))
+                {
+                    contest.RequiredFields.Add(new ContestFieldRequirementConfig
+                    {
+                        Key = "fd_section",
+                        Label = "Field Day Section",
+                        DetailFieldName = "Section"
+                    });
+                    existingFieldKeys.Add("fd_section");
+                    contestFieldsBackfilled = true;
+                }
+
+                if (!existingFieldKeys.Contains("fd_class"))
+                {
+                    contest.RequiredFields.Add(new ContestFieldRequirementConfig
+                    {
+                        Key = "fd_class",
+                        Label = "Field Day Class",
+                        DetailFieldName = "Class"
+                    });
+                    existingFieldKeys.Add("fd_class");
+                    contestFieldsBackfilled = true;
+                }
+            }
+        }
+
         foreach (var contest in defaults)
         {
             if (seenKeys.Contains(contest.Key))
@@ -503,3 +606,6 @@ public static class AppConfigurationStore
         cluster.QueueLength = cluster.QueueLength <= 0 ? 500 : cluster.QueueLength;
     }
 }
+
+
+

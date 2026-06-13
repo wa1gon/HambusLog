@@ -75,6 +75,7 @@ public sealed class ConfigProfile
     public bool StayOnTopLogInputWindow { get; set; }
     public bool StayOnTopAddContactWindow { get; set; }
     public bool StayOnTopArqpProgressWindow { get; set; }
+    public bool StayOnTopArrlFdProgressWindow { get; set; }
 }
 
 public sealed class ContestDefinitionConfig

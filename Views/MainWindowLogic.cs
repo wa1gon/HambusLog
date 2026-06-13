@@ -14,6 +14,7 @@ public partial class MainWindow
     private DxSpotsWindow? _dxSpotsWindow;
     private CabrilloExportWindow? _cabrilloExportWindow;
     private ArqpProgressWindow? _arqpProgressWindow;
+    private ArrlFdProgressWindow? _arrlFdProgressWindow;
     private bool _isImportingAdif;
     private bool _isAppExitRequested;
     private bool _skipNextMenuSelectionChanged;
@@ -155,6 +156,8 @@ public partial class MainWindow
             ToggleDxSpotsWindow();
         else if (node.Title == "ARQP Progress")
             OpenArqpProgressWindow();
+        else if (node.Title == "ARRL FD Progress")
+            OpenArrlFdProgressWindow();
         else if (node.Title == "Callbook")
             ShowNotImplemented("Callbook");
         else if (node.Title == "Awards" && !node.HasChildren)
@@ -280,6 +283,23 @@ public partial class MainWindow
         }
 
         ShowWithVisibleOwner(_arqpProgressWindow);
+    }
+
+    private void OpenArrlFdProgressWindow()
+    {
+        if (_arrlFdProgressWindow is { IsVisible: true })
+        {
+            _arrlFdProgressWindow.Activate();
+            return;
+        }
+
+        if (_arrlFdProgressWindow is null)
+        {
+            _arrlFdProgressWindow = App.FindOpenWindow<ArrlFdProgressWindow>() ?? new ArrlFdProgressWindow();
+            _arrlFdProgressWindow.Closed += (_, _) => _arrlFdProgressWindow = null;
+        }
+
+        ShowWithVisibleOwner(_arrlFdProgressWindow);
     }
 
     private void OpenNewContactWindow()

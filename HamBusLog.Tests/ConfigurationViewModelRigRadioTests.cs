@@ -162,6 +162,73 @@ public sealed class ConfigurationViewModelRigRadioTests : IDisposable
         Assert.Equal(Avalonia.Media.Color.Parse("#B91C1C"), viewModel.ButtonDangerColor);
     }
 
+    [Fact]
+    public void Load_BackfillsArrlFdRequiredFields_WhenContestEntryIsMissingThem()
+    {
+        File.WriteAllText(_configPath,
+            """
+            {
+              "ActiveProfile": "default",
+              "Profiles": {
+                "default": {
+                  "Name": "default",
+                  "ConnectionString": "Data Source=hambuslog.db"
+                }
+              },
+              "Contests": [
+                {
+                  "Key": "ARRL-FD",
+                  "DisplayName": "ARRL Field Day",
+                  "AdifContestId": "ARRL-FIELD-DAY",
+                  "ExchangeType": "fieldday",
+                  "RequiredFields": []
+                }
+              ]
+            }
+            """);
+
+        var loaded = AppConfigurationStore.Load();
+        var fieldDay = loaded.Contests.Single(x => string.Equals(x.Key, "ARRL-FD", StringComparison.OrdinalIgnoreCase));
+
+        Assert.Contains(fieldDay.RequiredFields, x => string.Equals(x.Key, "fd_section", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(fieldDay.RequiredFields, x => string.Equals(x.Key, "fd_class", StringComparison.OrdinalIgnoreCase));
+
+        Assert.True(AppConfigurationStore.ConsumeContestRepairNotice());
+        Assert.False(AppConfigurationStore.ConsumeContestRepairNotice());
+    }
+
+    [Fact]
+    public void Load_BackfillsFieldDayRequiredFields_ForCustomFdKey()
+    {
+        File.WriteAllText(_configPath,
+            """
+            {
+              "ActiveProfile": "default",
+              "Profiles": {
+                "default": {
+                  "Name": "default",
+                  "ConnectionString": "Data Source=hambuslog.db"
+                }
+              },
+              "Contests": [
+                {
+                  "Key": "FD",
+                  "DisplayName": "FD",
+                  "AdifContestId": "FD",
+                  "ExchangeType": "fieldday",
+                  "RequiredFields": []
+                }
+              ]
+            }
+            """);
+
+        var loaded = AppConfigurationStore.Load();
+        var fieldDay = loaded.Contests.Single(x => string.Equals(x.Key, "FD", StringComparison.OrdinalIgnoreCase));
+
+        Assert.Contains(fieldDay.RequiredFields, x => string.Equals(x.Key, "fd_section", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(fieldDay.RequiredFields, x => string.Equals(x.Key, "fd_class", StringComparison.OrdinalIgnoreCase));
+    }
+
 
     public void Dispose()
     {
