@@ -73,6 +73,25 @@ public partial class LogInputWindow
         textBox.CaretIndex = Math.Min(caret, upper.Length);
     }
 
+    public void OnInputCallChanged(object? sender, TextChangedEventArgs e)
+    {
+        OnUppercaseInputChanged(sender, e);
+
+        if (_viewModel.InputCall.Trim().Length < 3)
+        {
+            ClearDuplicateStatusIfPresent();
+            return;
+        }
+
+        if (_viewModel.TryGetDuplicateCallWarning(out var warning))
+        {
+            SetStatus(warning);
+            return;
+        }
+
+        ClearDuplicateStatusIfPresent();
+    }
+
     public void OnInputCallLostFocus(object? sender, RoutedEventArgs e)
     {
         if (_viewModel.TryGetDuplicateCallWarning(out var warning))
@@ -81,6 +100,11 @@ public partial class LogInputWindow
             return;
         }
 
+        ClearDuplicateStatusIfPresent();
+    }
+
+    private void ClearDuplicateStatusIfPresent()
+    {
         var label = this.FindControl<TextBlock>("StatusLabel");
         if (label is not null
             && !string.IsNullOrWhiteSpace(label.Text)

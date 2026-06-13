@@ -383,6 +383,354 @@ public sealed class ConfigurationViewModelRigRadioTests : IDisposable
     }
 
     [Fact]
+    public void LogInputViewModel_DuplicateWarning_WhenContestIdDoesNotMatchButBandModeDo()
+    {
+        var dbPath = Path.Combine(_tempDirectory, "dup-check-contest-mismatch.db");
+        var connectionString = $"Data Source={dbPath}";
+
+        var original = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(original);
+        var originalConnectionString = profile.ConnectionString;
+        profile.ConnectionString = connectionString;
+        AppConfigurationStore.Save(original);
+
+        try
+        {
+            Assert.True(App.ReinitializeDbContext(connectionString, out _));
+
+            App.DbContext.Qsos.Add(new Qso
+            {
+                Id = Guid.NewGuid(),
+                Call = "K5XYZ",
+                ContestId = string.Empty,
+                QsoDate = DateTime.UtcNow,
+                Band = "20M",
+                Mode = "SSB"
+            });
+            App.DbContext.SaveChanges();
+
+            var vm = new LogInputViewModel
+            {
+                SelectedContestType = ContestType.Normal,
+                InputCall = "k5xyz",
+                InputBand = "20m",
+                InputMode = "ssb"
+            };
+
+            var hasDuplicateWarning = vm.TryGetDuplicateCallWarning(out var warning);
+
+            Assert.True(hasDuplicateWarning);
+            Assert.Contains("Possible duplicate:", warning, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("K5XYZ", warning, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            profile.ConnectionString = originalConnectionString;
+            AppConfigurationStore.Save(original);
+            App.ReinitializeDbContext(originalConnectionString, out _);
+        }
+    }
+
+    [Fact]
+    public void LogInputViewModel_TryBuildQso_BlocksDuplicate_WhenCallBandAndModeMatch()
+    {
+        var dbPath = Path.Combine(_tempDirectory, "dup-block-exact.db");
+        var connectionString = $"Data Source={dbPath}";
+
+        var original = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(original);
+        var originalConnectionString = profile.ConnectionString;
+        profile.ConnectionString = connectionString;
+        AppConfigurationStore.Save(original);
+
+        try
+        {
+            Assert.True(App.ReinitializeDbContext(connectionString, out _));
+
+            App.DbContext.Qsos.Add(new Qso
+            {
+                Id = Guid.NewGuid(),
+                Call = "K1ABC",
+                ContestId = "ARRL-FD",
+                QsoDate = DateTime.UtcNow,
+                Band = "20M",
+                Mode = "SSB"
+            });
+            App.DbContext.SaveChanges();
+
+            var vm = new LogInputViewModel
+            {
+                InputCall = "k1abc",
+                InputDate = "20260613",
+                InputTimeOn = "1930",
+                InputBand = "20m",
+                InputMode = "ssb"
+            };
+
+            var qso = vm.TryBuildQso(out var error);
+
+            Assert.Null(qso);
+            Assert.Contains("Duplicate QSO not allowed", error, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            profile.ConnectionString = originalConnectionString;
+            AppConfigurationStore.Save(original);
+            App.ReinitializeDbContext(originalConnectionString, out _);
+        }
+    }
+
+    [Fact]
+    public void LogInputViewModel_TryBuildQso_BlocksDuplicate_WhenBothModesAreDigital()
+    {
+        var dbPath = Path.Combine(_tempDirectory, "dup-block-digital.db");
+        var connectionString = $"Data Source={dbPath}";
+
+        var original = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(original);
+        var originalConnectionString = profile.ConnectionString;
+        profile.ConnectionString = connectionString;
+        AppConfigurationStore.Save(original);
+
+        try
+        {
+            Assert.True(App.ReinitializeDbContext(connectionString, out _));
+
+            App.DbContext.Qsos.Add(new Qso
+            {
+                Id = Guid.NewGuid(),
+                Call = "W1DIG",
+                ContestId = "NORMAL",
+                QsoDate = DateTime.UtcNow,
+                Band = "40M",
+                Mode = "FT8"
+            });
+            App.DbContext.SaveChanges();
+
+            var vm = new LogInputViewModel
+            {
+                InputCall = "w1dig",
+                InputDate = "20260613",
+                InputTimeOn = "1935",
+                InputBand = "40m",
+                InputMode = "rtty"
+            };
+
+            var qso = vm.TryBuildQso(out var error);
+
+            Assert.Null(qso);
+            Assert.Contains("Duplicate QSO not allowed", error, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("DIGITAL", error, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            profile.ConnectionString = originalConnectionString;
+            AppConfigurationStore.Save(original);
+            App.ReinitializeDbContext(originalConnectionString, out _);
+        }
+    }
+
+    [Fact]
+    public void LogInputViewModel_TryBuildQso_BlocksDuplicate_WhenModesAreInPhoneFamily()
+    {
+        var dbPath = Path.Combine(_tempDirectory, "dup-block-phone.db");
+        var connectionString = $"Data Source={dbPath}";
+
+        var original = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(original);
+        var originalConnectionString = profile.ConnectionString;
+        profile.ConnectionString = connectionString;
+        AppConfigurationStore.Save(original);
+
+        try
+        {
+            Assert.True(App.ReinitializeDbContext(connectionString, out _));
+
+            App.DbContext.Qsos.Add(new Qso
+            {
+                Id = Guid.NewGuid(),
+                Call = "N0PHN",
+                ContestId = "NORMAL",
+                QsoDate = DateTime.UtcNow,
+                Band = "20M",
+                Mode = "FM"
+            });
+            App.DbContext.SaveChanges();
+
+            var vm = new LogInputViewModel
+            {
+                InputCall = "n0phn",
+                InputDate = "20260613",
+                InputTimeOn = "1940",
+                InputBand = "20m",
+                InputMode = "ssb"
+            };
+
+            var qso = vm.TryBuildQso(out var error);
+
+            Assert.Null(qso);
+            Assert.Contains("Duplicate QSO not allowed", error, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("PHONE", error, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            profile.ConnectionString = originalConnectionString;
+            AppConfigurationStore.Save(original);
+            App.ReinitializeDbContext(originalConnectionString, out _);
+        }
+    }
+
+    [Fact]
+    public void LogInputViewModel_DuplicateWarning_WhenModesAreInPhoneFamily()
+    {
+        var dbPath = Path.Combine(_tempDirectory, "dup-warning-phone.db");
+        var connectionString = $"Data Source={dbPath}";
+
+        var original = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(original);
+        var originalConnectionString = profile.ConnectionString;
+        profile.ConnectionString = connectionString;
+        AppConfigurationStore.Save(original);
+
+        try
+        {
+            Assert.True(App.ReinitializeDbContext(connectionString, out _));
+
+            App.DbContext.Qsos.Add(new Qso
+            {
+                Id = Guid.NewGuid(),
+                Call = "W1PHN",
+                ContestId = "NORMAL",
+                QsoDate = DateTime.UtcNow,
+                Band = "40M",
+                Mode = "AM"
+            });
+            App.DbContext.SaveChanges();
+
+            var vm = new LogInputViewModel
+            {
+                InputCall = "w1phn",
+                InputBand = "40m",
+                InputMode = "lsb"
+            };
+
+            var hasDuplicateWarning = vm.TryGetDuplicateCallWarning(out var warning);
+
+            Assert.True(hasDuplicateWarning);
+            Assert.Contains("Possible duplicate:", warning, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("PHONE", warning, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            profile.ConnectionString = originalConnectionString;
+            AppConfigurationStore.Save(original);
+            App.ReinitializeDbContext(originalConnectionString, out _);
+        }
+    }
+
+    [Fact]
+    public void LogInputViewModel_TryBuildQso_BlocksDuplicate_WhenBandFormattingDiffers()
+    {
+        var dbPath = Path.Combine(_tempDirectory, "dup-block-band-format.db");
+        var connectionString = $"Data Source={dbPath}";
+
+        var original = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(original);
+        var originalConnectionString = profile.ConnectionString;
+        profile.ConnectionString = connectionString;
+        AppConfigurationStore.Save(original);
+
+        try
+        {
+            Assert.True(App.ReinitializeDbContext(connectionString, out _));
+
+            App.DbContext.Qsos.Add(new Qso
+            {
+                Id = Guid.NewGuid(),
+                Call = "N1FMT",
+                ContestId = "NORMAL",
+                QsoDate = DateTime.UtcNow,
+                Band = "20 M",
+                Mode = "FM"
+            });
+            App.DbContext.SaveChanges();
+
+            var vm = new LogInputViewModel
+            {
+                InputCall = "n1fmt",
+                InputDate = "20260613",
+                InputTimeOn = "1945",
+                InputBand = "20m",
+                InputMode = "SSB"
+            };
+
+            var qso = vm.TryBuildQso(out var error);
+
+            Assert.Null(qso);
+            Assert.Contains("Duplicate QSO not allowed", error, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("PHONE", error, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            profile.ConnectionString = originalConnectionString;
+            AppConfigurationStore.Save(original);
+            App.ReinitializeDbContext(originalConnectionString, out _);
+        }
+    }
+
+    [Fact]
+    public void LogInputViewModel_TryBuildQso_BlocksDuplicate_WhenBandIsBlankButFrequencyMatches()
+    {
+        var dbPath = Path.Combine(_tempDirectory, "dup-block-blank-band-freq.db");
+        var connectionString = $"Data Source={dbPath}";
+
+        var original = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(original);
+        var originalConnectionString = profile.ConnectionString;
+        profile.ConnectionString = connectionString;
+        AppConfigurationStore.Save(original);
+
+        try
+        {
+            Assert.True(App.ReinitializeDbContext(connectionString, out _));
+
+            App.DbContext.Qsos.Add(new Qso
+            {
+                Id = Guid.NewGuid(),
+                Call = "KB1ETC",
+                ContestId = "NORMAL",
+                QsoDate = DateTime.UtcNow,
+                Band = string.Empty,
+                Freq = 145.000m,
+                Mode = "FM"
+            });
+            App.DbContext.SaveChanges();
+
+            var vm = new LogInputViewModel
+            {
+                InputCall = "kb1etc",
+                InputDate = "20260613",
+                InputTimeOn = "2359",
+                InputBand = string.Empty,
+                InputFreq = "145.000",
+                InputMode = "FM"
+            };
+
+            var qso = vm.TryBuildQso(out var error);
+
+            Assert.Null(qso);
+            Assert.Contains("Duplicate QSO not allowed", error, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("2M", error, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            profile.ConnectionString = originalConnectionString;
+            AppConfigurationStore.Save(original);
+            App.ReinitializeDbContext(originalConnectionString, out _);
+        }
+    }
+
+    [Fact]
     public void ArrlFdProgressViewModel_TracksDx_WhenFdDetailsExistWithoutContestId()
     {
         var dbPath = Path.Combine(_tempDirectory, "fd-progress.db");
