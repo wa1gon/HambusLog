@@ -37,6 +37,7 @@ public partial class LogInputWindow
         _viewModel = new LogInputViewModel();
         _viewModel.SetInitialSpot(initialCallsign, initialFrequencyMhz, initialSpotInfo);
         DataContext = _viewModel;
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
 
         _activeRigRefreshTimer.Tick += OnActiveRigRefreshTick;
         _activeRigRefreshTimer.Start();
@@ -276,9 +277,28 @@ public partial class LogInputWindow
 
     private void OnWindowClosed(object? sender, EventArgs e)
     {
+        _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        CloseOpenProgressWindows();
         _activeRigRefreshTimer.Tick -= OnActiveRigRefreshTick;
         _activeRigRefreshTimer.Stop();
         Closed -= OnWindowClosed;
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(LogInputViewModel.SelectedContestDefinition)
+            or nameof(LogInputViewModel.CurrentContestDefinition)
+            or nameof(LogInputViewModel.CurrentContestAdifId)
+            or nameof(LogInputViewModel.IsFieldDay))
+        {
+            CloseOpenProgressWindows();
+        }
+    }
+
+    private static void CloseOpenProgressWindows()
+    {
+        App.FindOpenWindow<ArqpProgressWindow>()?.Close();
+        App.FindOpenWindow<ArrlFdProgressWindow>()?.Close();
     }
 
     private void ApplyStayOnTopSetting()

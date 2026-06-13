@@ -154,14 +154,14 @@ public partial class MainWindow
             OpenCabrilloExportWindow();
         else if (node.Title == "DX Spots" || node.Title == "DX Cluster")
             ToggleDxSpotsWindow();
-        else if (node.Title == "ARQP Progress")
-            OpenArqpProgressWindow();
-        else if (node.Title == "ARRL FD Progress")
-            OpenArrlFdProgressWindow();
+        else if (node.Title == "ARQP Report")
+            OpenCabrilloExportWindow();
+        else if (node.Title == "ARRL FD Report")
+            OpenCabrilloExportWindow();
         else if (node.Title == "Callbook")
             ShowNotImplemented("Callbook");
-        else if (node.Title == "Progress" && !node.HasChildren)
-            ShowNotImplemented("Progress");
+        else if (node.Title == "Awards" && !node.HasChildren)
+            ShowNotImplemented("Awards");
         else if (node.Title == "eLogs")
             ShowNotImplemented("eLogs");
         else if (node.Title == "RecCall")
