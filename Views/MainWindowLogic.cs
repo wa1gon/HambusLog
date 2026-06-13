@@ -160,8 +160,8 @@ public partial class MainWindow
             OpenArrlFdProgressWindow();
         else if (node.Title == "Callbook")
             ShowNotImplemented("Callbook");
-        else if (node.Title == "Awards" && !node.HasChildren)
-            ShowNotImplemented("Awards");
+        else if (node.Title == "Progress" && !node.HasChildren)
+            ShowNotImplemented("Progress");
         else if (node.Title == "eLogs")
             ShowNotImplemented("eLogs");
         else if (node.Title == "RecCall")

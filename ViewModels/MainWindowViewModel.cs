@@ -24,7 +24,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         new MenuNode("Grid"),
         new MenuNode("DX Cluster"),
         new MenuNode("Configuration"),
-        new MenuNode("Awards", false,
+        new MenuNode("Progress", false,
             new MenuNode("ARQP Progress"),
             new MenuNode("ARRL FD Progress")),
         new MenuNode("eLogs"),

@@ -322,6 +322,16 @@ public static class AppConfigurationStore
             var exchangeType = string.IsNullOrWhiteSpace(contest.ExchangeType)
                 ? "normal"
                 : contest.ExchangeType.Trim().ToLowerInvariant();
+            if (IsArrlFieldDayContestKey(key)
+                || IsArrlFieldDayContestKey(adifId)
+                || IsArrlFieldDayContestName(displayName))
+            {
+                if (!string.Equals(exchangeType, "fieldday", StringComparison.OrdinalIgnoreCase))
+                {
+                    exchangeType = "fieldday";
+                    contestFieldsBackfilled = true;
+                }
+            }
             var startUtc = contest.StartUtc?.Trim() ?? string.Empty;
             var endUtc = contest.EndUtc?.Trim() ?? string.Empty;
 
@@ -604,6 +614,24 @@ public static class AppConfigurationStore
         cluster.Password = cluster.Password ?? string.Empty;
         cluster.Command = cluster.Command?.Trim() ?? string.Empty;
         cluster.QueueLength = cluster.QueueLength <= 0 ? 500 : cluster.QueueLength;
+    }
+
+    private static bool IsArrlFieldDayContestKey(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        var upper = value.Trim().ToUpperInvariant();
+        return upper is "ARRL-FD" or "ARRL-FIELD-DAY";
+    }
+
+    private static bool IsArrlFieldDayContestName(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        return value.Contains("ARRL Field Day", StringComparison.OrdinalIgnoreCase)
+               || value.Contains("Field Day", StringComparison.OrdinalIgnoreCase);
     }
 }
 

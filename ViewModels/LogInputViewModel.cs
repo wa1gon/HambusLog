@@ -389,6 +389,41 @@ public sealed class LogInputViewModel : ViewModelBase
     public bool HasClassError   => !string.IsNullOrWhiteSpace(ClassError);
     public bool HasContestError => !string.IsNullOrWhiteSpace(ContestError);
 
+    public bool TryGetDuplicateCallWarning(out string warning)
+    {
+        warning = string.Empty;
+
+        var call = InputCall.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(call))
+            return false;
+
+        var contestId = CurrentContestAdifId.Trim().ToUpperInvariant();
+        var band = InputBand.Trim().ToUpperInvariant();
+        var mode = InputMode.Trim().ToUpperInvariant();
+
+        var candidates = App.DbContext.Qsos
+            .AsNoTracking()
+            .Where(q => q.Call.Trim().ToUpper() == call);
+
+        if (!string.IsNullOrWhiteSpace(contestId))
+            candidates = candidates.Where(q => q.ContestId.Trim().ToUpper() == contestId);
+
+        if (!string.IsNullOrWhiteSpace(band))
+            candidates = candidates.Where(q => q.Band.Trim().ToUpper() == band);
+
+        if (!string.IsNullOrWhiteSpace(mode))
+            candidates = candidates.Where(q => q.Mode.Trim().ToUpper() == mode);
+
+        if (!candidates.Any())
+            return false;
+
+        warning = $"Possible duplicate: {call} is already logged"
+                  + (string.IsNullOrWhiteSpace(band) ? string.Empty : $" on {band}")
+                  + (string.IsNullOrWhiteSpace(mode) ? string.Empty : $" {mode}")
+                  + ".";
+        return true;
+    }
+
     // ── Detail Table Actions ──────────────────────────────────────────
     public bool AddDetail()
     {

@@ -73,6 +73,21 @@ public partial class LogInputWindow
         textBox.CaretIndex = Math.Min(caret, upper.Length);
     }
 
+    public void OnInputCallLostFocus(object? sender, RoutedEventArgs e)
+    {
+        if (_viewModel.TryGetDuplicateCallWarning(out var warning))
+        {
+            SetStatus(warning);
+            return;
+        }
+
+        var label = this.FindControl<TextBlock>("StatusLabel");
+        if (label is not null
+            && !string.IsNullOrWhiteSpace(label.Text)
+            && label.Text.StartsWith("Possible duplicate:", StringComparison.OrdinalIgnoreCase))
+            label.Text = string.Empty;
+    }
+
     public void OnApplySelectedRadioClicked(object? sender, RoutedEventArgs e)
     {
         _viewModel.EnableAutoRadioPopulate();
@@ -130,6 +145,30 @@ public partial class LogInputWindow
         App.Toasts.ShowSuccess("Callsign lookup", $"Found {result.CallSign} via {result.Provider}.");
     }
 
+    public void OnProgressStatusClicked(object? sender, RoutedEventArgs e)
+    {
+        var contest = _viewModel.CurrentContestDefinition;
+        var key = contest.Key.Trim();
+        var adif = contest.AdifContestId.Trim();
+        var name = contest.DisplayName.Trim();
+
+        if (_viewModel.IsFieldDay)
+        {
+            var window = App.FindOpenWindow<ArrlFdProgressWindow>() ?? new ArrlFdProgressWindow();
+            ShowProgressWindow(window);
+            return;
+        }
+
+        if (IsArqpContest(key, adif, name))
+        {
+            var window = App.FindOpenWindow<ArqpProgressWindow>() ?? new ArqpProgressWindow();
+            ShowProgressWindow(window);
+            return;
+        }
+
+        App.Toasts.ShowInfo("Progress status", "No contest progress window is available for the selected contest.");
+    }
+
     private async Task SubmitSpotAsync(bool isSelfSpot)
     {
         var target = isSelfSpot ? _viewModel.StationCallSign : _viewModel.InputCall;
@@ -171,6 +210,39 @@ public partial class LogInputWindow
         var label = this.FindControl<TextBlock>("StatusLabel");
         if (label != null)
             label.Text = message;
+    }
+
+    private void ShowProgressWindow(Window window)
+    {
+        if (window.IsVisible)
+        {
+            window.Activate();
+            return;
+        }
+
+        if (this.IsVisible)
+            window.Show(this);
+        else
+            window.Show();
+
+        window.Activate();
+    }
+
+    private static bool IsArqpContest(string key, string adif, string name)
+    {
+        static bool IsArqpKey(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var upper = value.Trim().ToUpperInvariant();
+            return upper is "ARQP" or "AR-QSO-PARTY";
+        }
+
+        return IsArqpKey(key)
+               || IsArqpKey(adif)
+               || name.Contains("Arkansas QSO Party", StringComparison.OrdinalIgnoreCase)
+               || name.Contains("ARQP", StringComparison.OrdinalIgnoreCase);
     }
 
     private void OnActiveRigRefreshTick(object? sender, EventArgs e)

@@ -24,6 +24,7 @@
                 <StackPanel Grid.Column="0" Spacing="6">
                     <TextBlock Text="ARRL Field Day Worked Sections" FontSize="18" FontWeight="Bold" />
                     <TextBlock Text="{Binding SectionSummary}" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                    <TextBlock Text="{Binding DxSummary}" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                     <TextBlock Text="{Binding LastUpdated}" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="11" />
                 </StackPanel>
                 <CheckBox Grid.Column="1"
@@ -50,7 +51,7 @@
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="1">
             <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
-                <TextBlock Text="Sections" FontSize="14" FontWeight="SemiBold" />
+                <TextBlock Text="Sections" FontSize="14" FontWeight="SemiBold" Margin="0,12,0,0" />
                 <TextBlock Text="Known ARRL/RAC Field Day sections; unknown worked codes are appended." Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="11" />
 
                 <TextBlock Grid.Row="2"
@@ -90,4 +91,5 @@
         </Border>
     </Grid>
 </Window>
+
 

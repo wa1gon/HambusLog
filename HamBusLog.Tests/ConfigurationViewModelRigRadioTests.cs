@@ -1,6 +1,7 @@
 using HamBusLog.Data;
 using HamBusLog.Models;
 using HamBusLog.ViewModels;
+using HamBusLog.Wa1gonLib.Models;
 using Xunit;
 
 namespace HamBusLog.Tests;
@@ -227,6 +228,205 @@ public sealed class ConfigurationViewModelRigRadioTests : IDisposable
 
         Assert.Contains(fieldDay.RequiredFields, x => string.Equals(x.Key, "fd_section", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(fieldDay.RequiredFields, x => string.Equals(x.Key, "fd_class", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ContestCatalog_ReturnsIndependentFieldDayCopies()
+    {
+        File.WriteAllText(_configPath,
+            """
+            {
+              "ActiveProfile": "default",
+              "Profiles": {
+                "default": {
+                  "Name": "default",
+                  "ConnectionString": "Data Source=hambuslog.db"
+                }
+              },
+              "Contests": [
+                {
+                  "Key": "ARRL-FD",
+                  "DisplayName": "ARRL Field Day",
+                  "AdifContestId": "ARRL-FIELD-DAY",
+                  "ExchangeType": "fieldday",
+                  "RequiredFields": []
+                }
+              ]
+            }
+            """);
+
+        var first = ContestCatalog.Get(ContestType.ArrlFieldDay);
+        var second = ContestCatalog.Get(ContestType.ArrlFieldDay);
+
+        Assert.NotSame(first, second);
+        Assert.NotSame(first.RequiredFields, second.RequiredFields);
+
+        var mutableFirstFields = Assert.IsType<List<ContestFieldRequirement>>(first.RequiredFields);
+        mutableFirstFields.Add(new ContestFieldRequirement("test", "Test"));
+
+        Assert.DoesNotContain(second.RequiredFields, x => string.Equals(x.Key, "test", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Load_NormalizesArrlFdExchangeTypeAndRequiredFields_WhenExchangeTypeWasCorrupted()
+    {
+        File.WriteAllText(_configPath,
+            """
+            {
+              "ActiveProfile": "default",
+              "Profiles": {
+                "default": {
+                  "Name": "default",
+                  "ConnectionString": "Data Source=hambuslog.db"
+                }
+              },
+              "Contests": [
+                {
+                  "Key": "ARRL-FD",
+                  "DisplayName": "ARRL Field Day",
+                  "AdifContestId": "ARRL-FD",
+                  "ExchangeType": "normal",
+                  "RequiredFields": []
+                }
+              ]
+            }
+            """);
+
+        var loaded = AppConfigurationStore.Load();
+        var fieldDay = loaded.Contests.Single(x => string.Equals(x.Key, "ARRL-FD", StringComparison.OrdinalIgnoreCase));
+
+        Assert.Equal("fieldday", fieldDay.ExchangeType);
+        Assert.Contains(fieldDay.RequiredFields, x => string.Equals(x.Key, "fd_section", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(fieldDay.RequiredFields, x => string.Equals(x.Key, "fd_class", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void LogInputViewModel_ShowsFieldDayFields_WhenArrlFdExchangeTypeWasCorrupted()
+    {
+        File.WriteAllText(_configPath,
+            """
+            {
+              "ActiveProfile": "default",
+              "Profiles": {
+                "default": {
+                  "Name": "default",
+                  "ConnectionString": "Data Source=hambuslog.db"
+                }
+              },
+              "Contests": [
+                {
+                  "Key": "ARRL-FD",
+                  "DisplayName": "ARRL Field Day",
+                  "AdifContestId": "ARRL-FD",
+                  "ExchangeType": "normal",
+                  "RequiredFields": []
+                }
+              ]
+            }
+            """);
+
+        var vm = new LogInputViewModel();
+        vm.SelectedContestType = ContestType.ArrlFieldDay;
+
+        Assert.True(vm.IsFieldDay);
+        Assert.True(vm.ShowFieldDaySection);
+        Assert.True(vm.ShowFieldDayClass);
+    }
+
+    [Fact]
+    public void LogInputViewModel_DuplicateWarning_WhenCallAlreadyLoggedForSameContestBandAndMode()
+    {
+        var dbPath = Path.Combine(_tempDirectory, "dup-check.db");
+        var connectionString = $"Data Source={dbPath}";
+
+        var original = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(original);
+        var originalConnectionString = profile.ConnectionString;
+        profile.ConnectionString = connectionString;
+        AppConfigurationStore.Save(original);
+
+        try
+        {
+            Assert.True(App.ReinitializeDbContext(connectionString, out _));
+
+            App.DbContext.Qsos.Add(new Qso
+            {
+                Id = Guid.NewGuid(),
+                Call = "K1ABC",
+                ContestId = "NORMAL",
+                QsoDate = DateTime.UtcNow,
+                Band = "20M",
+                Mode = "SSB"
+            });
+            App.DbContext.SaveChanges();
+
+            var vm = new LogInputViewModel
+            {
+                SelectedContestType = ContestType.Normal,
+                InputCall = "k1abc",
+                InputBand = "20m",
+                InputMode = "ssb"
+            };
+
+            var hasDuplicateWarning = vm.TryGetDuplicateCallWarning(out var warning);
+
+            Assert.True(hasDuplicateWarning);
+            Assert.Contains("Possible duplicate:", warning, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("K1ABC", warning, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            profile.ConnectionString = originalConnectionString;
+            AppConfigurationStore.Save(original);
+            App.ReinitializeDbContext(originalConnectionString, out _);
+        }
+    }
+
+    [Fact]
+    public void ArrlFdProgressViewModel_TracksDx_WhenFdDetailsExistWithoutContestId()
+    {
+        var dbPath = Path.Combine(_tempDirectory, "fd-progress.db");
+        var connectionString = $"Data Source={dbPath}";
+
+        var original = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(original);
+        var originalConnectionString = profile.ConnectionString;
+        profile.ConnectionString = connectionString;
+        AppConfigurationStore.Save(original);
+
+        try
+        {
+            Assert.True(App.ReinitializeDbContext(connectionString, out _));
+
+            var qsoId = Guid.NewGuid();
+            App.DbContext.Qsos.Add(new Qso
+            {
+                Id = qsoId,
+                Call = "K1DX",
+                ContestId = string.Empty,
+                State = "DX",
+                Country = "SPAIN",
+                QsoDate = DateTime.UtcNow,
+                Band = "20M",
+                Mode = "SSB"
+            });
+            App.DbContext.QsoDetails.AddRange(
+                new QsoDetail { QsoId = qsoId, FieldName = "Section", FieldValue = "DX" },
+                new QsoDetail { QsoId = qsoId, FieldName = "Class", FieldValue = "1D" });
+            App.DbContext.SaveChanges();
+
+            var vm = new ArrlFdProgressViewModel();
+            vm.Refresh();
+
+            Assert.Contains(vm.SectionRows, x => string.Equals(x.Code, "DX", StringComparison.OrdinalIgnoreCase) && x.IsWorked);
+            Assert.Equal("DX: Worked", vm.DxSummary);
+        }
+        finally
+        {
+            profile.ConnectionString = originalConnectionString;
+            AppConfigurationStore.Save(original);
+            App.ReinitializeDbContext(originalConnectionString, out _);
+        }
     }
 
 

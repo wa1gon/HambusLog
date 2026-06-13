@@ -11,7 +11,7 @@ public sealed class ArqpProgressViewModel : ViewModelBase
         "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
         "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
         "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
-        "DC", "DX"
+        "DC"
     ];
 
     private static readonly IReadOnlyList<string> CountyCodes =
@@ -78,20 +78,16 @@ public sealed class ArqpProgressViewModel : ViewModelBase
 
         var qsoRows = App.DbContext.Qsos
             .AsNoTracking()
-            .Where(q => contestIds.Contains((q.ContestId ?? string.Empty).Trim()))
+            .Where(q => contestIds.Contains(q.ContestId.Trim()))
             .Select(q => new QsoSnapshot(
                 q.Id,
-                (q.State ?? string.Empty).Trim().ToUpperInvariant(),
-                (q.Country ?? string.Empty).Trim().ToUpperInvariant()))
+                q.State.Trim().ToUpperInvariant()))
             .ToList();
 
         var workedStates = qsoRows
             .Select(q => q.State)
             .Where(code => code.Length == 2 && StateCodes.Contains(code))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        if (qsoRows.Any(IsDxQso))
-            workedStates.Add("DX");
 
         var qsoIds = qsoRows.Select(q => q.Id).ToList();
         var workedCounties = App.DbContext.QsoDetails
@@ -100,7 +96,7 @@ public sealed class ArqpProgressViewModel : ViewModelBase
             .Select(d => new { d.FieldName, d.FieldValue })
             .AsEnumerable()
             .Where(d => string.Equals(d.FieldName, "County", StringComparison.OrdinalIgnoreCase))
-            .Select(d => (d.FieldValue ?? string.Empty).Trim().ToUpperInvariant())
+            .Select(d => d.FieldValue.Trim().ToUpperInvariant())
             .Where(code => code.Length == 3 && code.All(char.IsLetter))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -147,9 +143,9 @@ public sealed class ArqpProgressViewModel : ViewModelBase
         var config = AppConfigurationStore.Load();
         foreach (var contest in config.Contests)
         {
-            var key = (contest.Key ?? string.Empty).Trim();
-            var adif = (contest.AdifContestId ?? string.Empty).Trim();
-            var name = (contest.DisplayName ?? string.Empty).Trim();
+            var key = contest.Key.Trim();
+            var adif = contest.AdifContestId.Trim();
+            var name = contest.DisplayName.Trim();
 
             if (IsArqpContestKey(key) || IsArqpContestKey(adif) || IsArqpContestName(name))
             {
@@ -181,30 +177,7 @@ public sealed class ArqpProgressViewModel : ViewModelBase
                || value.Contains("ARQP", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool IsDxQso(QsoSnapshot qso)
-    {
-        var state = (qso.State ?? string.Empty).Trim().ToUpperInvariant();
-        if (string.Equals(state, "DX", StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        var country = (qso.Country ?? string.Empty).Trim().ToUpperInvariant();
-        if (!string.IsNullOrWhiteSpace(country) && !IsUsCountry(country))
-            return true;
-
-        return !string.IsNullOrWhiteSpace(state)
-               && state.Length == 2
-               && !StateCodes.Contains(state);
-    }
-
-    private static bool IsUsCountry(string country)
-    {
-        return country is "US"
-            or "USA"
-            or "UNITED STATES"
-            or "UNITED STATES OF AMERICA";
-    }
-
-    private sealed record QsoSnapshot(Guid Id, string State, string Country);
+    private sealed record QsoSnapshot(Guid Id, string State);
 }
 
 public sealed class ProgressRow

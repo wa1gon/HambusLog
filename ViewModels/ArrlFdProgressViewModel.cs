@@ -4,18 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 public sealed class ArrlFdProgressViewModel : ViewModelBase
 {
-    // Includes common ARRL and RAC section identifiers used by Field Day logs.
-    private static readonly IReadOnlyList<string> KnownSectionCodes =
-    [
-        "AB", "AK", "AL", "AR", "AZ", "BC", "CO", "CT", "DC", "DE", "EB", "EMA", "ENY", "EPA", "EWA",
-        "GA", "GH", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "LAX", "MAR", "MB", "MDC", "ME", "MI",
-        "MN", "MO", "MS", "MT", "NB", "NC", "ND", "NE", "NFL", "NH", "NL", "NLI", "NM", "NNJ", "NNY",
-        "NS", "NT", "NTX", "NV", "NY", "OH", "OK", "ON", "ONE", "ONN", "ONS", "OR", "ORG", "PAC", "PE",
-        "PR", "QC", "RI", "SB", "SC", "SCV", "SD", "SDG", "SF", "SFL", "SJV", "SK", "SNJ", "STX", "SV",
-        "TER", "TN", "UT", "VA", "VI", "VT", "WCF", "WI", "WMA", "WNY", "WPA", "WTX", "WV", "WWA", "WY"
-    ];
+    private static readonly IReadOnlyList<string> KnownSectionCodes = ArrlFieldDaySectionCatalog.GetAll();
 
     private string _sectionSummary = "Sections: 0/0";
+    private string _dxSummary = "DX: Missing";
     private string _lastUpdated = "Last updated: never";
 
     public ObservableCollection<ProgressRow> SectionRows { get; } = [];
@@ -32,6 +24,12 @@ public sealed class ArrlFdProgressViewModel : ViewModelBase
         private set => SetProperty(ref _lastUpdated, value);
     }
 
+    public string DxSummary
+    {
+        get => _dxSummary;
+        private set => SetProperty(ref _dxSummary, value);
+    }
+
     public bool HasSections => SectionRows.Count > 0;
     public bool HasNoSections => !HasSections;
 
@@ -41,6 +39,7 @@ public sealed class ArrlFdProgressViewModel : ViewModelBase
         UpdateRows(SectionRows, snapshot.SectionRows);
 
         SectionSummary = $"Sections: {snapshot.WorkedKnownSectionCount}/{snapshot.TotalKnownSectionCount}";
+        DxSummary = snapshot.DxWorked ? "DX: Worked" : "DX: Missing";
         LastUpdated = $"Last updated: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
 
         OnPropertyChanged(nameof(HasSections));
@@ -51,22 +50,48 @@ public sealed class ArrlFdProgressViewModel : ViewModelBase
     {
         var contestIds = ResolveArrlFdContestIds();
         var sectionFieldNames = ResolveSectionFieldNames();
+        var classFieldNames = ResolveClassFieldNames();
 
-        var qsoIds = App.DbContext.Qsos
+        var qsoIdsFromContest = App.DbContext.Qsos
             .AsNoTracking()
             .Where(q => contestIds.Contains(q.ContestId.Trim()))
             .Select(q => q.Id)
             .ToList();
 
+        var qsoIdsFromDetails = App.DbContext.QsoDetails
+            .AsNoTracking()
+            .Where(d => sectionFieldNames.Contains(d.FieldName.Trim()) || classFieldNames.Contains(d.FieldName.Trim()))
+            .Select(d => d.QsoId)
+            .Distinct()
+            .ToList();
+
+        var fdQsoIds = qsoIdsFromContest
+            .Concat(qsoIdsFromDetails)
+            .Distinct()
+            .ToList();
+
+        var qsoSnapshots = App.DbContext.Qsos
+            .AsNoTracking()
+            .Where(q => fdQsoIds.Contains(q.Id))
+            .Select(q => new FdQsoSnapshot(
+                q.Id,
+                q.State.Trim(),
+                q.Country.Trim()))
+            .ToList();
+
         var workedSections = App.DbContext.QsoDetails
             .AsNoTracking()
-            .Where(d => qsoIds.Contains(d.QsoId))
+            .Where(d => fdQsoIds.Contains(d.QsoId))
             .Select(d => new { d.FieldName, d.FieldValue })
             .AsEnumerable()
             .Where(d => sectionFieldNames.Contains(d.FieldName.Trim()))
             .Select(d => NormalizeSectionCode(d.FieldValue))
             .Where(code => !string.IsNullOrWhiteSpace(code))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // Some FD imports encode DX via country/state without a section detail row.
+        if (qsoSnapshots.Any(IsDxSectionCandidate))
+            workedSections.Add("DX");
 
         var knownSet = KnownSectionCodes.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var knownRows = KnownSectionCodes
@@ -82,7 +107,7 @@ public sealed class ArrlFdProgressViewModel : ViewModelBase
         var rows = knownRows.Concat(extraRows).ToList();
         var workedKnownCount = knownRows.Count(x => x.IsWorked);
 
-        return new ArrlFdProgressSnapshot(rows, workedKnownCount, KnownSectionCodes.Count);
+        return new ArrlFdProgressSnapshot(rows, workedKnownCount, KnownSectionCodes.Count, workedSections.Contains("DX"));
     }
 
     private static string NormalizeSectionCode(string? raw)
@@ -100,7 +125,8 @@ public sealed class ArrlFdProgressViewModel : ViewModelBase
     private sealed record ArrlFdProgressSnapshot(
         IReadOnlyList<ProgressRow> SectionRows,
         int WorkedKnownSectionCount,
-        int TotalKnownSectionCount);
+        int TotalKnownSectionCount,
+        bool DxWorked);
 
     private static HashSet<string> ResolveArrlFdContestIds()
     {
@@ -116,8 +142,12 @@ public sealed class ArrlFdProgressViewModel : ViewModelBase
             var key = contest.Key.Trim();
             var adif = contest.AdifContestId.Trim();
             var name = contest.DisplayName.Trim();
+            var exchangeType = contest.ExchangeType.Trim();
 
-            if (IsArrlFdContestKey(key) || IsArrlFdContestKey(adif) || IsArrlFdContestName(name))
+            if (IsArrlFdContestKey(key)
+                || IsArrlFdContestKey(adif)
+                || IsArrlFdContestName(name)
+                || string.Equals(exchangeType, "fieldday", StringComparison.OrdinalIgnoreCase))
             {
                 if (!string.IsNullOrWhiteSpace(key))
                     contestIds.Add(key);
@@ -134,6 +164,7 @@ public sealed class ArrlFdProgressViewModel : ViewModelBase
         var fieldNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "Section",
+            "ARRL-SECTION",
             "ARRL_SECT",
             "ARRLSECT"
         };
@@ -143,7 +174,8 @@ public sealed class ArrlFdProgressViewModel : ViewModelBase
         {
             var isFieldDay = IsArrlFdContestKey(contest.Key.Trim())
                              || IsArrlFdContestKey(contest.AdifContestId.Trim())
-                             || IsArrlFdContestName(contest.DisplayName.Trim());
+                             || IsArrlFdContestName(contest.DisplayName.Trim())
+                             || string.Equals(contest.ExchangeType.Trim(), "fieldday", StringComparison.OrdinalIgnoreCase);
 
             if (!isFieldDay)
                 continue;
@@ -151,6 +183,39 @@ public sealed class ArrlFdProgressViewModel : ViewModelBase
             foreach (var field in contest.RequiredFields)
             {
                 if (!string.Equals(field.Key.Trim(), ContestFieldKeys.FieldDaySection, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var detailFieldName = field.DetailFieldName.Trim();
+                if (!string.IsNullOrWhiteSpace(detailFieldName))
+                    fieldNames.Add(detailFieldName);
+            }
+        }
+
+        return fieldNames;
+    }
+
+    private static HashSet<string> ResolveClassFieldNames()
+    {
+        var fieldNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Class",
+            "FD_CLASS"
+        };
+
+        var config = AppConfigurationStore.Load();
+        foreach (var contest in config.Contests)
+        {
+            var isFieldDay = IsArrlFdContestKey(contest.Key.Trim())
+                             || IsArrlFdContestKey(contest.AdifContestId.Trim())
+                             || IsArrlFdContestName(contest.DisplayName.Trim())
+                             || string.Equals(contest.ExchangeType.Trim(), "fieldday", StringComparison.OrdinalIgnoreCase);
+
+            if (!isFieldDay)
+                continue;
+
+            foreach (var field in contest.RequiredFields)
+            {
+                if (!string.Equals(field.Key.Trim(), ContestFieldKeys.FieldDayClass, StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 var detailFieldName = field.DetailFieldName.Trim();
@@ -179,6 +244,27 @@ public sealed class ArrlFdProgressViewModel : ViewModelBase
         return value.Contains("ARRL Field Day", StringComparison.OrdinalIgnoreCase)
                || value.Contains("Field Day", StringComparison.OrdinalIgnoreCase);
     }
+
+    private static bool IsDxSectionCandidate(FdQsoSnapshot qso)
+    {
+        var state = qso.State.Trim().ToUpperInvariant();
+        if (state == "DX")
+            return true;
+
+        var country = qso.Country.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(country))
+            return false;
+
+        return country is not ("US" or "USA" or "UNITED STATES" or "UNITED STATES OF AMERICA" or "CANADA");
+    }
+
+    private sealed record FdQsoSnapshot(Guid Id, string State, string Country);
 }
+
+
+
+
+
+
 
 

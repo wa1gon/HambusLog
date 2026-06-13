@@ -25,10 +25,25 @@ public sealed record ContestDefinition(
     DateTime? StartUtc,
     DateTime? EndUtc);
 
+public static class ContestDefinitionExtensions
+{
+    public static ContestDefinition Clone(this ContestDefinition contest)
+        => new(
+            contest.Key,
+            contest.DisplayName,
+            contest.AdifContestId,
+            contest.RequiredFields.Select(field => new ContestFieldRequirement(field.Key, field.Label, field.DetailFieldName)).ToList(),
+            contest.UsesNormalExchange,
+            contest.UsesFieldDayExchange,
+            contest.StartUtc,
+            contest.EndUtc);
+}
+
 public static class ContestCatalog
 {
     public const string NormalKey = "NORMAL";
     public const string ArrlFieldDayKey = "ARRL-FD";
+    public const string ArrlFieldDayAdifId = "ARRL-FIELD-DAY";
 
     private static string ToContestKey(ContestType type)
         => type == ContestType.ArrlFieldDay ? ArrlFieldDayKey : NormalKey;
@@ -36,8 +51,7 @@ public static class ContestCatalog
     public static ContestDefinition Get(ContestType type)
     {
         var key = ToContestKey(type);
-        return GetByKey(key)
-               ?? BuildFallback(key, key, type == ContestType.ArrlFieldDay ? "fieldday" : "normal", []);
+        return (GetByKey(key) ?? BuildBuiltIn(type)).Clone();
     }
 
     public static ContestDefinition? GetByKey(string? key)
@@ -55,10 +69,11 @@ public static class ContestCatalog
             .Where(x => x is not null)
             .Select(ToDefinition)
             .Where(x => !string.IsNullOrWhiteSpace(x.Key))
+            .Select(x => x.Clone())
             .ToList();
 
         if (contests.Count == 0)
-            return [BuildFallback(NormalKey, "Normal", "normal", [])];
+            return [BuildBuiltIn(ContestType.Normal).Clone()];
 
         return contests;
     }
@@ -71,6 +86,9 @@ public static class ContestCatalog
         var exchangeType = string.IsNullOrWhiteSpace(config.ExchangeType) ? "normal" : config.ExchangeType.Trim().ToLowerInvariant();
         var startUtc = ParseUtc(config.StartUtc);
         var endUtc = ParseUtc(config.EndUtc);
+
+        if (string.Equals(exchangeType, "fieldday", StringComparison.OrdinalIgnoreCase))
+            adifId = ArrlFieldDayAdifId;
 
         var requiredFields = config.RequiredFields
             .Where(x => !string.IsNullOrWhiteSpace(x.Key))
@@ -101,6 +119,32 @@ public static class ContestCatalog
             UsesFieldDayExchange: exchangeType == "fieldday",
             StartUtc: startUtc,
             EndUtc: endUtc);
+    }
+
+    private static ContestDefinition BuildBuiltIn(ContestType type)
+    {
+        return type == ContestType.ArrlFieldDay
+            ? new ContestDefinition(
+                ArrlFieldDayKey,
+                "ARRL Field Day",
+                ArrlFieldDayAdifId,
+                [
+                    new ContestFieldRequirement(ContestFieldKeys.FieldDaySection, "Field Day Section", "Section"),
+                    new ContestFieldRequirement(ContestFieldKeys.FieldDayClass, "Field Day Class", "Class")
+                ],
+                UsesNormalExchange: false,
+                UsesFieldDayExchange: true,
+                StartUtc: null,
+                EndUtc: null)
+            : new ContestDefinition(
+                NormalKey,
+                "Normal",
+                NormalKey,
+                [],
+                UsesNormalExchange: true,
+                UsesFieldDayExchange: false,
+                StartUtc: null,
+                EndUtc: null);
     }
 
     private static DateTime? ParseUtc(string? value)
