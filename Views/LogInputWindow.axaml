@@ -38,7 +38,7 @@
                 Background="{DynamicResource AppPanelBackgroundBrush}"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="1">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="16">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="16">
 
                 <!-- Active Radio label + radio buttons -->
                 <TextBlock Grid.Column="0"
@@ -109,6 +109,14 @@
                           Checked="OnStayOnTopChecked"
                           Unchecked="OnStayOnTopUnchecked"
                           Name="StayOnTopCheckBox" />
+
+                <Button Grid.Column="7"
+                        Content="Progress Status"
+                        Padding="12,6"
+                        VerticalAlignment="Center"
+                        Click="OnProgressStatusClicked"
+                        Background="{DynamicResource AppButtonNormalBrush}"
+                        Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
             </Grid>
         </Border>
 
@@ -133,7 +141,8 @@
                             <TextBox Grid.Column="0"
                                      Text="{Binding InputCall}"
                                      Watermark="K1ABC"
-                                     TextChanged="OnUppercaseInputChanged" />
+                                     TextChanged="OnInputCallChanged"
+                                     LostFocus="OnInputCallLostFocus" />
                             <Button Grid.Column="1"
                                     Content="Lookup"
                                     Padding="10,6"

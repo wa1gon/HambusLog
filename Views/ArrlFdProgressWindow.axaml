@@ -1,0 +1,95 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:HamBusLog.ViewModels"
+        x:Class="HamBusLog.Views.ArrlFdProgressWindow"
+        x:DataType="vm:ArrlFdProgressViewModel"
+        Title="ARRL Field Day Progress"
+        RequestedThemeVariant="Dark"
+        Background="{DynamicResource AppWindowBackgroundBrush}"
+        Foreground="{DynamicResource AppForegroundBrush}"
+        Width="960"
+        Height="720"
+        MinWidth="720"
+        MinHeight="520"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid RowDefinitions="Auto,*" Margin="16,14,16,12" RowSpacing="12">
+        <Border Grid.Row="0"
+                Padding="14"
+                CornerRadius="10"
+                Background="{DynamicResource AppPanelBackgroundBrush}"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                <StackPanel Grid.Column="0" Spacing="6">
+                    <TextBlock Text="ARRL Field Day Worked Sections" FontSize="18" FontWeight="Bold" />
+                    <TextBlock Text="{Binding SectionSummary}" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                    <TextBlock Text="{Binding DxSummary}" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                    <TextBlock Text="{Binding LastUpdated}" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="11" />
+                </StackPanel>
+                <CheckBox Grid.Column="1"
+                          Name="StayOnTopCheckBox"
+                          Content="Stay on top"
+                          VerticalAlignment="Center"
+                          Foreground="{DynamicResource AppForegroundBrush}"
+                          TextElement.Foreground="{DynamicResource AppForegroundBrush}"
+                          Checked="OnStayOnTopChecked"
+                          Unchecked="OnStayOnTopUnchecked" />
+                <Button Grid.Column="2"
+                        Content="Refresh"
+                        Padding="16,8"
+                        Click="OnRefreshClicked"
+                        Background="{DynamicResource AppButtonNormalBrush}"
+                        Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1"
+                Padding="12"
+                CornerRadius="10"
+                Background="{DynamicResource AppPanelBackgroundBrush}"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                <TextBlock Text="Sections" FontSize="14" FontWeight="SemiBold" Margin="0,12,0,0" />
+                <TextBlock Text="Known ARRL/RAC Field Day sections; unknown worked codes are appended." Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="11" />
+
+                <TextBlock Grid.Row="2"
+                           Text="No ARRL Field Day section QSOs yet."
+                           IsVisible="{Binding HasNoSections}"
+                           Foreground="{DynamicResource AppMutedForegroundBrush}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+
+                <ScrollViewer Grid.Row="2" IsVisible="{Binding HasSections}">
+                    <ItemsControl ItemsSource="{Binding SectionRows}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel ItemWidth="68" ItemHeight="32" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="6,4"
+                                        Margin="4"
+                                        CornerRadius="6"
+                                        Background="{Binding BackgroundBrush}"
+                                        Opacity="{Binding Opacity}"
+                                        BorderBrush="{DynamicResource AppBorderBrush}"
+                                        BorderThickness="1">
+                                    <TextBlock Text="{Binding Code}"
+                                               Foreground="{Binding ForegroundBrush}"
+                                               FontWeight="{Binding FontWeight}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
+
+

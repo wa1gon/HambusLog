@@ -389,6 +389,129 @@ public sealed class LogInputViewModel : ViewModelBase
     public bool HasClassError   => !string.IsNullOrWhiteSpace(ClassError);
     public bool HasContestError => !string.IsNullOrWhiteSpace(ContestError);
 
+    public bool TryGetDuplicateCallWarning(out string warning)
+    {
+        warning = string.Empty;
+
+        var call = InputCall.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(call))
+            return false;
+
+        var band = ResolveBandForDuplicate(InputBand, TryParseFrequencyMhz(InputFreq));
+        var mode = InputMode.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(band) || string.IsNullOrWhiteSpace(mode))
+            return false;
+
+        if (!HasDuplicateQso(call, band, mode, InputFreq))
+            return false;
+
+        warning = $"Possible duplicate: {call} is already logged"
+                  + $" on {band}"
+                  + $" ({NormalizeModeFamilyForDuplicate(mode)})"
+                  + ".";
+        return true;
+    }
+
+    private static string NormalizeText(string? value) => (value ?? string.Empty).Trim().ToUpperInvariant();
+
+    private static string NormalizeBandForDuplicate(string? band)
+    {
+        var normalized = NormalizeText(band)
+            .Replace(" ", string.Empty, StringComparison.Ordinal)
+            .Replace("-", string.Empty, StringComparison.Ordinal);
+
+        if (string.IsNullOrWhiteSpace(normalized))
+            return string.Empty;
+
+        if (Regex.IsMatch(normalized, @"^\d+(\.\d+)?$"))
+            return normalized + "M";
+
+        return normalized;
+    }
+
+    private static bool IsBandMatchForDuplicate(string? existingBand, string? inputBand)
+        => string.Equals(
+            NormalizeBandForDuplicate(existingBand),
+            NormalizeBandForDuplicate(inputBand),
+            StringComparison.OrdinalIgnoreCase);
+
+    private static decimal? TryParseFrequencyMhz(string? frequencyText)
+    {
+        if (!decimal.TryParse(frequencyText, NumberStyles.Number, CultureInfo.InvariantCulture, out var mhz) || mhz <= 0)
+            return null;
+
+        return mhz;
+    }
+
+    private static string ResolveBandForDuplicate(string? band, decimal? frequencyMhz)
+    {
+        var normalizedBand = NormalizeBandForDuplicate(band);
+        if (!string.IsNullOrWhiteSpace(normalizedBand))
+            return normalizedBand;
+
+        if (frequencyMhz is not decimal mhz || mhz <= 0)
+            return string.Empty;
+
+        var derivedBand = TryDeriveBandFromMhz(mhz);
+        return NormalizeBandForDuplicate(derivedBand);
+    }
+
+    private static string NormalizeModeFamilyForDuplicate(string? mode)
+    {
+        var normalized = NormalizeText(mode);
+        if (string.IsNullOrWhiteSpace(normalized))
+            return string.Empty;
+
+        if (normalized is "SSB" or "USB" or "LSB" or "AM" or "FM" or "NFM" or "WFM" or "PHONE" or "VOICE")
+            return "PHONE";
+
+        if (normalized.Contains("SSB", StringComparison.OrdinalIgnoreCase)
+            || normalized.Contains("VOICE", StringComparison.OrdinalIgnoreCase)
+            || normalized.Contains("PHONE", StringComparison.OrdinalIgnoreCase))
+            return "PHONE";
+
+        if (normalized is "PKTUSB" or "PKTLSB" or "DIGU" or "DIGL" or "RTTY" or "DATA" or "DATA-U" or "DATA-L"
+            or "PSK" or "PSK31" or "PSK63" or "PSK125" or "FT8" or "FT4" or "JT65" or "JT9" or "Q65"
+            or "MFSK" or "MSK144" or "FSK" or "OLIVIA" or "THOR" or "DOMINO" or "VARA" or "PACKET")
+            return "DIGITAL";
+
+        if (normalized.StartsWith("FT", StringComparison.OrdinalIgnoreCase)
+            || normalized.StartsWith("JT", StringComparison.OrdinalIgnoreCase)
+            || normalized.StartsWith("PSK", StringComparison.OrdinalIgnoreCase)
+            || normalized.Contains("DIG", StringComparison.OrdinalIgnoreCase)
+            || normalized.Contains("DATA", StringComparison.OrdinalIgnoreCase))
+            return "DIGITAL";
+
+        return normalized;
+    }
+
+    private static bool IsModeMatchForDuplicate(string? existingMode, string? inputMode)
+        => string.Equals(
+            NormalizeModeFamilyForDuplicate(existingMode),
+            NormalizeModeFamilyForDuplicate(inputMode),
+            StringComparison.OrdinalIgnoreCase);
+
+    private static bool HasDuplicateQso(string call, string band, string mode, string? frequencyText)
+    {
+        var normalizedCall = NormalizeText(call);
+        var normalizedBand = ResolveBandForDuplicate(band, TryParseFrequencyMhz(frequencyText));
+        var targetModeFamily = NormalizeModeFamilyForDuplicate(mode);
+        if (string.IsNullOrWhiteSpace(normalizedCall)
+            || string.IsNullOrWhiteSpace(normalizedBand)
+            || string.IsNullOrWhiteSpace(targetModeFamily))
+            return false;
+
+        var candidates = App.DbContext.Qsos
+            .AsNoTracking()
+            .Where(q => q.Call.Trim().ToUpper() == normalizedCall)
+            .Select(q => new { q.Band, q.Mode, q.Freq })
+            .ToList();
+
+        return candidates.Any(candidate
+            => IsBandMatchForDuplicate(ResolveBandForDuplicate(candidate.Band, candidate.Freq), normalizedBand)
+               && IsModeMatchForDuplicate(candidate.Mode, mode));
+    }
+
     // ── Detail Table Actions ──────────────────────────────────────────
     public bool AddDetail()
     {
@@ -429,6 +552,14 @@ public sealed class LogInputViewModel : ViewModelBase
         var mode = InputMode.Trim().ToUpperInvariant();
         var modeResult = _modeValidator.Validate(mode);
         if (!modeResult.IsValid) { ModeError = modeResult.ErrorMessage; errorMessage = ModeError; return null; }
+
+        if (HasDuplicateQso(InputCall, band, mode, InputFreq))
+        {
+            var dupBand = ResolveBandForDuplicate(band, TryParseFrequencyMhz(InputFreq));
+            ContestError = $"Duplicate QSO not allowed: {InputCall.Trim().ToUpperInvariant()} on {dupBand} ({NormalizeModeFamilyForDuplicate(mode)}).";
+            errorMessage = ContestError;
+            return null;
+        }
 
         if (IsFieldDay)
         {

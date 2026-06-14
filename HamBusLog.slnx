@@ -1,4 +1,7 @@
 <Solution>
-bl  <Project Path="Wa1gonLib/Wa1gonLib.csproj" />
   <Project Path="HamBusLog.csproj" />
+  <Project Path="Wa1gonLib/Wa1gonLib.csproj" />
+  <Project Path="Wa1gonLib.Tests/Wa1gonLib.Tests.csproj" />
+  <Project Path="HamBusLog.Tests/HamBusLog.Tests.csproj" />
+  <Project Path="ContestLicenseTool/ContestLicenseTool.csproj" />
 </Solution>

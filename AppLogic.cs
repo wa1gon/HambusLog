@@ -150,6 +150,13 @@ public partial class App
                 DataContext = new MainWindowViewModel(),
             };
             Toasts.RegisterWindow(desktop.MainWindow);
+
+            if (AppConfigurationStore.ConsumeContestRepairNotice())
+            {
+                Toasts.ShowInfo(
+                    "Configuration updated",
+                    "Restored missing built-in contest fields (including FD section/class). Review Configuration if needed.");
+            }
         }
 
         base.OnFrameworkInitializationCompleted();
