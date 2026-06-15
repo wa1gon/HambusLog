@@ -27,7 +27,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         new MenuNode("Awards", false,
             new MenuNode("ARQP Report"),
             new MenuNode("ARRL FD Report")),
-        new MenuNode("eLogs"),
+        new MenuNode("eLogs", false,
+            new MenuNode("Logbook of the World")),
         new MenuNode("Help", false,
             new MenuNode("About"),
             new MenuNode("Credits"))

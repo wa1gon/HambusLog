@@ -1,4 +1,6 @@
 using HamBusLog.Data;
+using HamBusLog.Models;
+using HamBusLog.Services;
 using HamBusLog.Wa1gonLib.Exchange;
 using HamBusLog.Wa1gonLib.Adif;
 using HamBusLog.Wa1gonLib.Models;
@@ -33,6 +35,32 @@ public sealed class TransferServicesTests : IDisposable
         var parsed = AdifReader.ReadFromString(adif);
         Assert.Single(parsed);
         Assert.Equal(id, parsed[0].Id);
+    }
+
+    [Fact]
+    public void LotwDownloadTemplate_ReplacesPlaceholders()
+    {
+        var rendered = LotwUploadService.RenderTemplate(
+            "-d -c \"{callsign}\" -o \"{output}\" --from {from} --to {to}",
+            "W1AW",
+            "/tmp/lotw.adi",
+            new DateTimeOffset(2026, 06, 01, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 06, 14, 0, 0, 0, TimeSpan.Zero));
+
+        Assert.Contains("W1AW", rendered, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("/tmp/lotw.adi", rendered, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("2026-06-01", rendered, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("2026-06-14", rendered, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void LotwConfiguration_DefaultDownloadTemplate_IsPresent()
+    {
+        var config = new LotwConfiguration();
+
+        Assert.NotNull(config.DownloadArgumentsTemplate);
+        Assert.Contains("{callsign}", config.DownloadArgumentsTemplate);
+        Assert.Contains("{output}", config.DownloadArgumentsTemplate);
     }
 
     [Fact]

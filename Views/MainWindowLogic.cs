@@ -15,6 +15,7 @@ public partial class MainWindow
     private CabrilloExportWindow? _cabrilloExportWindow;
     private ArqpProgressWindow? _arqpProgressWindow;
     private ArrlFdProgressWindow? _arrlFdProgressWindow;
+    private LotwUploadWindow? _lotwUploadWindow;
     private bool _isImportingAdif;
     private bool _isAppExitRequested;
     private bool _skipNextMenuSelectionChanged;
@@ -162,7 +163,9 @@ public partial class MainWindow
             ShowNotImplemented("Callbook");
         else if (node.Title == "Awards" && !node.HasChildren)
             ShowNotImplemented("Awards");
-        else if (node.Title == "eLogs")
+        else if (node.Title == "Logbook of the World")
+            OpenLotwUploadWindow();
+        else if (node.Title == "eLogs" && !node.HasChildren)
             ShowNotImplemented("eLogs");
         else if (node.Title == "RecCall")
             ShowNotImplemented("RecCall");
@@ -300,6 +303,23 @@ public partial class MainWindow
         }
 
         ShowWithVisibleOwner(_arrlFdProgressWindow);
+    }
+
+    private void OpenLotwUploadWindow()
+    {
+        if (_lotwUploadWindow is { IsVisible: true })
+        {
+            _lotwUploadWindow.Activate();
+            return;
+        }
+
+        if (_lotwUploadWindow is null)
+        {
+            _lotwUploadWindow = new LotwUploadWindow();
+            _lotwUploadWindow.Closed += (_, _) => _lotwUploadWindow = null;
+        }
+
+        ShowWithVisibleOwner(_lotwUploadWindow);
     }
 
     private void OpenNewContactWindow()

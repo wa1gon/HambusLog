@@ -20,6 +20,9 @@ public sealed class AppConfiguration
 
     /// <summary>Callsign lookup provider settings.</summary>
     public CallsignLookupConfiguration CallsignLookup { get; set; } = new();
+
+    /// <summary>Logbook of the World (LoTW) upload settings.</summary>
+    public LotwConfiguration Lotw { get; set; } = new();
 }
 
 public sealed class WindowPlacement
@@ -199,4 +202,27 @@ public sealed class QrzLookupConfiguration
         get => null;
         set { if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(Username)) Username = value.Trim(); }
     }
+}
+
+public sealed class LotwConfiguration
+{
+    /// <summary>Whether LoTW upload is enabled.</summary>
+    public bool Enabled { get; set; }
+
+    /// <summary>Automatically upload each QSO to LoTW when logged.</summary>
+    public bool AutoUploadOnLog { get; set; }
+
+    /// <summary>Path to the tqsl executable (defaults to searching PATH).</summary>
+    public string TqslPath { get; set; } = "tqsl";
+
+    /// <summary>Command-line template used to download LoTW QSOs to ADIF.
+    /// Supports {callsign}, {output}, {from}, and {to} placeholders.
+    /// </summary>
+    public string DownloadArgumentsTemplate { get; set; } = "-d -c \"{callsign}\" -o \"{output}\"";
+
+    /// <summary>Station callsign certificate to use for signing. Defaults to active profile station callsign.</summary>
+    public string StationCallsign { get; set; } = string.Empty;
+
+    /// <summary>XOR-obfuscated TQSL password (same scheme as QRZ).</summary>
+    public string PasswordCiphertext { get; set; } = string.Empty;
 }

@@ -1,0 +1,189 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:HamBusLog.ViewModels"
+        x:Class="HamBusLog.Views.LotwUploadWindow"
+        x:DataType="vm:LotwUploadViewModel"
+        Title="Logbook of the World (LoTW) Upload"
+        RequestedThemeVariant="Dark"
+        Background="{DynamicResource AppWindowBackgroundBrush}"
+        Foreground="{DynamicResource AppForegroundBrush}"
+        Width="760"
+        Height="600"
+        MinWidth="580"
+        MinHeight="460"
+        WindowStartupLocation="CenterOwner">
+    <Window.Styles>
+        <Style Selector="TextBlock.FieldLabel">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource AppMutedForegroundBrush}" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        <Style Selector="TextBlock.SectionHeading">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="16,14,16,12" RowSpacing="12">
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Padding="14"
+                CornerRadius="10"
+                Background="{DynamicResource AppPanelBackgroundBrush}"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1">
+            <StackPanel Spacing="4">
+                <TextBlock Text="Logbook of the World (LoTW)" FontSize="18" FontWeight="Bold" />
+                <TextBlock Text="Sign and upload QSOs to ARRL LoTW using TQSL." Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                <TextBlock Text="TQSL must be installed with your station certificate loaded." Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="11" />
+            </StackPanel>
+        </Border>
+
+        <!-- Settings + Upload Controls -->
+        <Border Grid.Row="1"
+                Padding="14"
+                CornerRadius="10"
+                Background="{DynamicResource AppPanelBackgroundBrush}"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto,*" RowSpacing="10" ColumnSpacing="12">
+
+                <!-- Enable LoTW -->
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="4" Classes="SectionHeading" Text="CONFIGURATION" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Classes="FieldLabel" Text="Enable LoTW" VerticalAlignment="Center" />
+                <CheckBox Grid.Row="1" Grid.Column="1"
+                          IsChecked="{Binding Enabled}"
+                          Content="Enable LoTW uploads"
+                          VerticalAlignment="Center" />
+
+                <TextBlock Grid.Row="1" Grid.Column="2" Classes="FieldLabel" Text="Auto-upload on log" VerticalAlignment="Center" />
+                <CheckBox Grid.Row="1" Grid.Column="3"
+                          IsChecked="{Binding AutoUploadOnLog}"
+                          Content="Upload each QSO as it is logged"
+                          VerticalAlignment="Center" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Classes="FieldLabel" Text="TQSL Path" VerticalAlignment="Center" />
+                <TextBox Grid.Row="2" Grid.Column="1"
+                         Text="{Binding TqslPath}"
+                         Watermark="tqsl  (or full path like /usr/bin/tqsl)" />
+
+                <TextBlock Grid.Row="2" Grid.Column="2" Classes="FieldLabel" Text="Station Callsign" VerticalAlignment="Center" />
+                <TextBox Grid.Row="2" Grid.Column="3"
+                         Text="{Binding StationCallsign}"
+                         Watermark="WA1GON" />
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Classes="FieldLabel" Text="TQSL Password" VerticalAlignment="Center" />
+                <TextBox Grid.Row="3" Grid.Column="1"
+                         Text="{Binding PasswordPlaintext}"
+                         PasswordChar="●"
+                         Watermark="Leave blank to be prompted by TQSL" />
+
+                <TextBlock Grid.Row="3" Grid.Column="2" Classes="FieldLabel" Text="Download args" VerticalAlignment="Center" />
+                <TextBox Grid.Row="3" Grid.Column="3"
+                         Text="{Binding DownloadArgumentsTemplate}"
+                         Watermark='-d -c "{callsign}" -o "{output}"' />
+
+                <!-- Upload range -->
+                <TextBlock Grid.Row="4" Grid.ColumnSpan="4" Classes="SectionHeading" Text="UPLOAD RANGE" Margin="0,8,0,0" />
+
+                <TextBlock Grid.Row="4" Grid.Column="0" Classes="FieldLabel" Text="From date" VerticalAlignment="Center" />
+                <DatePicker Grid.Row="4" Grid.Column="1"
+                            SelectedDate="{Binding UploadFrom}"
+                            VerticalAlignment="Center" />
+
+                <TextBlock Grid.Row="4" Grid.Column="2" Classes="FieldLabel" Text="To date" VerticalAlignment="Center" />
+                <DatePicker Grid.Row="4" Grid.Column="3"
+                            SelectedDate="{Binding UploadTo}"
+                            VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <!-- Upload log -->
+        <Border Grid.Row="2"
+                Padding="12"
+                CornerRadius="10"
+                Background="{DynamicResource AppPanelBackgroundBrush}"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1">
+            <Grid RowDefinitions="Auto,*">
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+                    <TextBlock Classes="SectionHeading" Text="UPLOAD LOG" VerticalAlignment="Center" Margin="0" />
+                    <TextBlock Text="{Binding QsoRangeSummary}"
+                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                               FontSize="11"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <TextBlock Text="{Binding UploadLog}"
+                               FontFamily="Monospace"
+                               FontSize="11"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- Action bar -->
+        <Border Grid.Row="3" Padding="0,8,0,0"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10">
+                <TextBlock Grid.Column="0"
+                           Text="{Binding StatusMessage}"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource AppMutedForegroundBrush}"
+                           FontSize="12"
+                           TextTrimming="CharacterEllipsis" />
+
+                <Button Grid.Column="1"
+                        Content="Download ADIF"
+                        IsEnabled="{Binding IsReadyToUpload}"
+                        Click="OnDownloadClicked"
+                        Padding="16,8"
+                        Background="{DynamicResource AppButtonCautionBrush}"
+                        Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+
+                <Button Grid.Column="2"
+                        Content="Upload Date Range"
+                        IsEnabled="{Binding IsReadyToUpload}"
+                        Click="OnUploadDateRangeClicked"
+                        Padding="16,8"
+                        Background="{DynamicResource AppButtonNormalBrush}"
+                        Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+
+                <Button Grid.Column="3"
+                        Content="Upload All"
+                        IsEnabled="{Binding IsReadyToUpload}"
+                        Click="OnUploadAllClicked"
+                        Padding="16,8"
+                        Background="{DynamicResource AppButtonCautionBrush}"
+                        Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
+
+                <Button Grid.Column="4"
+                        Content="Save Settings"
+                        Click="OnSaveSettingsClicked"
+                        Padding="16,8"
+                        Background="{DynamicResource AppButtonNormalBrush}"
+                        Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+
+                <Button Grid.Column="5"
+                        Content="Close"
+                        Click="OnCloseClicked"
+                        Padding="16,8"
+                        Background="Transparent"
+                        Foreground="{DynamicResource AppMutedForegroundBrush}"
+                        BorderBrush="{DynamicResource AppBorderBrush}"
+                        BorderThickness="1" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
+
+
+
+
