@@ -63,6 +63,12 @@
                                                      MinHeight="{Binding InputMinHeight}"
                                                      VerticalAlignment="Top"
                                                      IsVisible="{Binding IsTextInput}" />
+                                            <ComboBox ItemsSource="{Binding Options}"
+                                                      SelectedItem="{Binding Value}"
+                                                      IsVisible="{Binding IsSelection}" />
+                                            <TextBox Text="{Binding Value}"
+                                                     IsReadOnly="True"
+                                                     IsVisible="{Binding IsComputed}" />
                                             <StackPanel Orientation="Horizontal" Spacing="8"
                                                         IsVisible="{Binding IsDateTime}">
                                                 <DatePicker SelectedDate="{Binding SelectedDateOffset}" />
@@ -77,6 +83,9 @@
                     </StackPanel>
                 </Border>
 
+                <TextBlock Text="Claimed score is calculated automatically. Field Day bonus points are added during export."
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource AppMutedForegroundBrush}" />
                 <TextBlock Text="Only contests with exporters can be exported right now."
                            TextWrapping="Wrap"
                            Foreground="{DynamicResource AppMutedForegroundBrush}" />

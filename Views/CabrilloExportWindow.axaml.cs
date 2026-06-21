@@ -25,6 +25,29 @@ public partial class CabrilloExportWindow : Window
             return;
         }
 
+        // For Field Day contests, prompt for bonus points
+        int bonusPoints = 0;
+        if (IsFieldDayContest(contest))
+        {
+            var bonusWindow = new FieldDayBonusPointsWindow();
+            if (Owner is Window owner)
+            {
+                var result = await bonusWindow.ShowDialog<bool>(owner);
+                if (result == true)
+                    bonusPoints = bonusWindow.BonusPoints;
+                else
+                    return; // User cancelled
+            }
+            else
+            {
+                var result = await bonusWindow.ShowDialog<bool>(this);
+                if (result == true)
+                    bonusPoints = bonusWindow.BonusPoints;
+                else
+                    return; // User cancelled
+            }
+        }
+
         var config = AppConfigurationStore.Load();
         var profile = AppConfigurationStore.GetActiveProfile(config);
         var suggestedStartLocation = await TryGetFolderFromPathAsync(profile.AdifDirectory);
@@ -44,12 +67,14 @@ public partial class CabrilloExportWindow : Window
 
         var path = file.Path.LocalPath;
         var progressWindow = new OperationProgressWindow("Exporting Cabrillo", $"Writing {Path.GetFileName(path)}...");
-        if (Owner is Window owner)
-            progressWindow.Show(owner);
+        if (Owner is Window owner2)
+            progressWindow.Show(owner2);
         else
             progressWindow.Show(this);
 
         var settings = ViewModel.BuildSettings();
+        // Create new settings with bonus points included
+        settings = new CabrilloExportSettings(settings.Headers, bonusPoints);
         try
         {
             var exported = await CabrilloExportService.ExportToFileAsync(path, contest.Definition, settings);
@@ -64,6 +89,21 @@ public partial class CabrilloExportWindow : Window
         {
             progressWindow.Close();
         }
+    }
+
+    private static bool IsFieldDayContest(CabrilloContestOption contest)
+    {
+        if (contest is null)
+            return false;
+
+        var key = contest.Key.Trim().ToUpperInvariant();
+        var adifId = contest.AdifContestId.Trim().ToUpperInvariant();
+        var displayName = contest.DisplayName.Trim();
+
+        return key is "ARRL-FD" or "ARRL-FIELD-DAY"
+               || adifId is "ARRL-FD" or "ARRL-FIELD-DAY"
+               || displayName.Contains("ARRL Field Day", StringComparison.OrdinalIgnoreCase)
+               || displayName.Contains("Field Day", StringComparison.OrdinalIgnoreCase);
     }
 
     private void OnCloseClicked(object? sender, RoutedEventArgs e)

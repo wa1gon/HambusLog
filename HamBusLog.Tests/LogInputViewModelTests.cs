@@ -1,6 +1,7 @@
 using HamBusLog.Hardware;
 using HamBusLog.Services;
 using HamBusLog.ViewModels;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace HamBusLog.Tests;
@@ -108,14 +109,22 @@ public sealed class LogInputViewModelTests
     [Fact]
     public void TryBuildQso_NormalContest_UsesDefaultRstOnly()
     {
+        var call = FindUnusedCallsign();
         var viewModel = new LogInputViewModel
         {
             SelectedContestType = ContestType.Normal,
-            InputCall = "K1ABC",
+            InputCall = call,
             InputDate = "20260505",
             InputTimeOn = "1930",
             InputBand = "20M",
-            InputMode = "SSB"
+            InputMode = "SSB",
+            InputSent = "59",
+            InputRec = "59",
+            InputExchange = "AR",
+            InputCountry = "USA",
+            InputState = "AR",
+            InputCounty = "PUL",
+            InputName = "TEST"
         };
 
         var qso = viewModel.TryBuildQso(out var error);
@@ -130,16 +139,20 @@ public sealed class LogInputViewModelTests
     [Fact]
     public void TryBuildQso_FieldDay_RequiresSectionAndClassOnly()
     {
+        var call = FindUnusedCallsign();
         var viewModel = new LogInputViewModel
         {
             SelectedContestType = ContestType.ArrlFieldDay,
-            InputCall = "K1ABC",
+            InputCall = call,
             InputDate = "20260505",
             InputTimeOn = "1930",
             InputBand = "20M",
             InputMode = "CW",
             InputFieldDaySection = "EMA",
-            InputFieldDayClass = "1D"
+            InputFieldDayClass = "1D",
+            InputExchange = "EMA",
+            InputCountry = "USA",
+            InputState = "MA"
         };
 
         var qso = viewModel.TryBuildQso(out var error);
@@ -153,6 +166,38 @@ public sealed class LogInputViewModelTests
         Assert.Contains(qso.Details, d => d.FieldName == "Class" && d.FieldValue == "1D");
     }
 
+    [Fact]
+    public void AvailableModes_ContainsExpectedModes()
+    {
+        var viewModel = new LogInputViewModel();
+        var expectedModes = new[] { "USB", "LSB", "FM", "AM", "FT8", "FT4", "RTTY", "PSK31", "PSK63", 
+                                    "OLIVIA", "JS8", "MFSK", "PACKET", "HELL", "THOR", "DOMINO", "DIGITAL", "CW" };
+
+        Assert.All(expectedModes, mode => Assert.Contains(mode, viewModel.AvailableModes));
+    }
+
+    [Fact]
+    public void InputMode_ForcesUppercase()
+    {
+        var viewModel = new LogInputViewModel();
+
+        // Test lowercase
+        viewModel.InputMode = "ssb";
+        Assert.Equal("SSB", viewModel.InputMode);
+
+        // Test mixed case
+        viewModel.InputMode = "CW";
+        Assert.Equal("CW", viewModel.InputMode);
+
+        // Test lowercase cw
+        viewModel.InputMode = "cw";
+        Assert.Equal("CW", viewModel.InputMode);
+
+        // Test empty string
+        viewModel.InputMode = string.Empty;
+        Assert.Equal(string.Empty, viewModel.InputMode);
+    }
+
     private static ConnectedRadioOption CreateOption(string radioName, string label, string mode, long frequencyHz)
     {
         return new ConnectedRadioOption(new RadioRuntimeState(
@@ -163,5 +208,21 @@ public sealed class LogInputViewModelTests
             frequencyHz / 1_000_000m,
             null,
             DateTime.UtcNow));
+    }
+
+    private static string FindUnusedCallsign()
+    {
+        const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        for (var i = 0; i < letters.Length; i++)
+        for (var j = 0; j < letters.Length; j++)
+        for (var k = 0; k < letters.Length; k++)
+        {
+            var candidate = $"K9{letters[i]}{letters[j]}{letters[k]}";
+            var exists = App.DbContext.Qsos.AsNoTracking().Any(q => q.Call.ToUpper() == candidate);
+            if (!exists)
+                return candidate;
+        }
+
+        return "K9ZZZ";
     }
 }

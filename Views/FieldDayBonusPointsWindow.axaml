@@ -1,0 +1,110 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="HamBusLog.Views.FieldDayBonusPointsWindow"
+        Title="Field Day Bonus Points"
+        Background="{DynamicResource AppWindowBackgroundBrush}"
+        Foreground="{DynamicResource AppForegroundBrush}"
+        Width="600"
+        Height="700"
+        MinWidth="550"
+        MinHeight="650"
+        WindowStartupLocation="CenterOwner">
+    <Window.Styles>
+        <Style Selector="TextBlock.SectionHeading">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}" />
+            <Setter Property="Margin" Value="0,12,0,8" />
+        </Style>
+        <Style Selector="CheckBox">
+            <Setter Property="Margin" Value="0,4,0,4" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="*,Auto" Margin="16">
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="16">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Field Day Bonus Points"
+                               FontSize="16"
+                               FontWeight="Bold" />
+                    <TextBlock Text="Select bonuses earned during this Field Day event"
+                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Border Padding="12"
+                        CornerRadius="8"
+                        Background="{DynamicResource AppPanelBackgroundBrush}"
+                        BorderBrush="{DynamicResource AppBorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="12">
+                        <!-- 100-point bonuses -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="SectionHeading" Text="100-Point Bonuses" />
+                            <CheckBox Content="Emergency Power" IsChecked="{Binding EmergencyPower}" />
+                            <CheckBox Content="Media Publicity" IsChecked="{Binding MediaPublicity}" />
+                            <CheckBox Content="Public Location" IsChecked="{Binding PublicLocation}" />
+                            <CheckBox Content="Public Information Table" IsChecked="{Binding PublicInfoTable}" />
+                            <CheckBox Content="Message to Section Manager" IsChecked="{Binding MessageToSectionManager}" />
+                            <CheckBox Content="Satellite QSO" IsChecked="{Binding SatelliteQso}" />
+                            <CheckBox Content="W1AW Bulletin Copy" IsChecked="{Binding W1awBulletinCopy}" />
+                            <CheckBox Content="Educational Activity" IsChecked="{Binding EducationalActivity}" />
+                            <CheckBox Content="Social Media" IsChecked="{Binding SocialMedia}" />
+                            <CheckBox Content="Safety Officer" IsChecked="{Binding SafetyOfficer}" />
+                        </StackPanel>
+
+                        <!-- Variable-point bonuses -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="SectionHeading" Text="Variable-Point Bonuses" />
+
+                            <Grid ColumnDefinitions="300,*" RowDefinitions="Auto" ColumnSpacing="8">
+                                <TextBlock Grid.Column="0" Text="Formal Messages Sent (up to 100 pts)" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="1"
+                                              Value="{Binding FormalMessagesSent}"
+                                              Minimum="0"
+                                              Maximum="100" />
+                            </Grid>
+
+                            <Grid ColumnDefinitions="300,*" RowDefinitions="Auto" ColumnSpacing="8">
+                                <TextBlock Grid.Column="0" Text="Youth Participation (20 pts each, max 5)" VerticalAlignment="Center" />
+                                <NumericUpDown Grid.Column="1"
+                                              Value="{Binding YouthParticipation}"
+                                              Minimum="0"
+                                              Maximum="5" />
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Total bonus points -->
+                        <Border Padding="10" CornerRadius="6" Background="{DynamicResource AppAccentBrush}" Opacity="0.15">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                                <TextBlock Grid.Column="0"
+                                           Text="Total Bonus Points:"
+                                           FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding TotalBonusPoints}"
+                                           FontSize="18"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AppAccentBrush}"
+                                           VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
+            <Button Content="OK"
+                    Name="OkButton"
+                    Click="OnOkClicked"
+                    Padding="18,8" />
+            <Button Content="Cancel"
+                    Click="OnCancelClicked"
+                    Padding="18,8"
+                    IsCancel="True" />
+        </StackPanel>
+    </Grid>
+</Window>
+

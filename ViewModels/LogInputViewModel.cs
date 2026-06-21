@@ -5,6 +5,12 @@ using HamBusLog.Models;
 
 public sealed class LogInputViewModel : ViewModelBase
 {
+    private static readonly IReadOnlyList<string> AvailableModesStatic =
+    [
+        "USB", "LSB", "FM", "AM", "FT8", "FT4", "RTTY", "PSK31", "PSK63", 
+        "OLIVIA", "JS8", "MFSK", "PACKET", "HELL", "THOR", "DOMINO", "DIGITAL", "CW"
+    ];
+
     private readonly CallValidator   _callValidator   = new();
     private readonly BandValidator   _bandValidator   = new();
     private readonly ModeValidator   _modeValidator   = new();
@@ -93,6 +99,7 @@ public sealed class LogInputViewModel : ViewModelBase
     private readonly List<ContestDefinition> _contestDefinitions;
     public IReadOnlyList<ContestDefinition> ContestDefinitions => _contestDefinitions;
     public IReadOnlyList<ContestDefinition> FilteredContestDefinitions { get; private set; } = [];
+    public IReadOnlyList<string> AvailableModes => AvailableModesStatic;
     public bool ShowAllContests
     {
         get => _showAllContests;
@@ -284,9 +291,9 @@ public sealed class LogInputViewModel : ViewModelBase
     }
     public string InputDate    { get => _inputDate;    set => SetProperty(ref _inputDate,    value); }
     public string InputTimeOn  { get => _inputTimeOn;  set => SetProperty(ref _inputTimeOn,  value); }
-    public string InputBand    { get => _inputBand;    set { if (SetProperty(ref _inputBand, value)) ValidateBand(); } }
-    public string InputMode    { get => _inputMode;    set { if (SetProperty(ref _inputMode, value)) ValidateMode(); } }
-    public string InputFreq    { get => _inputFreq;    set => SetProperty(ref _inputFreq,    value); }
+     public string InputBand    { get => _inputBand;    set { if (SetProperty(ref _inputBand, value)) ValidateBand(); } }
+     public string InputMode    { get => _inputMode;    set { if (SetProperty(ref _inputMode, (value ?? string.Empty).ToUpperInvariant())) ValidateMode(); } }
+     public string InputFreq    { get => _inputFreq;    set => SetProperty(ref _inputFreq,    value); }
     public string InputSent    { get => _inputSent;    set => SetProperty(ref _inputSent,    value); }
     public string InputRec     { get => _inputRec;     set => SetProperty(ref _inputRec,     value); }
     public string InputCountry { get => _inputCountry; set => SetProperty(ref _inputCountry, (value ?? string.Empty).ToUpperInvariant()); }

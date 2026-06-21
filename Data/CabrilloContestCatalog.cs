@@ -8,7 +8,8 @@ public sealed record CabrilloHeaderFieldDefinition(
     bool IsRequired,
     bool IsUppercase,
     bool IsMultiline,
-    string InputType);
+    string InputType,
+    IReadOnlyList<string> Options);
 
 public sealed record CabrilloContestDefinition(
     string Key,
@@ -66,8 +67,15 @@ public static class CabrilloContestCatalog
                     x.IsRequired,
                     x.IsUppercase,
                     x.IsMultiline,
-                    string.IsNullOrWhiteSpace(x.InputType) ? "text" : x.InputType.Trim()))
+                    string.IsNullOrWhiteSpace(x.InputType) ? "text" : x.InputType.Trim(),
+                    x.Options
+                        .Where(option => !string.IsNullOrWhiteSpace(option))
+                        .Select(option => option.Trim())
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList()))
                 .ToList();
+
+            ApplyKnownHeaderDefaults(key, adifId, exporterKey, headers);
 
             normalized.Add(new CabrilloContestDefinition(
                 key,
@@ -190,6 +198,114 @@ public static class CabrilloContestCatalog
                 [])
         ];
     }
+
+    private static void ApplyKnownHeaderDefaults(
+        string key,
+        string adifId,
+        string exporterKey,
+        List<CabrilloHeaderFieldDefinition> headers)
+    {
+        var upperKey = key.Trim().ToUpperInvariant();
+        var upperAdif = adifId.Trim().ToUpperInvariant();
+        var upperExporter = exporterKey.Trim().ToUpperInvariant();
+
+        if (upperKey is "ARQP" or "AR-QSO-PARTY"
+            || upperAdif is "ARQP" or "AR-QSO-PARTY"
+            || upperExporter == "ARQP")
+        {
+            EnsureSelectField(headers, "CATEGORY-POWER", "Category Power", ["QRP", "LOW", "HIGH"]);
+            EnsureSelectField(headers, "CATEGORY-MODE", "Category Mode", ["CW", "SSB", "FM", "RTTY", "DIGITAL", "MIXED"]);
+            EnsureTextField(headers, "CATEGORY-CLASS", "Category Class", isUppercase: true);
+            EnsureComputedField(headers, "CLAIMED-SCORE", "Claimed Score");
+        }
+
+        if (upperKey is "ARRL-FD" or "ARRL-FIELD-DAY"
+            || upperAdif is "ARRL-FD" or "ARRL-FIELD-DAY"
+            || upperExporter == "ARRL-FD")
+        {
+            EnsureComputedField(headers, "CLAIMED-SCORE", "Claimed Score");
+        }
+    }
+
+    private static void EnsureSelectField(
+        List<CabrilloHeaderFieldDefinition> headers,
+        string key,
+        string label,
+        IReadOnlyList<string> options)
+    {
+        var index = FindHeaderIndex(headers, key);
+        if (index >= 0)
+        {
+            var current = headers[index];
+            headers[index] = current with
+            {
+                InputType = "select",
+                Options = options.ToList()
+            };
+            return;
+        }
+
+        headers.Add(new CabrilloHeaderFieldDefinition(
+            key,
+            label,
+            null,
+            null,
+            false,
+            true,
+            false,
+            "select",
+            options.ToList()));
+    }
+
+    private static void EnsureComputedField(List<CabrilloHeaderFieldDefinition> headers, string key, string label)
+    {
+        var index = FindHeaderIndex(headers, key);
+        if (index >= 0)
+        {
+            var current = headers[index];
+            headers[index] = current with { InputType = "computed" };
+            return;
+        }
+
+        headers.Add(new CabrilloHeaderFieldDefinition(
+            key,
+            label,
+            null,
+            null,
+            false,
+            false,
+            false,
+            "computed",
+            []));
+    }
+
+    private static void EnsureTextField(List<CabrilloHeaderFieldDefinition> headers, string key, string label, bool isUppercase)
+    {
+        if (FindHeaderIndex(headers, key) >= 0)
+            return;
+
+        headers.Add(new CabrilloHeaderFieldDefinition(
+            key,
+            label,
+            null,
+            null,
+            false,
+            isUppercase,
+            false,
+            "text",
+            []));
+    }
+
+    private static int FindHeaderIndex(List<CabrilloHeaderFieldDefinition> headers, string key)
+    {
+        for (var i = 0; i < headers.Count; i++)
+        {
+            if (string.Equals(headers[i].Key, key, StringComparison.OrdinalIgnoreCase))
+                return i;
+        }
+
+        return -1;
+    }
 }
 
 public sealed class CabrilloContestCatalogConfig
@@ -217,6 +333,7 @@ public sealed class CabrilloHeaderFieldDefinitionConfig
     public bool IsUppercase { get; set; }
     public bool IsMultiline { get; set; }
     public string InputType { get; set; } = string.Empty;
+    public List<string> Options { get; set; } = [];
 }
 
 

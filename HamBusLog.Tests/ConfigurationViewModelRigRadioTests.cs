@@ -6,6 +6,7 @@ using Xunit;
 
 namespace HamBusLog.Tests;
 
+[Collection("Config file tests")]
 public sealed class ConfigurationViewModelRigRadioTests : IDisposable
 {
     private static readonly object ConfigLock = new();
