@@ -1,0 +1,74 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="HamBusLog.Views.SplashWindow"
+        Title="HamBusLog"
+        Width="700"
+        Height="440"
+        CanResize="False"
+        ShowInTaskbar="False"
+        SystemDecorations="None"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        TransparencyLevelHint="AcrylicBlur">
+
+    <Border CornerRadius="14"
+            ClipToBounds="True"
+            Background="#EE0F172A"
+            BorderBrush="#44FFFFFF"
+            BorderThickness="1"
+            PointerPressed="OnSplashPointerPressed">
+
+        <Grid RowDefinitions="*,Auto">
+
+            <!-- Logo image fills the upper area -->
+            <Image Grid.Row="0"
+                   Source="/images/hambus-large.png"
+                   Stretch="Uniform"
+                   Margin="40,36,40,16"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Center" />
+
+            <!-- Bottom strip: countdown + dismiss -->
+            <Border Grid.Row="1"
+                    Background="#22FFFFFF"
+                    Padding="28,14">
+                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="HamBusLog"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="#E5E7EB"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="·"
+                                   FontSize="18"
+                                   Foreground="#4B5563"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Name="CountdownText"
+                                   Text="Closing in 30 s…"
+                                   FontSize="13"
+                                   Foreground="#94A3B8"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            Name="DismissButton"
+                            Content="Dismiss"
+                            Click="OnDismissClicked"
+                            Background="#2563EB"
+                            Foreground="White"
+                            BorderThickness="0"
+                            CornerRadius="6"
+                            Padding="20,8"
+                            FontSize="13"
+                            FontWeight="SemiBold"
+                            Cursor="Hand" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
+
+
+
+
+

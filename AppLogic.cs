@@ -156,7 +156,8 @@ public partial class App
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
+            // Keep alive during splash before the main window exists.
+            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             ApplyThemeFromActiveProfile();
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
@@ -171,18 +172,43 @@ public partial class App
                 RigctldConnectionManager.Dispose();
                 DxClusterReader.Dispose();
             };
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = new MainWindowViewModel(),
-            };
-            Toasts.RegisterWindow(desktop.MainWindow);
 
-            if (AppConfigurationStore.ConsumeContestRepairNotice())
+            var splash = new SplashWindow();
+            App.TrackWindowPlacement(splash, nameof(SplashWindow));
+
+            // When splash closes: open the main window on the same monitor the splash was on.
+            splash.Closed += (_, _) =>
             {
-                Toasts.ShowInfo(
-                    "Configuration updated",
-                    "Restored missing built-in contest fields (including FD section/class). Review Configuration if needed.");
-            }
+                var mainWindow = new MainWindow
+                {
+                    DataContext = new MainWindowViewModel(),
+                };
+
+                // Place the main window on the same monitor as splash by reusing splash top-left.
+                var targetPosition = splash.LastKnownPosition;
+                mainWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+                mainWindow.Position = targetPosition;
+
+                desktop.MainWindow = mainWindow;
+                desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
+                mainWindow.Show();
+                // Some WMs may override initial placement; enforce once after mapping.
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    mainWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+                    mainWindow.Position = targetPosition;
+                });
+                mainWindow.Activate();
+
+                if (AppConfigurationStore.ConsumeContestRepairNotice())
+                {
+                    Toasts.ShowInfo(
+                        "Configuration updated",
+                        "Restored missing built-in contest fields (including FD section/class). Review Configuration if needed.");
+                }
+            };
+
+            splash.Show();
         }
 
         base.OnFrameworkInitializationCompleted();
