@@ -79,6 +79,32 @@ public partial class App
             return;
 
         QsoSaved?.Invoke(null, qso);
+        _ = TryAutoUploadToLotwAsync(qso);
+    }
+
+    private static async Task TryAutoUploadToLotwAsync(Qso qso)
+    {
+        try
+        {
+            var config = AppConfigurationStore.Load();
+            if (!config.Lotw.Enabled || !config.Lotw.AutoUploadOnLog)
+                return;
+
+            var service = new LotwUploadService(config.Lotw, AppConfigurationStore.GetActiveProfile(config));
+            if (!service.IsConfigured)
+                return;
+
+            var result = await service.UploadQsosAsync([qso]);
+            if (result.Success)
+                Toasts.ShowSuccess("LoTW", $"Uploaded {qso.Call} to LoTW.");
+            else
+                Toasts.ShowWarning("LoTW upload failed", result.Message);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"LoTW auto-upload error: {ex.Message}");
+            Toasts.ShowWarning("LoTW auto-upload error", ex.Message);
+        }
     }
 
     private static HamBusLogDbContext CreateDbContext(string connectionString)

@@ -20,14 +20,15 @@
                 Background="{DynamicResource AppPanelBackgroundBrush}"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="1">
-            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                <StackPanel Grid.Column="0" Spacing="6">
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="12" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6">
                     <TextBlock Text="ARRL Field Day Worked Sections" FontSize="18" FontWeight="Bold" />
                     <TextBlock Text="{Binding SectionSummary}" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                     <TextBlock Text="{Binding DxSummary}" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                     <TextBlock Text="{Binding LastUpdated}" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="11" />
                 </StackPanel>
-                <CheckBox Grid.Column="1"
+
+                <CheckBox Grid.Row="0" Grid.Column="1"
                           Name="StayOnTopCheckBox"
                           Content="Stay on top"
                           VerticalAlignment="Center"
@@ -35,12 +36,47 @@
                           TextElement.Foreground="{DynamicResource AppForegroundBrush}"
                           Checked="OnStayOnTopChecked"
                           Unchecked="OnStayOnTopUnchecked" />
-                <Button Grid.Column="2"
+
+                <Button Grid.Row="0" Grid.Column="2"
                         Content="Refresh"
                         Padding="16,8"
                         Click="OnRefreshClicked"
                         Background="{DynamicResource AppButtonNormalBrush}"
                         Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+
+                <Border Grid.Row="1" Grid.ColumnSpan="3"
+                        Padding="10,8"
+                        CornerRadius="6"
+                        Background="{DynamicResource AppWindowBackgroundBrush}"
+                        BorderBrush="{DynamicResource AppBorderBrush}"
+                        BorderThickness="1">
+                    <Grid ColumnDefinitions="*,*,*,*,*,*" ColumnSpacing="12">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="{Binding CwContactsCount}" FontWeight="SemiBold" FontSize="13" />
+                            <TextBlock Text="CW Contacts" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="10" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock Text="{Binding PhoneContactsCount}" FontWeight="SemiBold" FontSize="13" />
+                            <TextBlock Text="Phone Contacts" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="10" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="2">
+                            <TextBlock Text="{Binding DigitalContactsCount}" FontWeight="SemiBold" FontSize="13" />
+                            <TextBlock Text="Digital Contacts" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="10" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="3" Spacing="2">
+                            <TextBlock Text="{Binding TotalQsoPoints}" FontWeight="SemiBold" FontSize="13" />
+                            <TextBlock Text="Total Points" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="10" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="4" Spacing="2">
+                            <TextBlock Text="{Binding QsoLast20Mins}" FontWeight="SemiBold" FontSize="13" />
+                            <TextBlock Text="Last 20 min" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="10" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="5" Spacing="2">
+                            <TextBlock Text="{Binding QsoLast60Mins}" FontWeight="SemiBold" FontSize="13" />
+                            <TextBlock Text="Last 60 min" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="10" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
             </Grid>
         </Border>
 

@@ -127,9 +127,10 @@ public static class CabrilloExportService
         AppendHeader(sb, "CATEGORY-BAND", NormalizeHeader(ResolveHeaderValue(settings, "CATEGORY-BAND", "ALL")));
         AppendHeader(sb, "CATEGORY-MODE", NormalizeHeader(ResolveHeaderValue(settings, "CATEGORY-MODE", "MIXED")));
         AppendHeader(sb, "CATEGORY-POWER", NormalizeHeader(ResolveHeaderValue(settings, "CATEGORY-POWER", "LOW")));
+        AppendHeader(sb, "CATEGORY-CLASS", NormalizeHeader(ResolveHeaderValue(settings, "CATEGORY-CLASS", null)));
         AppendHeader(sb, "CATEGORY-TRANSMITTER", NormalizeHeader(ResolveHeaderValue(settings, "CATEGORY-TRANSMITTER", "ONE")));
         AppendHeader(sb, "LOCATION", location);
-        AppendHeader(sb, "CLAIMED-SCORE", ResolveClaimedScore(ResolveHeaderValue(settings, "CLAIMED-SCORE", null), qsos.Count));
+        AppendHeader(sb, "CLAIMED-SCORE", qsos.Count.ToString(CultureInfo.InvariantCulture));
         AppendHeader(sb, "OPERATORS", ResolveHeaderValue(settings, "OPERATORS", callSign));
         AppendHeader(sb, "CLUB", ResolveHeaderValue(settings, "CLUB", null));
         AppendHeader(sb, "ADDRESS", ResolveHeaderValue(settings, "ADDRESS", null));
@@ -155,6 +156,7 @@ public static class CabrilloExportService
         var location = ResolveHeaderValue(settings, "LOCATION", profile.MyStateProvince).ToUpperInvariant();
         var category = ResolveHeaderValue(settings, "CATEGORY", profile.MyFieldDayClass).ToUpperInvariant();
         var arrlSection = ResolveHeaderValue(settings, "ARRL-SECTION", profile.MyFieldDaySection).ToUpperInvariant();
+        var bonusPoints = settings?.BonusPoints ?? 0;
 
         AppendHeader(sb, "START-OF-LOG", "3.1");
         AppendHeader(sb, "CREATED-BY", "HamBusLog");
@@ -163,7 +165,7 @@ public static class CabrilloExportService
         AppendHeader(sb, "CATEGORY", category);
         AppendHeader(sb, "LOCATION", location);
         AppendHeader(sb, "ARRL-SECTION", arrlSection);
-        AppendHeader(sb, "CLAIMED-SCORE", ResolveClaimedScore(ResolveHeaderValue(settings, "CLAIMED-SCORE", null), qsos.Count));
+        AppendHeader(sb, "CLAIMED-SCORE", CalculateFieldDayScore(qsos, bonusPoints).ToString(CultureInfo.InvariantCulture));
         AppendHeader(sb, "OPERATORS", ResolveHeaderValue(settings, "OPERATORS", callSign));
         AppendHeader(sb, "NAME", ResolveHeaderValue(settings, "NAME", null));
         AppendHeader(sb, "ADDRESS", ResolveHeaderValue(settings, "ADDRESS", null));
@@ -200,7 +202,7 @@ public static class CabrilloExportService
             : qso.QsoDate.ToUniversalTime();
 
         var frequency = FormatFrequencyKhz(qso);
-        var mode = NormalizeCabrilloMode(qso.Mode);
+        var mode = NormalizeFieldDayCabrilloMode(qso.Mode);
         var date = utc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         var time = utc.ToString("HHmm", CultureInfo.InvariantCulture);
         var myCall = profile.StationCallSign.Trim().ToUpperInvariant();
@@ -231,7 +233,7 @@ public static class CabrilloExportService
             : qso.QsoDate.ToUniversalTime();
 
         var frequency = FormatFrequencyKhz(qso);
-        var mode = NormalizeCabrilloMode(qso.Mode);
+        var mode = NormalizeFieldDayCabrilloMode(qso.Mode);
         var date = utc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         var time = utc.ToString("HHmm", CultureInfo.InvariantCulture);
         var myCall = ResolveHeaderValue(settings, "CALLSIGN", profile.StationCallSign).ToUpperInvariant();
@@ -240,7 +242,7 @@ public static class CabrilloExportService
         var hisCall = (qso.Call ?? string.Empty).Trim().ToUpperInvariant();
 
         return string.Format(CultureInfo.InvariantCulture,
-            "QSO: {0,6} {1,-2} {2} {3} {4,-13} {5,-2} {6,-6} {7,-13} {8,-2} {9,-6}",
+            "QSO: {0,6} {1,-7} {2} {3} {4,-13} {5,-2} {6,-6} {7,-13} {8,-2} {9,-6}",
             frequency,
             mode,
             date,
@@ -309,15 +311,35 @@ public static class CabrilloExportService
             return "PH";
 
         var upper = mode.Trim().ToUpperInvariant();
-        if (upper.Contains("CW", StringComparison.OrdinalIgnoreCase))
+        
+        // CW modes
+        if (upper is "CW" or "MORSE")
             return "CW";
-        if (upper.Contains("FT", StringComparison.OrdinalIgnoreCase)
-            || upper.Contains("RTTY", StringComparison.OrdinalIgnoreCase)
-            || upper.Contains("PSK", StringComparison.OrdinalIgnoreCase)
-            || upper.Contains("DIG", StringComparison.OrdinalIgnoreCase))
+
+        // Phone (voice) modes
+        if (upper is "SSB" or "AM" or "FM" or "LSB" or "USB")
+            return "PH";
+
+        // Digital modes - return standardized Cabrillo code
+        if (upper is "FT8" or "FT4" or "RTTY" or "RY" or "PSK" or "OLIVIA" or "HELL" or "DSTAR" or "ATV" or "JS8" or "MFSK" or "PACKET" or "THOR" or "DOMINO" or "DIGITAL")
             return "DG";
 
+        // Default: classify as digital if contains common digital keywords
+        if (upper.Contains("DIGITAL") || upper.Contains("DATA") || upper.Contains("PACKET") || upper.Contains("JT") || upper.Contains("FT"))
+            return "DG";
+
+        // Otherwise assume phone if unknown
         return "PH";
+    }
+
+    private static string NormalizeFieldDayCabrilloMode(string? mode)
+    {
+        return NormalizeFieldDayMode(mode) switch
+        {
+            "CW" => "CW",
+            "DIGITAL" => "DIGITAL",
+            _ => "PHONE"
+        };
     }
 
     private static string NormalizeRst(string? rst, string cabrilloMode)
@@ -390,10 +412,53 @@ public static class CabrilloExportService
         return resolved.Trim().ToUpperInvariant();
     }
 
-    private static string ResolveClaimedScore(string? value, int fallback)
+    private static int CalculateFieldDayScore(IReadOnlyList<Qso> qsos, int bonusPoints = 0)
     {
-        var trimmed = value?.Trim();
-        return string.IsNullOrWhiteSpace(trimmed) ? fallback.ToString(CultureInfo.InvariantCulture) : trimmed;
+        // In ARRL FD: CW and digital modes count as 2 points, phone counts as 1 point
+        var cwCount = 0;
+        var phoneCount = 0;
+        var digitalCount = 0;
+
+        foreach (var qso in qsos)
+        {
+            var mode = NormalizeFieldDayMode(qso.Mode);
+            if (mode == "CW")
+                cwCount++;
+            else if (mode == "DIGITAL")
+                digitalCount++;
+            else
+                phoneCount++;
+        }
+
+        var qsoScore = (cwCount * 2) + (digitalCount * 2) + (phoneCount * 1);
+        return qsoScore + bonusPoints;
+    }
+
+    private static string NormalizeFieldDayMode(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return "PHONE";
+
+        var mode = raw.Trim().ToUpperInvariant();
+
+        // CW modes
+        if (mode is "CW" or "MORSE")
+            return "CW";
+
+        // Phone (voice) modes
+        if (mode is "SSB" or "AM" or "FM" or "LSB" or "USB")
+            return "PHONE";
+
+        // Digital modes - comprehensive list matching available modes
+        if (mode is "FT8" or "FT4" or "RTTY" or "RY" or "PSK" or "PSK31" or "PSK63" or "OLIVIA" or "HELL" or "DSTAR" or "ATV" or "JS8" or "MFSK" or "PACKET" or "THOR" or "DOMINO" or "DIGITAL")
+            return "DIGITAL";
+
+        // Default: classify as digital if contains common digital keywords
+        if (mode.Contains("DIGITAL") || mode.Contains("DATA") || mode.Contains("PACKET") || mode.Contains("JT") || mode.Contains("FT"))
+            return "DIGITAL";
+
+        // Otherwise assume phone if unknown
+        return "PHONE";
     }
 
     private static void AppendSoapbox(StringBuilder sb, string? soapbox)
