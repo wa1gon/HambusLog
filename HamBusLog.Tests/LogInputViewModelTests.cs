@@ -167,6 +167,48 @@ public sealed class LogInputViewModelTests
     }
 
     [Fact]
+    public void TryBuildQso_DefaultNormalLog_AddsCommentDetailFromNotes()
+    {
+        var call = FindUnusedCallsign();
+        var viewModel = new LogInputViewModel
+        {
+            SelectedContestType = ContestType.Normal,
+            InputCall = call,
+            InputDate = "20260505",
+            InputTimeOn = "1930",
+            InputBand = "20M",
+            InputMode = "SSB",
+            InputSent = "59",
+            InputRec = "59",
+            InputExchange = "AR",
+            InputCountry = "USA",
+            InputState = "AR",
+            InputCounty = "PUL",
+            InputName = "TEST",
+            InputNormalNotes = "Worked mobile from a park"
+        };
+
+        var qso = viewModel.TryBuildQso(out var error);
+
+        Assert.NotNull(qso);
+        Assert.Equal(string.Empty, error);
+        Assert.Contains(qso!.Details, d => d.FieldName == "COMMENT" && d.FieldValue == "Worked mobile from a park");
+    }
+
+    [Fact]
+    public void PrepareForNextLogEntry_ClearsDefaultNormalLogNotes()
+    {
+        var viewModel = new LogInputViewModel
+        {
+            InputNormalNotes = "Temporary note"
+        };
+
+        viewModel.PrepareForNextLogEntry();
+
+        Assert.Equal(string.Empty, viewModel.InputNormalNotes);
+    }
+
+    [Fact]
     public void AvailableModes_ContainsExpectedModes()
     {
         var viewModel = new LogInputViewModel();

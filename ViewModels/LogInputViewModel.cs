@@ -34,6 +34,7 @@ public sealed class LogInputViewModel : ViewModelBase
     private string _inputGrid    = string.Empty;
     private string _inputOperator = string.Empty;
     private string _inputExchange = string.Empty;
+    private string _inputNormalNotes = string.Empty;
     private string _selectedContestKey = ContestCatalog.NormalKey;
 
     // ----- field day fields -----
@@ -221,6 +222,7 @@ public sealed class LogInputViewModel : ViewModelBase
         OnPropertyChanged(nameof(SelectedContestDefinition));
         OnPropertyChanged(nameof(IsFieldDay));
         OnPropertyChanged(nameof(IsNormalContest));
+        OnPropertyChanged(nameof(IsDefaultNormalLog));
         OnPropertyChanged(nameof(UsesUnifiedExchange));
         OnPropertyChanged(nameof(ShowLegacyNormalExchangeFields));
         OnPropertyChanged(nameof(ShowUnifiedExchangeField));
@@ -252,6 +254,9 @@ public sealed class LogInputViewModel : ViewModelBase
     }
 
     public bool IsNormalContest => CurrentContestDefinition.UsesNormalExchange;
+    public bool IsDefaultNormalLog
+        => string.Equals(CurrentContestDefinition.Key, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase)
+           || string.Equals(CurrentContestDefinition.AdifContestId, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase);
     public bool IsFieldDay => CurrentContestDefinition.UsesFieldDayExchange;
     public IReadOnlyList<ContestFieldRequirement> EffectiveRequiredFields
         => IsArkansasQsoParty ? ArkansasQsoPartyRequiredFields : CurrentContestDefinition.RequiredFields;
@@ -350,6 +355,7 @@ public sealed class LogInputViewModel : ViewModelBase
 
     public string InputOperator { get => _inputOperator; set => SetProperty(ref _inputOperator, (value ?? string.Empty).ToUpperInvariant()); }
     public string InputExchange { get => _inputExchange; set => SetProperty(ref _inputExchange, (value ?? string.Empty).ToUpperInvariant()); }
+    public string InputNormalNotes { get => _inputNormalNotes; set => SetProperty(ref _inputNormalNotes, value ?? string.Empty); }
     public string StationCallSign => _stationCallSign.Trim().ToUpperInvariant();
     public string InputFieldDaySection
     {
@@ -628,6 +634,8 @@ public sealed class LogInputViewModel : ViewModelBase
         ApplyContestExchangeToQsoDetails(qso);
         AddDetailIfMissing(qso.Details, "COUNTY", InputCounty);
         AddDetailIfMissing(qso.Details, "GRID", InputGrid);
+        if (IsDefaultNormalLog)
+            AddFreeTextDetailIfMissing(qso.Details, "COMMENT", InputNormalNotes);
 
         errorMessage = string.Empty;
         return qso;
@@ -688,6 +696,7 @@ public sealed class LogInputViewModel : ViewModelBase
         InputGrid = string.Empty;
         InputOperator = StationCallSign;
         InputExchange = string.Empty;
+        InputNormalNotes = string.Empty;
         InputFieldDaySection = string.Empty;
         InputFieldDayClass = string.Empty;
         SpotRemark = string.Empty;
@@ -856,6 +865,20 @@ public sealed class LogInputViewModel : ViewModelBase
         var exists = details.Any(x => string.Equals(x.FieldName, fieldName, StringComparison.OrdinalIgnoreCase));
         if (!exists)
             details.Add(new QsoDetail { FieldName = fieldName, FieldValue = normalized.ToUpperInvariant() });
+    }
+
+    private static void AddFreeTextDetailIfMissing(ICollection<QsoDetail> details, string fieldName, string? value)
+    {
+        if (details is null || string.IsNullOrWhiteSpace(fieldName))
+            return;
+
+        var normalized = (value ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(normalized))
+            return;
+
+        var exists = details.Any(x => string.Equals(x.FieldName, fieldName, StringComparison.OrdinalIgnoreCase));
+        if (!exists)
+            details.Add(new QsoDetail { FieldName = fieldName, FieldValue = normalized });
     }
 
     private static bool TryParseUnifiedExchange(string? rawExchange, out string normalized, out bool isCounty)

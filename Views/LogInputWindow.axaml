@@ -114,6 +114,7 @@
                         Content="Progress Status"
                         Padding="12,6"
                         VerticalAlignment="Center"
+                        IsVisible="{Binding !IsDefaultNormalLog}"
                         Click="OnProgressStatusClicked"
                         Background="{DynamicResource AppButtonNormalBrush}"
                         Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
@@ -129,10 +130,10 @@
                         Background="{DynamicResource AppPanelBackgroundBrush}"
                         BorderBrush="{DynamicResource AppBorderBrush}"
                         BorderThickness="1">
-                    <Grid ColumnDefinitions="Auto,220,16,Auto,170"
-                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                    <Grid ColumnDefinitions="Auto,176,16,Auto,136,16,Auto,136"
+                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           RowSpacing="10">
-                        <TextBlock Grid.Row="0" Grid.ColumnSpan="5"
+                        <TextBlock Grid.Row="0" Grid.ColumnSpan="8"
                                    Classes="SectionHeading"
                                    Text="REQUIRED FIELDS" />
 
@@ -178,7 +179,21 @@
                         <TextBlock Grid.Row="4" Grid.Column="3" Classes="FieldLabel" Text="Operator" VerticalAlignment="Center" />
                         <TextBox Grid.Row="4" Grid.Column="4" Text="{Binding InputOperator}" Watermark="Defaults to station call" TextChanged="OnUppercaseInputChanged" />
 
-                        <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5"
+                        <TextBlock Grid.Row="1" Grid.Column="6"
+                                   IsVisible="{Binding IsDefaultNormalLog}"
+                                   Classes="FieldLabel"
+                                   Text="Notes"
+                                   VerticalAlignment="Top" />
+                        <TextBox Grid.Row="2" Grid.Column="6" Grid.ColumnSpan="2" Grid.RowSpan="4"
+                                 IsVisible="{Binding IsDefaultNormalLog}"
+                                 Text="{Binding InputNormalNotes}"
+                                 Watermark="Optional notes for this normal log entry"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 MinHeight="72"
+                                 VerticalAlignment="Top" />
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="8"
                                    Text="These are always required for every log entry."
                                    Foreground="{DynamicResource AppMutedForegroundBrush}"
                                    FontSize="11" />
@@ -190,28 +205,13 @@
                         Background="{DynamicResource AppPanelBackgroundBrush}"
                         BorderBrush="{DynamicResource AppBorderBrush}"
                         BorderThickness="1">
-                    <Grid ColumnDefinitions="Auto,170,16,Auto,170"
+                    <Grid ColumnDefinitions="Auto,136,16,Auto,136"
                           RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           RowSpacing="10">
                         <TextBlock Grid.Row="0" Grid.ColumnSpan="5"
                                    Classes="SectionHeading"
                                    Text="CONTEST REQUIREMENTS" />
 
-                        <TextBlock Grid.Row="1" Grid.ColumnSpan="5"
-                                   Text="{Binding CurrentContestDisplayName, StringFormat=Selected: {0}}"
-                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                   FontSize="11" />
-                        <TextBlock Grid.Row="1" Grid.Column="4"
-                                   HorizontalAlignment="Right"
-                                   Text="{Binding CurrentContestAdifId, StringFormat=ADIF: {0}}"
-                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                   FontSize="11" />
-
-                        <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
-                                   IsVisible="{Binding ShowLegacyNormalExchangeFields}"
-                                   Text="Normal Contest Required Exchange"
-                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                   FontSize="11" />
 
                         <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
                                    IsVisible="{Binding ShowExchangeHelp}"
