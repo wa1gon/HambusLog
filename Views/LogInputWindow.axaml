@@ -31,14 +31,14 @@
 
     <Grid RowDefinitions="Auto,*,Auto" Margin="16,12,16,12">
 
-        <!-- ── Top Bar: Active Radio + Log Type ───────────────────────── -->
+        <!-- ── Top Bar: Active Radio + Active Log Type ─────────────────── -->
         <Border Grid.Row="0"
                 Padding="12,10" Margin="0,0,0,10"
                 CornerRadius="8"
                 Background="{DynamicResource AppPanelBackgroundBrush}"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="1">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="16">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="16">
 
                 <!-- Active Radio label + radio buttons -->
                 <TextBlock Grid.Column="0"
@@ -76,32 +76,12 @@
                         Background="{DynamicResource AppBorderBrush}"
                         VerticalAlignment="Stretch" Margin="0,2" />
 
-                <!-- Log Type label -->
                 <TextBlock Grid.Column="3"
-                           Text="LOG TYPE"
-                           Classes="SectionHeading"
+                           Text="{Binding CurrentContestDisplayName, StringFormat=LOG TYPE: {0}}"
                            VerticalAlignment="Center"
-                           Margin="0" />
+                           Foreground="{DynamicResource AppMutedForegroundBrush}" />
 
-                <!-- Log Type combo -->
-                <ComboBox Grid.Column="4"
-                          ItemsSource="{Binding FilteredContestDefinitions}"
-                          SelectedItem="{Binding SelectedContestDefinition}"
-                          MinWidth="140"
-                          VerticalAlignment="Center">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding DisplayName}" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-
-                <CheckBox Grid.Column="5"
-                          Content="Show all"
-                          IsChecked="{Binding ShowAllContests}"
-                          VerticalAlignment="Center"
-                          Foreground="{DynamicResource AppMutedForegroundBrush}" />
-                <CheckBox Grid.Column="6"
+                <CheckBox Grid.Column="4"
                           Content="Stay on top"
                           Margin="10,0,0,0"
                           VerticalAlignment="Center"
@@ -110,7 +90,7 @@
                           Unchecked="OnStayOnTopUnchecked"
                           Name="StayOnTopCheckBox" />
 
-                <Button Grid.Column="7"
+                <Button Grid.Column="5"
                         Content="Progress Status"
                         Padding="12,6"
                         VerticalAlignment="Center"

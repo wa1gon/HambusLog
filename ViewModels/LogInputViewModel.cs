@@ -56,6 +56,8 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
     private QsoDetailRow? _selectedDetail;
     private AppConfiguration _appConfig = new();
     private string _selectedProfile = "default";
+    private readonly ILogTypeSelectionService _logTypeSelectionService;
+    private bool _isApplyingGlobalLogType;
     private readonly bool _wsjtAutoPopulateEnabled;
     private DateTime? _suspendRigAutoPopulateUntilUtc;
 
@@ -84,13 +86,22 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
     {
         _appConfig = AppConfigurationStore.Load();
         _wsjtAutoPopulateEnabled = _appConfig.Wsjt.AutoPopulateLogInput;
+        _logTypeSelectionService = App.LogTypeSelectionService;
         SelectActiveProfile();
         _contestDefinitions = ContestCatalog.GetAll().ToList();
         ApplyContestFilter();
         Details         = [];
         AvailableConnectedRadios = new ObservableCollection<ConnectedRadioOption>();
+        _logTypeSelectionService.SelectedContestChanged += OnSelectedContestChanged;
         var storedContestKey = ActiveConfigProfile().LastContestKey;
         var initialContestKey = ResolveInitialContestKey(storedContestKey);
+        var globalContestKey = _logTypeSelectionService.SelectedContestKey;
+        if (!string.Equals(globalContestKey, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase)
+            && FindContestDefinition(globalContestKey) is not null)
+        {
+            initialContestKey = globalContestKey;
+        }
+
         SetSelectedContestKey(initialContestKey);
         LoadStationConfig();
         EnsureRstDefaults();
@@ -255,6 +266,26 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
         {
             profile.LastContestKey = normalized;
             AppConfigurationStore.Save(_appConfig);
+        }
+
+        if (!_isApplyingGlobalLogType)
+            _logTypeSelectionService.SetSelectedContestKey(normalized);
+    }
+
+    private void OnSelectedContestChanged(object? sender, EventArgs e)
+    {
+        var selected = _logTypeSelectionService.SelectedContestKey;
+        if (string.IsNullOrWhiteSpace(selected) || string.Equals(selected, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _isApplyingGlobalLogType = true;
+        try
+        {
+            SetSelectedContestKey(selected);
+        }
+        finally
+        {
+            _isApplyingGlobalLogType = false;
         }
     }
 
@@ -1393,6 +1424,8 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        _logTypeSelectionService.SelectedContestChanged -= OnSelectedContestChanged;
+
         if (_wsjtAutoPopulateEnabled)
             App.WsjtBridgeService.LoggedQsoReceived -= OnWsjtLoggedQsoReceived;
     }
