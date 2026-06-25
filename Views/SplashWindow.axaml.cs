@@ -17,6 +17,19 @@ public partial class SplashWindow : Window
     public SplashWindow()
     {
         InitializeComponent();
+        SetVersionInfo();
+    }
+
+    private void SetVersionInfo()
+    {
+        var versionText = this.FindControl<TextBlock>("VersionText");
+        var buildText = this.FindControl<TextBlock>("BuildText");
+
+        if (versionText is not null)
+            versionText.Text = $"v{AppVersionService.Version}";
+
+        if (buildText is not null)
+            buildText.Text = $"build {AppVersionService.BuildNumber}";
     }
 
     protected override void OnOpened(EventArgs e)
@@ -88,6 +101,9 @@ public partial class SplashWindow : Window
         BeginMoveDrag(e);
     }
 }
+
+
+
 
 
 
