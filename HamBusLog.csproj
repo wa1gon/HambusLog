@@ -27,6 +27,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>BUILD.txt</Link>
     </Content>
+    <Content Include="images/hambus-large.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>images/hambus-large.png</Link>
+    </Content>
     <Compile Remove="**/obj/**/*.cs" />
     <Compile Remove="**/bin/**/*.cs" />
     <Compile Remove="HamBusLog.Tests/**/*.cs" />

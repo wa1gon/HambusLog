@@ -180,45 +180,45 @@
                                    Foreground="{DynamicResource AppMutedForegroundBrush}"
                                    FontSize="12" />
                     </StackPanel>
-                    <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <Button Classes="QuickAction" Content="Open Grid"
-                                Click="OnOpenGridClicked"
-                                Background="{DynamicResource AppButtonNormalBrush}"
-                                Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
-                                Margin="0,0,8,0" />
-                        <Button Classes="QuickAction" Content="New Contact"
-                                Click="OnOpenNewContactClicked"
-                                Background="{DynamicResource AppButtonNormalBrush}"
-                                Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
-                                Margin="0,0,8,0" />
-                        <!-- <Button Classes="QuickAction" Content="Configuration" -->
-                        <!--         Click="OnOpenConfigurationClicked" -->
-                        <!--         Background="{DynamicResource AppButtonNormalBrush}" -->
-                        <!--         Foreground="{DynamicResource AppButtonNormalForegroundBrush}" -->
-                        <!--         Margin="0,0,8,0" /> -->
-                        <!-- <Button Classes="QuickAction" Content="Import ADIF" -->
-                        <!--         Click="OnImportAdifClicked" -->
-                        <!--         Background="{DynamicResource AppButtonNormalBrush}" -->
-                        <!--         Foreground="{DynamicResource AppButtonNormalForegroundBrush}" -->
-                        <!--         Margin="0,0,0,0" /> -->
-                        <Button Classes="QuickAction" Content="DX Cluster"
-                                Click="OnOpenDxClusterClicked"
-                                Background="{DynamicResource AppButtonNormalBrush}"
-                                Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
-                                Margin="8,0,0,0" />
-                        <Button Classes="QuickAction" Content="Exit Program"
-                                Click="OnExitProgramClicked"
-                                Background="{DynamicResource AppButtonDangerBrush}"
-                                Foreground="{DynamicResource AppButtonDangerForegroundBrush}"
-                                Margin="8,0,0,0" />
-                        <CheckBox Content="Stay on top"
-                                  Margin="12,0,0,0"
-                                  VerticalAlignment="Center"
-                                  Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                  Checked="OnStayOnTopChecked"
-                                  Unchecked="OnStayOnTopUnchecked"
-                                  Name="StayOnTopCheckBox" />
-                    </WrapPanel>
+                    <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="8" HorizontalAlignment="Right">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="LOG TYPE" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                            <ComboBox ItemsSource="{Binding AvailableLogTypes}"
+                                      SelectedItem="{Binding SelectedLogType, Mode=TwoWay}"
+                                      MinWidth="160">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DisplayName}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                        <WrapPanel ItemSpacing="8" HorizontalAlignment="Right">
+                            <Button Classes="QuickAction" Content="Open Grid"
+                                    Click="OnOpenGridClicked"
+                                    Background="{DynamicResource AppButtonNormalBrush}"
+                                    Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+                            <Button Classes="QuickAction" Content="New Contact"
+                                    Click="OnOpenNewContactClicked"
+                                    Background="{DynamicResource AppButtonNormalBrush}"
+                                    Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+                            <Button Classes="QuickAction" Content="DX Cluster"
+                                    Click="OnOpenDxClusterClicked"
+                                    Background="{DynamicResource AppButtonNormalBrush}"
+                                    Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+                            <Button Classes="QuickAction" Content="Exit Program"
+                                    Click="OnExitProgramClicked"
+                                    Background="{DynamicResource AppButtonDangerBrush}"
+                                    Foreground="{DynamicResource AppButtonDangerForegroundBrush}" />
+                            <CheckBox Content="Stay on top"
+                                      Margin="12,0,0,0"
+                                      VerticalAlignment="Center"
+                                      Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                      Checked="OnStayOnTopChecked"
+                                      Unchecked="OnStayOnTopUnchecked"
+                                      Name="StayOnTopCheckBox" />
+                        </WrapPanel>
+                    </StackPanel>
                 </Grid>
             </Border>
 

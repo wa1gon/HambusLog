@@ -22,6 +22,7 @@
 
             <!-- Logo image fills the upper area -->
             <Image Grid.Row="0"
+                   Name="SplashLogo"
                    Source="/images/hambus-large.png"
                    Stretch="Uniform"
                    Margin="40,36,40,16"
@@ -81,6 +82,7 @@
         </Grid>
     </Border>
 </Window>
+
 
 
 
