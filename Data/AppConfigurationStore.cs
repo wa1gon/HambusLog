@@ -29,6 +29,7 @@ public static class AppConfigurationStore
                 EnsureRigConfiguration(fresh);
                 EnsureClusterConfiguration(fresh);
                 EnsureLookupConfiguration(fresh);
+                EnsureWsjtConfiguration(fresh);
                 EnsureContestConfiguration(fresh, out contestFieldsBackfilled);
                 return fresh;
             }
@@ -41,9 +42,13 @@ public static class AppConfigurationStore
             EnsureRigConfiguration(config);
             EnsureClusterConfiguration(config);
             EnsureLookupConfiguration(config);
+            EnsureWsjtConfiguration(config);
             EnsureContestConfiguration(config, out contestFieldsBackfilled);
 
-            if (!ContainsActiveProfileProperty(json) || !ContainsContestsProperty(json) || contestFieldsBackfilled)
+            if (!ContainsActiveProfileProperty(json)
+                || !ContainsContestsProperty(json)
+                || !ContainsWsjtProperty(json)
+                || contestFieldsBackfilled)
                 Save(config);
 
             if (contestFieldsBackfilled)
@@ -70,6 +75,7 @@ public static class AppConfigurationStore
             EnsureRigConfiguration(configuration);
             EnsureClusterConfiguration(configuration);
             EnsureLookupConfiguration(configuration);
+            EnsureWsjtConfiguration(configuration);
             EnsureContestConfiguration(configuration);
             NormalizeLookupForSave(configuration);
 
@@ -238,6 +244,22 @@ public static class AppConfigurationStore
         }
     }
 
+    private static bool ContainsWsjtProperty(string? rawJson)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson))
+            return false;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(rawJson);
+            return doc.RootElement.TryGetProperty("Wsjt", out _);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static void EnsureRigConfiguration(AppConfiguration config)
     {
         config.Rigctld ??= new RigctldConfiguration();
@@ -264,6 +286,16 @@ public static class AppConfigurationStore
         }
 
         config.CallsignLookup.Qrz.LegacyPassword = null;
+    }
+
+    private static void EnsureWsjtConfiguration(AppConfiguration config)
+    {
+        config.Wsjt ??= new WsjtConfiguration();
+        config.Wsjt.ListenAddress = string.IsNullOrWhiteSpace(config.Wsjt.ListenAddress)
+            ? "0.0.0.0"
+            : config.Wsjt.ListenAddress.Trim();
+        config.Wsjt.ListenPort = config.Wsjt.ListenPort <= 0 ? 2237 : config.Wsjt.ListenPort;
+        config.Wsjt.DebugQueueLength = config.Wsjt.DebugQueueLength <= 0 ? 500 : config.Wsjt.DebugQueueLength;
     }
 
     private static void NormalizeLookupForSave(AppConfiguration config)

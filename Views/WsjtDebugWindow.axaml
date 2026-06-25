@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:HamBusLog.ViewModels"
+        x:Class="HamBusLog.Views.WsjtDebugWindow"
+        x:DataType="vm:WsjtDebugWindowViewModel"
+        Title="WSJT Debug"
+        Width="1080"
+        Height="620"
+        MinWidth="760"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppWindowBackgroundBrush}"
+        Foreground="{DynamicResource AppForegroundBrush}">
+
+    <Window.Styles>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource AppHeaderBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+        </Style>
+    </Window.Styles>
+
+    <Grid Margin="14" RowDefinitions="Auto,2*,*" RowSpacing="10">
+        <Border Grid.Row="0" Padding="12" CornerRadius="8"
+                BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
+                Background="{DynamicResource AppPanelBackgroundBrush}">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="10">
+                <TextBlock Grid.Column="0" Text="WSJT-X Traffic" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1"
+                          ItemsSource="{Binding Filters}"
+                          SelectedItem="{Binding SelectedFilter}"
+                          MinWidth="120"
+                          VerticalAlignment="Center" />
+                <CheckBox Grid.Column="2"
+                          Content="Pause"
+                          IsChecked="{Binding IsPaused}"
+                          VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3" />
+                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{Binding Summary}" VerticalAlignment="Center"
+                               Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                    <Button Content="Clear"
+                            Padding="12,6"
+                            Click="OnClearClicked"
+                            Background="{DynamicResource AppButtonNormalBrush}"
+                            Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" CornerRadius="8"
+                BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
+                Background="{DynamicResource AppPanelBackgroundBrush}">
+            <DataGrid Name="TrafficGrid"
+                      ItemsSource="{Binding Rows}"
+                      SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      GridLinesVisibility="All"
+                      CanUserReorderColumns="True"
+                      CanUserSortColumns="True"
+                      HeadersVisibility="Column"
+                      RowHeight="30"
+                      Margin="8">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Time (UTC)" Binding="{Binding TimestampUtc, StringFormat='{}{0:HH:mm:ss.fff}'}" Width="140" />
+                    <DataGridTextColumn Header="Dir" Binding="{Binding Direction}" Width="70" />
+                    <DataGridTextColumn Header="Type" Binding="{Binding MessageType}" Width="120" />
+                    <DataGridTextColumn Header="Summary" Binding="{Binding Summary}" Width="220" />
+                    <DataGridTextColumn Header="Payload (decoded)" Binding="{Binding PayloadDecoded}" Width="*" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <Border Grid.Row="2" Padding="12" CornerRadius="8"
+                BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
+                Background="{DynamicResource AppPanelBackgroundBrush}">
+            <Grid RowDefinitions="Auto,*" RowSpacing="8">
+                <StackPanel Grid.Row="0" Spacing="3">
+                    <TextBlock Text="Full Decoded Payload" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding SelectedPayloadSummary}"
+                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto">
+                    <SelectableTextBlock Text="{Binding SelectedPayloadDecoded}"
+                                         TextWrapping="Wrap"
+                                         FontFamily="Consolas, Menlo, Monospace" />
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
+
+
+

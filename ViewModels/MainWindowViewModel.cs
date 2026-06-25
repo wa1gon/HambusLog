@@ -23,6 +23,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             new MenuNode("Watch List")),
         new MenuNode("Grid"),
         new MenuNode("DX Cluster"),
+        new MenuNode("WSJT Debug"),
         new MenuNode("Configuration"),
         new MenuNode("Awards", false,
             new MenuNode("ARQP Report"),

@@ -7,6 +7,7 @@ public partial class App
     public static IDxSpotFeed DxSpotFeed { get; } = new DxSpotFeed();
     public static IDxClusterTcpReader DxClusterReader { get; } = new DxClusterTcpReader();
     public static IDxClusterSpotPublisher DxClusterSpotPublisher { get; } = new DxClusterSpotPublisher();
+    public static IWsjtBridgeService WsjtBridgeService { get; } = new WsjtBridgeService();
     public static IToastService Toasts { get; } = new ToastService();
 
     private static HamBusLogDbContext? _dbContext;
@@ -167,10 +168,12 @@ public partial class App
             LogDxClusterNonSpot("SYS", "Application started");
             _ = RigctldConnectionManager.RefreshActiveConnectionsAsync();
             _ = DxClusterReader.StartAsync();
+            _ = WsjtBridgeService.StartAsync();
             desktop.Exit += (_, _) =>
             {
                 RigctldConnectionManager.Dispose();
                 DxClusterReader.Dispose();
+                WsjtBridgeService.Dispose();
             };
 
             var splash = new SplashWindow();
