@@ -20,6 +20,7 @@ public sealed class SqliteQsoRepository : IQsoRepository, IUnitOfWork
             _ = await _context.Database.CanConnectAsync(cancellationToken);
 
             var qsos = await _context.Qsos
+                .OrderByDescending(q => q.QsoDate)
                 .ToListAsync(cancellationToken);
 
             return qsos;
