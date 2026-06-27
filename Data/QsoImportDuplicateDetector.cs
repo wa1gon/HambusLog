@@ -4,6 +4,42 @@ using HamBusLog.Wa1gonLib.Models;
 
 public static class QsoImportDuplicateDetector
 {
+    public static async Task<bool> IsDuplicateAsync(
+        HamBusLogDbContext db,
+        Qso qso,
+        CancellationToken cancellationToken = default)
+    {
+        if (qso is null)
+            return false;
+
+        if (qso.Id != Guid.Empty)
+        {
+            var idExists = await db.Qsos
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == qso.Id, cancellationToken);
+            if (idExists)
+                return true;
+        }
+
+        var signature = CreateSignature(new DuplicateProbe(
+            qso.Call,
+            qso.StationCallSign,
+            qso.QsoDate,
+            qso.Band,
+            qso.Mode,
+            qso.Freq));
+
+        var existingKeys = await db.Qsos
+            .AsNoTracking()
+            .Where(x => x.QsoDate == qso.QsoDate)
+            .Select(x => new DuplicateProbe(x.Call, x.StationCallSign, x.QsoDate, x.Band, x.Mode, x.Freq))
+            .ToListAsync(cancellationToken);
+
+        return existingKeys
+            .Select(CreateSignature)
+            .Any(x => string.Equals(x, signature, StringComparison.OrdinalIgnoreCase));
+    }
+
     public static async Task<QsoImportDuplicateFilterResult> FilterNewQsosAsync(
         HamBusLogDbContext db,
         IReadOnlyCollection<Qso> imported,

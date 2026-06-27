@@ -231,14 +231,28 @@ public partial class App
         if (loggedQso is null || string.IsNullOrWhiteSpace(loggedQso.Call))
             return Task.CompletedTask;
 
-        return Task.Run(() =>
+        return Task.Run(async () =>
         {
             try
             {
                 var contest = LogTypeSelectionService.GetSelectedContestDefinition();
                 var qso = BuildQsoFromWsjt(loggedQso, contest);
+                var missingFieldDayExchange = contest.UsesFieldDayExchange && !HasFieldDayClassAndSection(qso);
+                if (missingFieldDayExchange)
+                {
+                    var rawExchange = (loggedQso.ExchangeReceived ?? string.Empty).Trim();
+                    var fallbackExchange = $"{loggedQso.RstSent} {loggedQso.RstRcvd}".Trim();
+                    System.Diagnostics.Debug.WriteLine(
+                        $"WSJT-X FD exchange missing/invalid for {qso.Call}: EXCHANGE='{rawExchange}' fallback='{fallbackExchange}'");
+                }
 
                 using var context = CreateTransientDbContext();
+                if (await QsoImportDuplicateDetector.IsDuplicateAsync(context, qso))
+                {
+                    System.Diagnostics.Debug.WriteLine($"WSJT-X duplicate skipped: {qso.Call} {qso.Band} {qso.Mode} {qso.QsoDate:yyyy-MM-dd HH:mm:ss}");
+                    return;
+                }
+
                 context.Qsos.Add(qso);
                 context.SaveChanges();
 
@@ -246,6 +260,12 @@ public partial class App
                 {
                     RaiseQsoSaved(qso);
                     Toasts.ShowSuccess("WSJT-X", $"Auto-logged {qso.Call} on {qso.Band} {qso.Mode} ({contest.DisplayName}).");
+                    if (missingFieldDayExchange)
+                    {
+                        Toasts.ShowInfo(
+                            "WSJT-X FD exchange",
+                            $"Logged {qso.Call}, but could not parse valid Field Day Class/Section from WSJT exchange.");
+                    }
                 });
             }
             catch (Exception ex)
@@ -299,8 +319,8 @@ public partial class App
             Freq = freq,
             Country = loggedQso.Country.Trim().ToUpperInvariant(),
             State = loggedQso.State.Trim().ToUpperInvariant(),
-            RstSent = loggedQso.RstSent.Trim(),
-            RstRcvd = loggedQso.RstRcvd.Trim(),
+            RstSent = contest.UsesFieldDayExchange ? string.Empty : loggedQso.RstSent.Trim(),
+            RstRcvd = contest.UsesFieldDayExchange ? string.Empty : loggedQso.RstRcvd.Trim(),
             Details = new List<QsoDetail>()
         };
 
@@ -309,9 +329,51 @@ public partial class App
         AddDetailIfPresent(qso.Details, "COUNTY", loggedQso.County);
         AddDetailIfPresent(qso.Details, "NAME", loggedQso.Name);
         AddDetailIfPresent(qso.Details, "OPERATOR", loggedQso.Operator);
-        AddDetailIfPresent(qso.Details, "EXCHANGE", loggedQso.ExchangeReceived);
+
+        if (contest.UsesFieldDayExchange)
+        {
+            if (!TryParseFieldDayExchange(loggedQso.ExchangeReceived, out var fieldDayClass, out var fieldDaySection)
+                && !TryParseFieldDayExchange($"{loggedQso.RstSent} {loggedQso.RstRcvd}", out fieldDayClass, out fieldDaySection))
+            {
+                fieldDayClass = string.Empty;
+                fieldDaySection = string.Empty;
+            }
+
+            AddDetailIfPresent(qso.Details, "Class", fieldDayClass);
+            AddDetailIfPresent(qso.Details, "Section", fieldDaySection);
+        }
+        else
+        {
+            AddDetailIfPresent(qso.Details, "EXCHANGE", loggedQso.ExchangeReceived);
+        }
 
         return qso;
+    }
+
+    private static bool TryParseFieldDayExchange(string? rawExchange, out string fieldDayClass, out string fieldDaySection)
+    {
+        fieldDayClass = string.Empty;
+        fieldDaySection = string.Empty;
+
+        var tokens = (rawExchange ?? string.Empty)
+            .Trim()
+            .ToUpperInvariant()
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (tokens.Length < 2)
+            return false;
+
+        var parsedClass = tokens[0];
+        var parsedSection = tokens[1];
+
+        if (!Regex.IsMatch(parsedClass, "^[0-9]{1,2}[A-Z]$", RegexOptions.CultureInvariant)
+            || !Regex.IsMatch(parsedSection, "^[A-Z]{2,4}$", RegexOptions.CultureInvariant))
+        {
+            return false;
+        }
+
+        fieldDayClass = parsedClass;
+        fieldDaySection = parsedSection;
+        return true;
     }
 
     private static decimal ParseFrequencyMhz(string? value)
@@ -353,6 +415,18 @@ public partial class App
             FieldName = fieldName,
             FieldValue = normalized.ToUpperInvariant()
         });
+    }
+
+    private static bool HasFieldDayClassAndSection(Qso qso)
+    {
+        if (qso?.Details is null)
+            return false;
+
+        var hasClass = qso.Details.Any(x => string.Equals(x.FieldName, "Class", StringComparison.OrdinalIgnoreCase)
+                                            && !string.IsNullOrWhiteSpace(x.FieldValue));
+        var hasSection = qso.Details.Any(x => string.Equals(x.FieldName, "Section", StringComparison.OrdinalIgnoreCase)
+                                              && !string.IsNullOrWhiteSpace(x.FieldValue));
+        return hasClass && hasSection;
     }
 
     public static void ApplyThemeFromActiveProfile()

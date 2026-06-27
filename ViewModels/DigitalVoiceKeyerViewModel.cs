@@ -15,6 +15,7 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
     private string _selectedOutputDevice = DigitalVoiceKeyerService.SystemDefaultPlaybackDevice;
     private ContestDefinition? _selectedLogType;
     private string _statusMessage = "Ready";
+    private bool _isCompactView;
     private bool _isApplyingLogTypeFromService;
 
     public DigitalVoiceKeyerViewModel()
@@ -34,6 +35,7 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
         RefreshAvailableLogTypes();
         ApplySelectedLogTypeFromService();
         RefreshOutputDevices();
+        IsCompactView = _voiceKeyerService.GetCompactViewEnabled();
         LoadFromGlobalLogType();
     }
 
@@ -70,6 +72,23 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _statusMessage, value);
     }
 
+    public bool IsCompactView
+    {
+        get => _isCompactView;
+        set
+        {
+            if (!SetProperty(ref _isCompactView, value))
+                return;
+
+            _voiceKeyerService.SetCompactViewEnabled(value);
+            OnPropertyChanged(nameof(IsDetailedView));
+            foreach (var row in _rows)
+                row.IsCompactView = value;
+        }
+    }
+
+    public bool IsDetailedView => !IsCompactView;
+
     public string SelectedOutputDevice
     {
         get => _selectedOutputDevice;
@@ -96,6 +115,7 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
             SlotNumber = x.SlotNumber,
             Label = x.Label,
             Message = x.Message,
+            RepeatDelaySeconds = x.RepeatDelaySeconds,
             RecordingPath = x.RecordingPath,
             HasRecording = x.HasRecording,
             IsRecording = x.IsRecording
@@ -225,9 +245,11 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
                 record.SlotNumber,
                 record.Label,
                 record.Message,
+                record.RepeatDelaySeconds,
                 record.RecordingPath,
                 record.HasRecording,
-                record.IsRecording));
+                record.IsRecording,
+                IsCompactView));
     }
 
     public void Dispose()
@@ -246,8 +268,9 @@ public sealed class DigitalVoiceKeyerRowViewModel : INotifyPropertyChanged
     private bool _isRecording;
     private bool _isPlaying;
     private int _repeatDelaySeconds;
+    private bool _isCompactView;
 
-    public DigitalVoiceKeyerRowViewModel(int slotNumber, string label, string message, string recordingPath, bool hasRecording, bool isRecording)
+    public DigitalVoiceKeyerRowViewModel(int slotNumber, string label, string message, int repeatDelaySeconds, string recordingPath, bool hasRecording, bool isRecording, bool isCompactView)
     {
         SlotNumber = slotNumber;
         _label = label;
@@ -256,7 +279,8 @@ public sealed class DigitalVoiceKeyerRowViewModel : INotifyPropertyChanged
         _hasRecording = hasRecording;
         _isRecording = isRecording;
         _isPlaying = false;
-        _repeatDelaySeconds = 0;
+        _repeatDelaySeconds = Math.Max(0, repeatDelaySeconds);
+        _isCompactView = isCompactView;
     }
 
     public int SlotNumber { get; }
@@ -359,6 +383,22 @@ public sealed class DigitalVoiceKeyerRowViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool IsCompactView
+    {
+        get => _isCompactView;
+        set
+        {
+            if (_isCompactView == value)
+                return;
+
+            _isCompactView = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCompactView)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsDetailedView)));
+        }
+    }
+
+    public bool IsDetailedView => !IsCompactView;
+
     public string RecordingFileName => string.IsNullOrWhiteSpace(_recordingPath) ? string.Empty : Path.GetFileName(_recordingPath);
 
     public string RecordButtonText => IsRecording ? "Stop" : "Record";
@@ -367,6 +407,7 @@ public sealed class DigitalVoiceKeyerRowViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 }
+
 
 
 

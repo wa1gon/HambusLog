@@ -110,11 +110,30 @@ public partial class DigitalVoiceKeyerWindow
             return;
         }
 
-        StopPlayback(null);
-        row.IsPlaying = true;
-        _activePlaybackRow = row;
-        _activePlaybackCts = new CancellationTokenSource();
-        _ = RunPlayLoopAsync(slotNumber, row, _activePlaybackCts.Token);
+        StartPlayback(slotNumber, row, repeatWithDelay: false);
+    }
+
+    private void OnSlotPlayButtonPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.PointerUpdateKind != PointerUpdateKind.RightButtonPressed)
+            return;
+
+        if (sender is not Button button || button.DataContext is not DigitalVoiceKeyerRowViewModel row)
+            return;
+
+        var slotNumber = ReadSlotNumber(button.Tag);
+        if (slotNumber <= 0)
+            return;
+
+        if (row.IsPlaying)
+        {
+            StopPlayback($"Stopped playback for slot {slotNumber}.");
+            e.Handled = true;
+            return;
+        }
+
+        StartPlayback(slotNumber, row, repeatWithDelay: true);
+        e.Handled = true;
     }
 
     private void OnSlotDeleteButtonClicked(object? sender, RoutedEventArgs e)
@@ -132,7 +151,16 @@ public partial class DigitalVoiceKeyerWindow
         _viewModel.DeleteRecording(slotNumber);
     }
 
-    private async Task RunPlayLoopAsync(int slotNumber, DigitalVoiceKeyerRowViewModel row, CancellationToken cancellationToken)
+    private void StartPlayback(int slotNumber, DigitalVoiceKeyerRowViewModel row, bool repeatWithDelay)
+    {
+        StopPlayback(null);
+        row.IsPlaying = true;
+        _activePlaybackRow = row;
+        _activePlaybackCts = new CancellationTokenSource();
+        _ = RunPlayLoopAsync(slotNumber, row, repeatWithDelay, _activePlaybackCts.Token);
+    }
+
+    private async Task RunPlayLoopAsync(int slotNumber, DigitalVoiceKeyerRowViewModel row, bool repeatWithDelay, CancellationToken cancellationToken)
     {
         try
         {
@@ -140,6 +168,9 @@ public partial class DigitalVoiceKeyerWindow
             {
                 var result = await _viewModel.PlaySlotAsync(slotNumber, cancellationToken);
                 if (cancellationToken.IsCancellationRequested || !result.Success)
+                    break;
+
+                if (!repeatWithDelay)
                     break;
 
                 var repeatDelaySeconds = Math.Max(0, row.RepeatDelaySeconds);
@@ -204,6 +235,7 @@ public partial class DigitalVoiceKeyerWindow
         };
     }
 }
+
 
 
 

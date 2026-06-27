@@ -83,6 +83,8 @@
                                     Binding="{Binding Freq, StringFormat={}{0:F3}}"
                                     Width="110" />
                 <DataGridTextColumn Header="Mode"       Binding="{Binding Mode}"    Width="90" />
+                <DataGridTextColumn Header="Section"  Binding="{Binding FieldDaySection}" Width="90" />
+                <DataGridTextColumn Header="Class"    Binding="{Binding FieldDayClass}" Width="90" />
                 <DataGridTextColumn Header="RST Sent"   Binding="{Binding RstSent}" Width="90" />
                 <DataGridTextColumn Header="RST Rcvd"   Binding="{Binding RstRcvd}" Width="90" />
             </DataGrid.Columns>

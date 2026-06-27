@@ -736,7 +736,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 StayOnTopAddContactWindow = existingProfile?.StayOnTopAddContactWindow ?? false,
                 StayOnTopArqpProgressWindow = existingProfile?.StayOnTopArqpProgressWindow ?? false,
                 StayOnTopArrlFdProgressWindow = existingProfile?.StayOnTopArrlFdProgressWindow ?? false,
-                StayOnTopDigitalVoiceKeyerWindow = existingProfile?.StayOnTopDigitalVoiceKeyerWindow ?? false,
+              StayOnTopDigitalVoiceKeyerWindow = existingProfile?.StayOnTopDigitalVoiceKeyerWindow ?? false,
                 ConnectionString = resolvedConnectionString
             };
 

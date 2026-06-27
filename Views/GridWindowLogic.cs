@@ -17,13 +17,43 @@ public partial class GridWindow
         RebuildRepositoryBinding();
         App.DbContextReinitialized += OnDbContextReinitialized;
         App.QsoSaved += OnQsoSaved;
+        App.LogTypeSelectionService.SelectedContestChanged += OnSelectedContestChanged;
+        ApplyContestColumns();
     }
 
     protected override void OnClosed(EventArgs e)
     {
         App.DbContextReinitialized -= OnDbContextReinitialized;
         App.QsoSaved -= OnQsoSaved;
+        App.LogTypeSelectionService.SelectedContestChanged -= OnSelectedContestChanged;
         base.OnClosed(e);
+    }
+
+    private void OnSelectedContestChanged(object? sender, EventArgs e)
+    {
+        if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            ApplyContestColumns();
+            return;
+        }
+
+        Avalonia.Threading.Dispatcher.UIThread.Post(ApplyContestColumns);
+    }
+
+    private void ApplyContestColumns()
+    {
+        var contest = App.LogTypeSelectionService.GetSelectedContestDefinition();
+        var showFieldDayColumns = contest.UsesFieldDayExchange;
+
+        var sectionColumn = QsoDataGrid.Columns
+            .FirstOrDefault(x => string.Equals(x.Header?.ToString(), "Section", StringComparison.OrdinalIgnoreCase));
+        var classColumn = QsoDataGrid.Columns
+            .FirstOrDefault(x => string.Equals(x.Header?.ToString(), "Class", StringComparison.OrdinalIgnoreCase));
+
+        if (sectionColumn is not null)
+            sectionColumn.IsVisible = showFieldDayColumns;
+        if (classColumn is not null)
+            classColumn.IsVisible = showFieldDayColumns;
     }
 
     private void OnQsoSaved(object? sender, Qso qso)
