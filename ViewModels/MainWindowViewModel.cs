@@ -24,6 +24,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         new MenuNode("Grid"),
         new MenuNode("DX Cluster"),
         new MenuNode("WSJT Debug"),
+        new MenuNode("Digital Voice Keyer"),
         new MenuNode("Configuration"),
         new MenuNode("Awards", false,
             new MenuNode("ARQP Report"),
@@ -39,10 +40,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly RigCatalogStore _rigCatalogStore;
     private readonly IRigctldConnectionManager _rigctldConnectionManager;
     private readonly ILogTypeSelectionService _logTypeSelectionService;
+    private readonly IDigitalVoiceKeyerService _digitalVoiceKeyerService;
     private ObservableCollection<ActiveRadioOption> _availableRadios = [];
     private ActiveRadioOption? _selectedActiveRadio;
     private ObservableCollection<ContestDefinition> _availableLogTypes = [];
     private ContestDefinition? _selectedLogType;
+    private ObservableCollection<DigitalVoiceKeyerDashboardSlotViewModel> _voiceKeyerSlots = [];
     private ObservableCollection<RadioConnectionStatusViewModel> _radioStatuses = [];
     private RadioConnectionStatusViewModel? _selectedRadioStatus;
     private string _controlFrequencyMhz = string.Empty;
@@ -56,10 +59,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _rigCatalogStore = App.RigCatalogStore;
         _rigctldConnectionManager = App.RigctldConnectionManager;
         _logTypeSelectionService = App.LogTypeSelectionService;
+        _digitalVoiceKeyerService = App.DigitalVoiceKeyerService;
         _rigCatalogStore.PropertyChanged += OnRigCatalogStorePropertyChanged;
         _rigctldConnectionManager.StatesChanged += OnRigctldStatesChanged;
         _logTypeSelectionService.SelectedContestChanged += OnSelectedContestChanged;
+        _digitalVoiceKeyerService.BankChanged += OnDigitalVoiceKeyerBankChanged;
         RefreshLogTypesFromService();
+        RefreshVoiceKeyerSlots();
         RefreshActiveRadioOptions();
         RefreshRadioStatuses();
         _ = _rigctldConnectionManager.RefreshActiveConnectionsAsync();
@@ -90,6 +96,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         get => _availableLogTypes;
         private set => SetProperty(ref _availableLogTypes, value);
+    }
+
+    public ObservableCollection<DigitalVoiceKeyerDashboardSlotViewModel> VoiceKeyerSlots
+    {
+        get => _voiceKeyerSlots;
+        private set => SetProperty(ref _voiceKeyerSlots, value);
     }
 
     public ContestDefinition? SelectedLogType
@@ -246,10 +258,26 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         if (Dispatcher.UIThread.CheckAccess())
         {
             RefreshLogTypesFromService();
+            RefreshVoiceKeyerSlots();
             return;
         }
 
-        Dispatcher.UIThread.Post(RefreshLogTypesFromService);
+        Dispatcher.UIThread.Post(() =>
+        {
+            RefreshLogTypesFromService();
+            RefreshVoiceKeyerSlots();
+        });
+    }
+
+    private void OnDigitalVoiceKeyerBankChanged(object? sender, EventArgs e)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            RefreshVoiceKeyerSlots();
+            return;
+        }
+
+        Dispatcher.UIThread.Post(RefreshVoiceKeyerSlots);
     }
 
     private void RefreshLogTypesFromService()
@@ -267,6 +295,21 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _isApplyingLogTypeFromService = true;
         SelectedLogType = selected;
         _isApplyingLogTypeFromService = false;
+    }
+
+    private void RefreshVoiceKeyerSlots()
+    {
+        var contest = _logTypeSelectionService.GetSelectedContestDefinition();
+        var records = _digitalVoiceKeyerService.GetRecordsForLogType(contest.Key)
+            .OrderBy(x => x.SlotNumber)
+            .Select(x => new DigitalVoiceKeyerDashboardSlotViewModel(
+                x.SlotNumber,
+                string.IsNullOrWhiteSpace(x.Label) ? $"Slot {x.SlotNumber}" : x.Label,
+                x.HasRecording,
+                x.IsRecording))
+            .ToList();
+
+        VoiceKeyerSlots = new ObservableCollection<DigitalVoiceKeyerDashboardSlotViewModel>(records);
     }
 
     private void RefreshRadioStatuses()
@@ -537,6 +580,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _rigCatalogStore.PropertyChanged -= OnRigCatalogStorePropertyChanged;
         _rigctldConnectionManager.StatesChanged -= OnRigctldStatesChanged;
         _logTypeSelectionService.SelectedContestChanged -= OnSelectedContestChanged;
+        _digitalVoiceKeyerService.BankChanged -= OnDigitalVoiceKeyerBankChanged;
     }
 }
 
@@ -584,6 +628,24 @@ public sealed class ActiveRadioOption
     public string Display { get; }
 
     public override string ToString() => Display;
+}
+
+public sealed class DigitalVoiceKeyerDashboardSlotViewModel
+{
+    public DigitalVoiceKeyerDashboardSlotViewModel(int slotNumber, string label, bool hasRecording, bool isRecording)
+    {
+        SlotNumber = slotNumber;
+        Label = label;
+        HasRecording = hasRecording;
+        IsRecording = isRecording;
+    }
+
+    public int SlotNumber { get; }
+    public string Label { get; }
+    public bool HasRecording { get; }
+    public bool IsRecording { get; }
+
+    public override string ToString() => Label;
 }
 
 public sealed class MenuNode : INotifyPropertyChanged

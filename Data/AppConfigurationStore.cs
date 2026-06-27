@@ -2,6 +2,7 @@ namespace HamBusLog.Data;
 
 public static class AppConfigurationStore
 {
+    private const int DigitalVoiceKeyerSlotsPerBank = 10;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true
@@ -30,6 +31,7 @@ public static class AppConfigurationStore
                 EnsureClusterConfiguration(fresh);
                 EnsureLookupConfiguration(fresh);
                 EnsureWsjtConfiguration(fresh);
+                EnsureDigitalVoiceKeyerConfiguration(fresh);
                 EnsureContestConfiguration(fresh, out contestFieldsBackfilled);
                 return fresh;
             }
@@ -43,11 +45,13 @@ public static class AppConfigurationStore
             EnsureClusterConfiguration(config);
             EnsureLookupConfiguration(config);
             EnsureWsjtConfiguration(config);
+            EnsureDigitalVoiceKeyerConfiguration(config);
             EnsureContestConfiguration(config, out contestFieldsBackfilled);
 
             if (!ContainsActiveProfileProperty(json)
                 || !ContainsContestsProperty(json)
                 || !ContainsWsjtProperty(json)
+                || !ContainsDigitalVoiceKeyerProperty(json)
                 || contestFieldsBackfilled)
                 Save(config);
 
@@ -76,6 +80,7 @@ public static class AppConfigurationStore
             EnsureClusterConfiguration(configuration);
             EnsureLookupConfiguration(configuration);
             EnsureWsjtConfiguration(configuration);
+            EnsureDigitalVoiceKeyerConfiguration(configuration);
             EnsureContestConfiguration(configuration);
             NormalizeLookupForSave(configuration);
 
@@ -260,6 +265,22 @@ public static class AppConfigurationStore
         }
     }
 
+    private static bool ContainsDigitalVoiceKeyerProperty(string? rawJson)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson))
+            return false;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(rawJson);
+            return doc.RootElement.TryGetProperty("DigitalVoiceKeyer", out _);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static void EnsureRigConfiguration(AppConfiguration config)
     {
         config.Rigctld ??= new RigctldConfiguration();
@@ -296,6 +317,86 @@ public static class AppConfigurationStore
             : config.Wsjt.ListenAddress.Trim();
         config.Wsjt.ListenPort = config.Wsjt.ListenPort <= 0 ? 2237 : config.Wsjt.ListenPort;
         config.Wsjt.DebugQueueLength = config.Wsjt.DebugQueueLength <= 0 ? 500 : config.Wsjt.DebugQueueLength;
+    }
+
+    private static void EnsureDigitalVoiceKeyerConfiguration(AppConfiguration config)
+    {
+        config.DigitalVoiceKeyer ??= new DigitalVoiceKeyerConfiguration();
+        config.DigitalVoiceKeyer.OutputDevice = config.DigitalVoiceKeyer.OutputDevice?.Trim() ?? string.Empty;
+        config.DigitalVoiceKeyer.Banks ??= new Dictionary<string, DigitalVoiceKeyerBankConfig>(StringComparer.OrdinalIgnoreCase);
+
+        var normalizedBanks = new Dictionary<string, DigitalVoiceKeyerBankConfig>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in config.DigitalVoiceKeyer.Banks)
+        {
+            var key = NormalizeLogTypeKey(pair.Key);
+            var sourceBank = pair.Value ?? new DigitalVoiceKeyerBankConfig();
+            var normalizedBank = new DigitalVoiceKeyerBankConfig
+            {
+                LogTypeKey = key,
+                Records = NormalizeDigitalVoiceKeyerRecords(sourceBank.Records, key)
+            };
+
+            normalizedBanks[key] = normalizedBank;
+        }
+
+        config.DigitalVoiceKeyer.Banks = normalizedBanks;
+    }
+
+    private static List<DigitalVoiceKeyerRecordConfig> NormalizeDigitalVoiceKeyerRecords(
+        IEnumerable<DigitalVoiceKeyerRecordConfig>? records,
+        string logTypeKey)
+    {
+        var map = new Dictionary<int, DigitalVoiceKeyerRecordConfig>();
+        foreach (var record in records ?? [])
+        {
+            if (record is null)
+                continue;
+
+            var slot = Math.Clamp(record.SlotNumber, 1, DigitalVoiceKeyerSlotsPerBank);
+            map[slot] = new DigitalVoiceKeyerRecordConfig
+            {
+                SlotNumber = slot,
+                Label = record.Label?.Trim() ?? string.Empty,
+                Message = record.Message?.Trim() ?? string.Empty,
+                RecordingPath = record.RecordingPath?.Trim() ?? string.Empty,
+                IsRecording = record.IsRecording
+            };
+        }
+
+        var normalized = new List<DigitalVoiceKeyerRecordConfig>(DigitalVoiceKeyerSlotsPerBank);
+        for (var slot = 1; slot <= DigitalVoiceKeyerSlotsPerBank; slot++)
+        {
+            if (!map.TryGetValue(slot, out var record))
+            {
+                normalized.Add(new DigitalVoiceKeyerRecordConfig
+                {
+                    SlotNumber = slot,
+                    Label = $"{logTypeKey} {slot}",
+                    Message = string.Empty,
+                    RecordingPath = string.Empty,
+                    IsRecording = false
+                });
+                continue;
+            }
+
+            normalized.Add(new DigitalVoiceKeyerRecordConfig
+            {
+                SlotNumber = slot,
+                Label = string.IsNullOrWhiteSpace(record.Label) ? $"{logTypeKey} {slot}" : record.Label,
+                Message = record.Message,
+                RecordingPath = record.RecordingPath?.Trim() ?? string.Empty,
+                IsRecording = record.IsRecording
+            });
+        }
+
+        return normalized;
+    }
+
+    private static string NormalizeLogTypeKey(string? rawKey)
+    {
+        return string.IsNullOrWhiteSpace(rawKey)
+            ? ContestCatalog.NormalKey
+            : rawKey.Trim().ToUpperInvariant();
     }
 
     private static void NormalizeLookupForSave(AppConfiguration config)

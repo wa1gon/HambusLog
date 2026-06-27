@@ -13,6 +13,7 @@ public partial class MainWindow
     private ConfigurationWindow? _configurationWindow;
     private DxSpotsWindow? _dxSpotsWindow;
     private WsjtDebugWindow? _wsjtDebugWindow;
+    private DigitalVoiceKeyerWindow? _digitalVoiceKeyerWindow;
     private CabrilloExportWindow? _cabrilloExportWindow;
     private ArqpProgressWindow? _arqpProgressWindow;
     private ArrlFdProgressWindow? _arrlFdProgressWindow;
@@ -158,6 +159,8 @@ public partial class MainWindow
             ToggleDxSpotsWindow();
         else if (node.Title == "WSJT Debug")
             ToggleWsjtDebugWindow();
+        else if (node.Title == "Digital Voice Keyer")
+            ToggleDigitalVoiceKeyerWindow();
         else if (node.Title == "ARQP Report")
             OpenCabrilloExportWindow();
         else if (node.Title == "ARRL FD Report")
@@ -201,6 +204,28 @@ public partial class MainWindow
     public async void OnImportAdifClicked(object? sender, RoutedEventArgs e) => await ImportAdifAsync();
 
     public void OnOpenDxClusterClicked(object? sender, RoutedEventArgs e) => ToggleDxSpotsWindow();
+
+    public void OnOpenDigitalVoiceKeyerClicked(object? sender, RoutedEventArgs e) => ToggleDigitalVoiceKeyerWindow();
+
+    public async void OnVoiceKeyerSlotClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.DataContext is not DigitalVoiceKeyerDashboardSlotViewModel slot)
+            return;
+
+        var contest = App.LogTypeSelectionService.GetSelectedContestDefinition();
+        if (!slot.HasRecording)
+        {
+            ToggleDigitalVoiceKeyerWindow();
+            App.Toasts.ShowInfo("Digital Voice Keyer", $"Slot {slot.SlotNumber} has no recording yet. Opened the DVK editor.");
+            return;
+        }
+
+        var result = await App.DigitalVoiceKeyerService.PlaySlotAsync(contest.Key, slot.SlotNumber);
+        if (result.Success)
+            App.Toasts.ShowSuccess("Digital Voice Keyer", result.Message);
+        else
+            App.Toasts.ShowInfo("Digital Voice Keyer", result.Message);
+    }
 
     public void OnExitProgramClicked(object? sender, RoutedEventArgs e) => Close();
 
@@ -273,6 +298,24 @@ public partial class MainWindow
         }
 
         ShowWithVisibleOwner(_wsjtDebugWindow);
+    }
+
+    private void ToggleDigitalVoiceKeyerWindow()
+    {
+        if (_digitalVoiceKeyerWindow is { IsVisible: true })
+        {
+            App.SaveWindowPlacement(_digitalVoiceKeyerWindow, nameof(DigitalVoiceKeyerWindow));
+            _digitalVoiceKeyerWindow.Hide();
+            return;
+        }
+
+        if (_digitalVoiceKeyerWindow is null)
+        {
+            _digitalVoiceKeyerWindow = new DigitalVoiceKeyerWindow();
+            _digitalVoiceKeyerWindow.Closed += (_, _) => _digitalVoiceKeyerWindow = null;
+        }
+
+        ShowWithVisibleOwner(_digitalVoiceKeyerWindow);
     }
 
     private void OpenCabrilloExportWindow()
