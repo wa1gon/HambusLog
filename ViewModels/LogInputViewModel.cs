@@ -1,9 +1,10 @@
 namespace HamBusLog.ViewModels;
 
+using Avalonia.Threading;
 using HamBusLog.Hardware;
 using HamBusLog.Models;
 
-public sealed class LogInputViewModel : ViewModelBase
+public sealed class LogInputViewModel : ViewModelBase, IDisposable
 {
     private static readonly IReadOnlyList<string> AvailableModesStatic =
     [
@@ -55,6 +56,10 @@ public sealed class LogInputViewModel : ViewModelBase
     private QsoDetailRow? _selectedDetail;
     private AppConfiguration _appConfig = new();
     private string _selectedProfile = "default";
+    private readonly ILogTypeSelectionService _logTypeSelectionService;
+    private bool _isApplyingGlobalLogType;
+    private readonly bool _wsjtAutoPopulateEnabled;
+    private DateTime? _suspendRigAutoPopulateUntilUtc;
 
     // ----- station / operator config -----
     private string _stationCallSign = string.Empty;
@@ -80,19 +85,32 @@ public sealed class LogInputViewModel : ViewModelBase
     public LogInputViewModel()
     {
         _appConfig = AppConfigurationStore.Load();
+        _wsjtAutoPopulateEnabled = _appConfig.Wsjt.AutoPopulateLogInput;
+        _logTypeSelectionService = App.LogTypeSelectionService;
         SelectActiveProfile();
         _contestDefinitions = ContestCatalog.GetAll().ToList();
         ApplyContestFilter();
         Details         = [];
         AvailableConnectedRadios = new ObservableCollection<ConnectedRadioOption>();
+        _logTypeSelectionService.SelectedContestChanged += OnSelectedContestChanged;
         var storedContestKey = ActiveConfigProfile().LastContestKey;
         var initialContestKey = ResolveInitialContestKey(storedContestKey);
+        var globalContestKey = _logTypeSelectionService.SelectedContestKey;
+        if (!string.Equals(globalContestKey, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase)
+            && FindContestDefinition(globalContestKey) is not null)
+        {
+            initialContestKey = globalContestKey;
+        }
+
         SetSelectedContestKey(initialContestKey);
         LoadStationConfig();
         EnsureRstDefaults();
         InputDate       = DateTime.UtcNow.ToString("yyyyMMdd");
         InputTimeOn     = DateTime.UtcNow.ToString("HHmm");
         ApplyActiveRigSnapshot();
+
+        if (_wsjtAutoPopulateEnabled)
+            App.WsjtBridgeService.LoggedQsoReceived += OnWsjtLoggedQsoReceived;
     }
 
     // ── Properties ────────────────────────────────────────────────────
@@ -248,6 +266,26 @@ public sealed class LogInputViewModel : ViewModelBase
         {
             profile.LastContestKey = normalized;
             AppConfigurationStore.Save(_appConfig);
+        }
+
+        if (!_isApplyingGlobalLogType)
+            _logTypeSelectionService.SetSelectedContestKey(normalized);
+    }
+
+    private void OnSelectedContestChanged(object? sender, EventArgs e)
+    {
+        var selected = _logTypeSelectionService.SelectedContestKey;
+        if (string.IsNullOrWhiteSpace(selected) || string.Equals(selected, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _isApplyingGlobalLogType = true;
+        try
+        {
+            SetSelectedContestKey(selected);
+        }
+        finally
+        {
+            _isApplyingGlobalLogType = false;
         }
     }
 
@@ -709,8 +747,67 @@ public sealed class LogInputViewModel : ViewModelBase
 
     public void RefreshAutoFields()
     {
-        RefreshSelectedRadioInputs();
+        if (_suspendRigAutoPopulateUntilUtc is not DateTime pauseUntil || DateTime.UtcNow >= pauseUntil)
+            RefreshSelectedRadioInputs();
+
         InputTimeOn = DateTime.UtcNow.ToString("HHmm");
+    }
+
+    public void ApplyWsjtLoggedQso(WsjtLoggedQso qso)
+    {
+        if (qso is null || string.IsNullOrWhiteSpace(qso.Call))
+            return;
+
+        InputCall = qso.Call;
+
+        if (qso.TimeOnUtc is DateTimeOffset timeOnUtc)
+        {
+            InputDate = timeOnUtc.UtcDateTime.ToString("yyyyMMdd");
+            InputTimeOn = timeOnUtc.UtcDateTime.ToString("HHmm");
+        }
+
+        if (!string.IsNullOrWhiteSpace(qso.Band))
+            InputBand = qso.Band;
+
+        var mode = NormalizeWsjtMode(qso.Mode, qso.Submode);
+        if (!string.IsNullOrWhiteSpace(mode))
+            InputMode = mode;
+
+        if (!string.IsNullOrWhiteSpace(qso.FreqMhz))
+            InputFreq = qso.FreqMhz;
+
+        if (!string.IsNullOrWhiteSpace(qso.RstSent))
+            InputSent = qso.RstSent;
+
+        if (!string.IsNullOrWhiteSpace(qso.RstRcvd))
+            InputRec = qso.RstRcvd;
+
+        if (!string.IsNullOrWhiteSpace(qso.Country))
+            InputCountry = qso.Country;
+
+        if (!string.IsNullOrWhiteSpace(qso.Name))
+            InputName = qso.Name;
+
+        if (!string.IsNullOrWhiteSpace(qso.State))
+            InputState = qso.State;
+
+        if (!string.IsNullOrWhiteSpace(qso.County))
+            InputCounty = qso.County;
+
+        if (!string.IsNullOrWhiteSpace(qso.GridSquare))
+            InputGrid = qso.GridSquare;
+
+        if (!string.IsNullOrWhiteSpace(qso.ExchangeReceived) && string.IsNullOrWhiteSpace(InputExchange))
+            InputExchange = qso.ExchangeReceived;
+
+        var operatorCall = !string.IsNullOrWhiteSpace(qso.Operator)
+            ? qso.Operator
+            : qso.StationCallsign;
+        if (!string.IsNullOrWhiteSpace(operatorCall))
+            InputOperator = operatorCall;
+
+        // Keep recent WSJT values stable against the periodic rig autofill refresh.
+        _suspendRigAutoPopulateUntilUtc = DateTime.UtcNow.AddMinutes(2);
     }
 
     public void ApplySelectedRadioToInputs()
@@ -1294,6 +1391,44 @@ public sealed class LogInputViewModel : ViewModelBase
 
     private static bool IsNear(decimal mhz, decimal target, decimal tolerance = 0.003m)
         => Math.Abs(mhz - target) <= tolerance;
+
+    private static string NormalizeWsjtMode(string mode, string submode)
+    {
+        var normalizedSubmode = (submode ?? string.Empty).Trim().ToUpperInvariant();
+        if (!string.IsNullOrWhiteSpace(normalizedSubmode))
+            return normalizedSubmode;
+
+        var normalizedMode = (mode ?? string.Empty).Trim().ToUpperInvariant();
+        return normalizedMode switch
+        {
+            "MFSK" => "FT8",
+            "PKTUSB" => "DIGU",
+            "PKTLSB" => "DIGL",
+            _ => normalizedMode
+        };
+    }
+
+    private void OnWsjtLoggedQsoReceived(object? sender, WsjtLoggedQso qso)
+    {
+        if (!_wsjtAutoPopulateEnabled)
+            return;
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            ApplyWsjtLoggedQso(qso);
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() => ApplyWsjtLoggedQso(qso));
+    }
+
+    public void Dispose()
+    {
+        _logTypeSelectionService.SelectedContestChanged -= OnSelectedContestChanged;
+
+        if (_wsjtAutoPopulateEnabled)
+            App.WsjtBridgeService.LoggedQsoReceived -= OnWsjtLoggedQsoReceived;
+    }
 }
 
 /// <summary>Mutable detail row displayed in the QsoDetail DataGrid.</summary>

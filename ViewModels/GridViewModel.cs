@@ -299,7 +299,7 @@ public class GridViewModel
                 newEntry.Details.Add(new QsoDetail { FieldName = "Class", FieldValue = InputFieldDayClass });
         }
         
-        LogEntries.Add(newEntry);
+        LogEntries.Insert(0, newEntry);
         SaveEntryAsync(newEntry);
         ClearInputs();
     }

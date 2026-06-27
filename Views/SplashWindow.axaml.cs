@@ -1,11 +1,13 @@
 namespace HamBusLog.Views;
 
 using Avalonia.Input;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 
 public partial class SplashWindow : Window
 {
     private const int SplashSeconds = 30;
+    private const string SplashImageRelativePath = "images/hambus-large.png";
     private readonly CancellationTokenSource _cts = new();
 
     /// <summary>The screen the splash was displayed on — read by AppLogic after Close().</summary>
@@ -17,6 +19,41 @@ public partial class SplashWindow : Window
     public SplashWindow()
     {
         InitializeComponent();
+        SetSplashImage();
+        SetVersionInfo();
+    }
+
+    private void SetSplashImage()
+    {
+        var splashLogo = this.FindControl<Image>("SplashLogo");
+        if (splashLogo is null)
+            return;
+
+        var imagePath = Path.Combine(AppContext.BaseDirectory, SplashImageRelativePath);
+        if (!File.Exists(imagePath))
+            return;
+
+        try
+        {
+            using var stream = File.OpenRead(imagePath);
+            splashLogo.Source = new Bitmap(stream);
+        }
+        catch
+        {
+            // Keep the embedded image fallback if the external file can't be loaded.
+        }
+    }
+
+    private void SetVersionInfo()
+    {
+        var versionText = this.FindControl<TextBlock>("VersionText");
+        var buildText = this.FindControl<TextBlock>("BuildText");
+
+        if (versionText is not null)
+            versionText.Text = $"v{AppVersionService.Version}";
+
+        if (buildText is not null)
+            buildText.Text = $"build {AppVersionService.BuildNumber}";
     }
 
     protected override void OnOpened(EventArgs e)
@@ -88,6 +125,10 @@ public partial class SplashWindow : Window
         BeginMoveDrag(e);
     }
 }
+
+
+
+
 
 
 

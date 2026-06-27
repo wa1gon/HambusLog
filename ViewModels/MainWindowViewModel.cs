@@ -23,6 +23,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             new MenuNode("Watch List")),
         new MenuNode("Grid"),
         new MenuNode("DX Cluster"),
+        new MenuNode("WSJT Debug"),
         new MenuNode("Configuration"),
         new MenuNode("Awards", false,
             new MenuNode("ARQP Report"),
@@ -37,21 +38,28 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private MenuNode? _selectedMenuItem;
     private readonly RigCatalogStore _rigCatalogStore;
     private readonly IRigctldConnectionManager _rigctldConnectionManager;
+    private readonly ILogTypeSelectionService _logTypeSelectionService;
     private ObservableCollection<ActiveRadioOption> _availableRadios = [];
     private ActiveRadioOption? _selectedActiveRadio;
+    private ObservableCollection<ContestDefinition> _availableLogTypes = [];
+    private ContestDefinition? _selectedLogType;
     private ObservableCollection<RadioConnectionStatusViewModel> _radioStatuses = [];
     private RadioConnectionStatusViewModel? _selectedRadioStatus;
     private string _controlFrequencyMhz = string.Empty;
     private string _controlMode = string.Empty;
     private string _radioControlMessage = string.Empty;
     private string _radioStatusSummary = "Rig status: none";
+    private bool _isApplyingLogTypeFromService;
 
     public MainWindowViewModel()
     {
         _rigCatalogStore = App.RigCatalogStore;
         _rigctldConnectionManager = App.RigctldConnectionManager;
+        _logTypeSelectionService = App.LogTypeSelectionService;
         _rigCatalogStore.PropertyChanged += OnRigCatalogStorePropertyChanged;
         _rigctldConnectionManager.StatesChanged += OnRigctldStatesChanged;
+        _logTypeSelectionService.SelectedContestChanged += OnSelectedContestChanged;
+        RefreshLogTypesFromService();
         RefreshActiveRadioOptions();
         RefreshRadioStatuses();
         _ = _rigctldConnectionManager.RefreshActiveConnectionsAsync();
@@ -76,6 +84,27 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         get => _availableRadios;
         private set => SetProperty(ref _availableRadios, value);
+    }
+
+    public ObservableCollection<ContestDefinition> AvailableLogTypes
+    {
+        get => _availableLogTypes;
+        private set => SetProperty(ref _availableLogTypes, value);
+    }
+
+    public ContestDefinition? SelectedLogType
+    {
+        get => _selectedLogType;
+        set
+        {
+            if (!SetProperty(ref _selectedLogType, value))
+                return;
+
+            if (_isApplyingLogTypeFromService || value is null)
+                return;
+
+            _logTypeSelectionService.SetSelectedContestKey(value.Key);
+        }
     }
 
     public ActiveRadioOption? SelectedActiveRadio
@@ -210,6 +239,34 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         Dispatcher.UIThread.Post(RefreshRadioStatuses);
+    }
+
+    private void OnSelectedContestChanged(object? sender, EventArgs e)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            RefreshLogTypesFromService();
+            return;
+        }
+
+        Dispatcher.UIThread.Post(RefreshLogTypesFromService);
+    }
+
+    private void RefreshLogTypesFromService()
+    {
+        var available = _logTypeSelectionService.GetAvailableContests().ToList();
+        AvailableLogTypes = new ObservableCollection<ContestDefinition>(available);
+
+        var selectedKey = _logTypeSelectionService.SelectedContestKey;
+        var selected = available.FirstOrDefault(x =>
+                           string.Equals(x.Key, selectedKey, StringComparison.OrdinalIgnoreCase)
+                           || string.Equals(x.AdifContestId, selectedKey, StringComparison.OrdinalIgnoreCase))
+                       ?? available.FirstOrDefault(x => string.Equals(x.Key, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase))
+                       ?? available.FirstOrDefault();
+
+        _isApplyingLogTypeFromService = true;
+        SelectedLogType = selected;
+        _isApplyingLogTypeFromService = false;
     }
 
     private void RefreshRadioStatuses()
@@ -479,6 +536,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         _rigCatalogStore.PropertyChanged -= OnRigCatalogStorePropertyChanged;
         _rigctldConnectionManager.StatesChanged -= OnRigctldStatesChanged;
+        _logTypeSelectionService.SelectedContestChanged -= OnSelectedContestChanged;
     }
 }
 

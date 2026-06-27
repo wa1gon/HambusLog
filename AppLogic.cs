@@ -7,6 +7,8 @@ public partial class App
     public static IDxSpotFeed DxSpotFeed { get; } = new DxSpotFeed();
     public static IDxClusterTcpReader DxClusterReader { get; } = new DxClusterTcpReader();
     public static IDxClusterSpotPublisher DxClusterSpotPublisher { get; } = new DxClusterSpotPublisher();
+    public static IWsjtBridgeService WsjtBridgeService { get; } = new WsjtBridgeService();
+    public static ILogTypeSelectionService LogTypeSelectionService { get; } = new LogTypeSelectionService();
     public static IToastService Toasts { get; } = new ToastService();
 
     private static HamBusLogDbContext? _dbContext;
@@ -167,10 +169,14 @@ public partial class App
             LogDxClusterNonSpot("SYS", "Application started");
             _ = RigctldConnectionManager.RefreshActiveConnectionsAsync();
             _ = DxClusterReader.StartAsync();
+            _ = WsjtBridgeService.StartAsync();
+            WsjtBridgeService.LoggedQsoReceived += OnWsjtLoggedQsoReceived;
             desktop.Exit += (_, _) =>
             {
+                WsjtBridgeService.LoggedQsoReceived -= OnWsjtLoggedQsoReceived;
                 RigctldConnectionManager.Dispose();
                 DxClusterReader.Dispose();
+                WsjtBridgeService.Dispose();
             };
 
             var splash = new SplashWindow();
@@ -212,6 +218,140 @@ public partial class App
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static async void OnWsjtLoggedQsoReceived(object? sender, WsjtLoggedQso loggedQso)
+    {
+        await SaveWsjtLoggedQsoAsync(loggedQso);
+    }
+
+    private static Task SaveWsjtLoggedQsoAsync(WsjtLoggedQso loggedQso)
+    {
+        if (loggedQso is null || string.IsNullOrWhiteSpace(loggedQso.Call))
+            return Task.CompletedTask;
+
+        return Task.Run(() =>
+        {
+            try
+            {
+                var contest = LogTypeSelectionService.GetSelectedContestDefinition();
+                var qso = BuildQsoFromWsjt(loggedQso, contest);
+
+                using var context = CreateTransientDbContext();
+                context.Qsos.Add(qso);
+                context.SaveChanges();
+
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    RaiseQsoSaved(qso);
+                    Toasts.ShowSuccess("WSJT-X", $"Auto-logged {qso.Call} on {qso.Band} {qso.Mode} ({contest.DisplayName}).");
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"WSJT-X auto-log failed: {ex.Message}");
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => Toasts.ShowError("WSJT-X auto-log failed", ex.Message));
+            }
+        });
+    }
+
+    private static HamBusLogDbContext CreateTransientDbContext()
+    {
+        string connectionString;
+        lock (_dbContextSync)
+            connectionString = string.IsNullOrWhiteSpace(_dbConnectionString) ? ResolveAppConnectionString() : _dbConnectionString;
+
+        var options = HamBusLogDbContextFactory.BuildOptions(DatabaseProvider.Sqlite, connectionString);
+        var context = new HamBusLogDbContext(options);
+        context.Database.EnsureCreated();
+        return context;
+    }
+
+    private static Qso BuildQsoFromWsjt(WsjtLoggedQso loggedQso, ContestDefinition contest)
+    {
+        var mode = !string.IsNullOrWhiteSpace(loggedQso.Submode)
+            ? loggedQso.Submode.Trim().ToUpperInvariant()
+            : loggedQso.Mode.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(mode))
+            mode = "DIGITAL";
+
+        var band = loggedQso.Band.Trim().ToUpperInvariant();
+        var freq = ParseFrequencyMhz(loggedQso.FreqMhz);
+        if (string.IsNullOrWhiteSpace(band))
+            band = DeriveBandFromMhz(freq) ?? "20M";
+
+        var stationCall = loggedQso.StationCallsign.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(stationCall))
+        {
+            var config = AppConfigurationStore.Load();
+            stationCall = AppConfigurationStore.GetActiveProfile(config).StationCallSign.Trim().ToUpperInvariant();
+        }
+
+        var qso = new Qso
+        {
+            Call = loggedQso.Call.Trim().ToUpperInvariant(),
+            StationCallSign = stationCall,
+            QsoDate = (loggedQso.TimeOnUtc ?? DateTimeOffset.UtcNow).UtcDateTime,
+            Band = band,
+            Mode = mode,
+            ContestId = contest.AdifContestId,
+            Freq = freq,
+            Country = loggedQso.Country.Trim().ToUpperInvariant(),
+            State = loggedQso.State.Trim().ToUpperInvariant(),
+            RstSent = loggedQso.RstSent.Trim(),
+            RstRcvd = loggedQso.RstRcvd.Trim(),
+            Details = new List<QsoDetail>()
+        };
+
+        AddDetailIfPresent(qso.Details, "GRID", loggedQso.GridSquare);
+        AddDetailIfPresent(qso.Details, "MY_GRIDSQUARE", loggedQso.MyGridSquare);
+        AddDetailIfPresent(qso.Details, "COUNTY", loggedQso.County);
+        AddDetailIfPresent(qso.Details, "NAME", loggedQso.Name);
+        AddDetailIfPresent(qso.Details, "OPERATOR", loggedQso.Operator);
+        AddDetailIfPresent(qso.Details, "EXCHANGE", loggedQso.ExchangeReceived);
+
+        return qso;
+    }
+
+    private static decimal ParseFrequencyMhz(string? value)
+    {
+        return decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed) && parsed > 0
+            ? parsed
+            : 0m;
+    }
+
+    private static string? DeriveBandFromMhz(decimal mhz)
+    {
+        return mhz switch
+        {
+            >= 1.8m and <= 2.0m => "160M",
+            >= 3.5m and <= 4.0m => "80M",
+            >= 5.3305m and <= 5.4065m => "60M",
+            >= 7.0m and <= 7.3m => "40M",
+            >= 10.1m and <= 10.15m => "30M",
+            >= 14.0m and <= 14.35m => "20M",
+            >= 18.068m and <= 18.168m => "17M",
+            >= 21.0m and <= 21.45m => "15M",
+            >= 24.89m and <= 24.99m => "12M",
+            >= 28.0m and <= 29.7m => "10M",
+            >= 50.0m and <= 54.0m => "6M",
+            >= 144.0m and <= 148.0m => "2M",
+            >= 420.0m and <= 450.0m => "70CM",
+            _ => null
+        };
+    }
+
+    private static void AddDetailIfPresent(ICollection<QsoDetail> details, string fieldName, string? value)
+    {
+        var normalized = (value ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(normalized))
+            return;
+
+        details.Add(new QsoDetail
+        {
+            FieldName = fieldName,
+            FieldValue = normalized.ToUpperInvariant()
+        });
     }
 
     public static void ApplyThemeFromActiveProfile()

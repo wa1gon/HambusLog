@@ -12,6 +12,7 @@ public partial class MainWindow
     private SqliteQsoRepository? _qsoRepository;
     private ConfigurationWindow? _configurationWindow;
     private DxSpotsWindow? _dxSpotsWindow;
+    private WsjtDebugWindow? _wsjtDebugWindow;
     private CabrilloExportWindow? _cabrilloExportWindow;
     private ArqpProgressWindow? _arqpProgressWindow;
     private ArrlFdProgressWindow? _arrlFdProgressWindow;
@@ -155,6 +156,8 @@ public partial class MainWindow
             OpenCabrilloExportWindow();
         else if (node.Title == "DX Spots" || node.Title == "DX Cluster")
             ToggleDxSpotsWindow();
+        else if (node.Title == "WSJT Debug")
+            ToggleWsjtDebugWindow();
         else if (node.Title == "ARQP Report")
             OpenCabrilloExportWindow();
         else if (node.Title == "ARRL FD Report")
@@ -252,6 +255,24 @@ public partial class MainWindow
         }
 
         ShowWithVisibleOwner(_dxSpotsWindow);
+    }
+
+    private void ToggleWsjtDebugWindow()
+    {
+        if (_wsjtDebugWindow is { IsVisible: true })
+        {
+            App.SaveWindowPlacement(_wsjtDebugWindow, nameof(WsjtDebugWindow));
+            _wsjtDebugWindow.Hide();
+            return;
+        }
+
+        if (_wsjtDebugWindow is null)
+        {
+            _wsjtDebugWindow = new WsjtDebugWindow();
+            _wsjtDebugWindow.Closed += (_, _) => _wsjtDebugWindow = null;
+        }
+
+        ShowWithVisibleOwner(_wsjtDebugWindow);
     }
 
     private void OpenCabrilloExportWindow()

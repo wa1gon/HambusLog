@@ -278,6 +278,7 @@ public partial class LogInputWindow
     private void OnWindowClosed(object? sender, EventArgs e)
     {
         _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        _viewModel.Dispose();
         CloseOpenProgressWindows();
         _activeRigRefreshTimer.Tick -= OnActiveRigRefreshTick;
         _activeRigRefreshTimer.Stop();

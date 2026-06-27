@@ -16,12 +16,42 @@ public partial class GridWindow
         App.Toasts.RegisterWindow(this);
         RebuildRepositoryBinding();
         App.DbContextReinitialized += OnDbContextReinitialized;
+        App.QsoSaved += OnQsoSaved;
     }
 
     protected override void OnClosed(EventArgs e)
     {
         App.DbContextReinitialized -= OnDbContextReinitialized;
+        App.QsoSaved -= OnQsoSaved;
         base.OnClosed(e);
+    }
+
+    private void OnQsoSaved(object? sender, Qso qso)
+    {
+        if (_viewModel is null || qso is null)
+            return;
+
+        // Already on UI thread if triggered from the manual log flow; WSJT comes from a
+        // background task so marshal either way to be safe.
+        if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            AppendQsoIfNew(qso);
+            return;
+        }
+
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => AppendQsoIfNew(qso));
+    }
+
+    private void AppendQsoIfNew(Qso qso)
+    {
+        if (_viewModel is null)
+            return;
+
+        // Avoid double-add: the manual log flow adds directly to LogEntries AND fires QsoSaved.
+        if (_viewModel.LogEntries.Any(x => x.Id == qso.Id))
+            return;
+
+        _viewModel.LogEntries.Insert(0, qso);
     }
 
     private void OnDbContextReinitialized(object? sender, EventArgs e)
@@ -60,7 +90,7 @@ public partial class GridWindow
         _logInputWindow.Closed += (_, _) => _logInputWindow = null;
         _logInputWindow.QsoLogged += async (_, qso) => 
         {
-            _viewModel.LogEntries.Add(qso);
+            _viewModel.LogEntries.Insert(0, qso);
             // Save to database
             await SaveQsoAsync(qso);
         };

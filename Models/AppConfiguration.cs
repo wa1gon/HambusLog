@@ -23,6 +23,9 @@ public sealed class AppConfiguration
 
     /// <summary>Logbook of the World (LoTW) upload settings.</summary>
     public LotwConfiguration Lotw { get; set; } = new();
+
+    /// <summary>System-wide WSJT-X UDP bridge settings.</summary>
+    public WsjtConfiguration Wsjt { get; set; } = new();
 }
 
 public sealed class WindowPlacement
@@ -226,3 +229,14 @@ public sealed class LotwConfiguration
     /// <summary>XOR-obfuscated TQSL password (same scheme as QRZ).</summary>
     public string PasswordCiphertext { get; set; } = string.Empty;
 }
+
+public sealed class WsjtConfiguration
+{
+    public bool Enabled { get; set; } = true;
+    public string ListenAddress { get; set; } = "0.0.0.0";
+    public int ListenPort { get; set; } = 2237;
+    public bool AcceptOnlyLocalhost { get; set; } = true;
+    public bool AutoPopulateLogInput { get; set; } = true;
+    public int DebugQueueLength { get; set; } = 500;
+}
+

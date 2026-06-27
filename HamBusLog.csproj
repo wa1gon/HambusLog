@@ -19,6 +19,18 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>dx-region-prefixes.json</Link>
     </Content>
+    <Content Include="VERSION.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>VERSION.txt</Link>
+    </Content>
+    <Content Include="BUILD.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>BUILD.txt</Link>
+    </Content>
+    <Content Include="images/hambus-large.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>images/hambus-large.png</Link>
+    </Content>
     <Compile Remove="**/obj/**/*.cs" />
     <Compile Remove="**/bin/**/*.cs" />
     <Compile Remove="HamBusLog.Tests/**/*.cs" />
@@ -78,5 +90,19 @@
     <Content Include="Wa1gonLib.Tests/Wa1gonLib.Tests.csproj" />
     <Content Include="Wa1gonLib/Wa1gonLib.csproj" />
   </ItemGroup>
+
+  <Target Name="IncrementBuildNumber" BeforeTargets="BeforeBuild">
+    <ReadLinesFromFile File="$(MSBuildProjectDirectory)/BUILD.txt">
+      <Output TaskParameter="Lines" ItemName="BuildNumberLines" />
+    </ReadLinesFromFile>
+
+    <PropertyGroup>
+      <CurrentBuildNumber Condition="'@(BuildNumberLines)' != ''">@(BuildNumberLines)</CurrentBuildNumber>
+      <CurrentBuildNumber Condition="'$(CurrentBuildNumber)' == ''">0</CurrentBuildNumber>
+      <NextBuildNumber>$([MSBuild]::Add($(CurrentBuildNumber), 1))</NextBuildNumber>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(MSBuildProjectDirectory)/BUILD.txt" Lines="$(NextBuildNumber)" Overwrite="true" />
+  </Target>
 
 </Project>
