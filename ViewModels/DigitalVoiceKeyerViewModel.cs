@@ -9,10 +9,13 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
     private readonly ILogTypeSelectionService _logTypeSelectionService;
     private readonly ObservableCollection<DigitalVoiceKeyerRowViewModel> _rows = [];
     private readonly ObservableCollection<string> _availableOutputDevices = [];
+    private readonly ObservableCollection<ContestDefinition> _availableLogTypes = [];
 
     private string _selectedLogTypeDisplayName = "Normal";
     private string _selectedOutputDevice = DigitalVoiceKeyerService.SystemDefaultPlaybackDevice;
+    private ContestDefinition? _selectedLogType;
     private string _statusMessage = "Ready";
+    private bool _isApplyingLogTypeFromService;
 
     public DigitalVoiceKeyerViewModel()
         : this(App.DigitalVoiceKeyerService, App.LogTypeSelectionService)
@@ -28,6 +31,8 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
 
         _voiceKeyerService.BankChanged += OnBankChanged;
         _logTypeSelectionService.SelectedContestChanged += OnSelectedContestChanged;
+        RefreshAvailableLogTypes();
+        ApplySelectedLogTypeFromService();
         RefreshOutputDevices();
         LoadFromGlobalLogType();
     }
@@ -35,6 +40,23 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
     public ObservableCollection<DigitalVoiceKeyerRowViewModel> Rows => _rows;
 
     public ObservableCollection<string> AvailableOutputDevices => _availableOutputDevices;
+
+    public ObservableCollection<ContestDefinition> AvailableLogTypes => _availableLogTypes;
+
+    public ContestDefinition? SelectedLogType
+    {
+        get => _selectedLogType;
+        set
+        {
+            if (!SetProperty(ref _selectedLogType, value))
+                return;
+
+            if (_isApplyingLogTypeFromService || value is null)
+                return;
+
+            _logTypeSelectionService.SetSelectedContestKey(value.Key);
+        }
+    }
 
     public string SelectedLogTypeDisplayName
     {
@@ -91,12 +113,16 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
         LoadFromGlobalLogType();
     }
 
-    public async Task PlaySlotAsync(int slotNumber)
+    public async Task<DigitalVoiceKeyerOperationResult> PlaySlotAsync(int slotNumber, CancellationToken cancellationToken = default)
     {
         var logType = _logTypeSelectionService.GetSelectedContestDefinition();
-        var result = await _voiceKeyerService.PlaySlotAsync(logType.Key, slotNumber);
+        var result = await _voiceKeyerService.PlaySlotAsync(logType.Key, slotNumber, cancellationToken);
         StatusMessage = result.Message;
+        return result;
     }
+
+    public void SetStatusMessage(string message)
+        => StatusMessage = message?.Trim() ?? string.Empty;
 
     public void DeleteRecording(int slotNumber)
     {
@@ -131,10 +157,35 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(SelectedOutputDevice));
     }
 
+    private void RefreshAvailableLogTypes()
+    {
+        _availableLogTypes.Clear();
+        foreach (var contest in _logTypeSelectionService.GetAvailableContests())
+            _availableLogTypes.Add(contest);
+    }
+
+    private void ApplySelectedLogTypeFromService()
+    {
+        var selected = _availableLogTypes.FirstOrDefault(x =>
+            string.Equals(x.Key, _logTypeSelectionService.SelectedContestKey, StringComparison.OrdinalIgnoreCase))
+            ?? _logTypeSelectionService.GetSelectedContestDefinition();
+
+        _isApplyingLogTypeFromService = true;
+        try
+        {
+            SelectedLogType = selected;
+        }
+        finally
+        {
+            _isApplyingLogTypeFromService = false;
+        }
+    }
+
     private void OnSelectedContestChanged(object? sender, EventArgs e)
     {
         if (Dispatcher.UIThread.CheckAccess())
         {
+            ApplySelectedLogTypeFromService();
             LoadFromGlobalLogType();
             StatusMessage = $"Loaded bank for {SelectedLogTypeDisplayName}.";
             return;
@@ -142,6 +193,7 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
 
         Dispatcher.UIThread.Post(() =>
         {
+            ApplySelectedLogTypeFromService();
             LoadFromGlobalLogType();
             StatusMessage = $"Loaded bank for {SelectedLogTypeDisplayName}.";
         });
@@ -192,6 +244,8 @@ public sealed class DigitalVoiceKeyerRowViewModel : INotifyPropertyChanged
     private string _recordingPath;
     private bool _hasRecording;
     private bool _isRecording;
+    private bool _isPlaying;
+    private int _repeatDelaySeconds;
 
     public DigitalVoiceKeyerRowViewModel(int slotNumber, string label, string message, string recordingPath, bool hasRecording, bool isRecording)
     {
@@ -201,6 +255,8 @@ public sealed class DigitalVoiceKeyerRowViewModel : INotifyPropertyChanged
         _recordingPath = recordingPath;
         _hasRecording = hasRecording;
         _isRecording = isRecording;
+        _isPlaying = false;
+        _repeatDelaySeconds = 0;
     }
 
     public int SlotNumber { get; }
@@ -275,12 +331,44 @@ public sealed class DigitalVoiceKeyerRowViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool IsPlaying
+    {
+        get => _isPlaying;
+        set
+        {
+            if (_isPlaying == value)
+                return;
+
+            _isPlaying = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPlaying)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PlayButtonText)));
+        }
+    }
+
+    public int RepeatDelaySeconds
+    {
+        get => _repeatDelaySeconds;
+        set
+        {
+            var normalized = Math.Max(0, value);
+            if (_repeatDelaySeconds == normalized)
+                return;
+
+            _repeatDelaySeconds = normalized;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RepeatDelaySeconds)));
+        }
+    }
+
     public string RecordingFileName => string.IsNullOrWhiteSpace(_recordingPath) ? string.Empty : Path.GetFileName(_recordingPath);
 
     public string RecordButtonText => IsRecording ? "Stop" : "Record";
 
+    public string PlayButtonText => IsPlaying ? "Stop" : "Play";
+
     public event PropertyChangedEventHandler? PropertyChanged;
 }
+
+
 
 
 

@@ -429,8 +429,9 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
 
     private static string GetRecordingPath(string logTypeKey, int slot)
     {
-        var dataDir = App.GetDataDirectoryPath();
-        var folder = Path.Combine(dataDir, RecordingFolderName, logTypeKey);
+        var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var baseDir = Path.Combine(homeDir, "HamBusLog");
+        var folder = Path.Combine(baseDir, RecordingFolderName, logTypeKey);
         Directory.CreateDirectory(folder);
         return Path.Combine(folder, $"slot-{slot:00}.wav");
     }
@@ -550,16 +551,34 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
         if (!process.Start())
             throw new InvalidOperationException($"Failed to start process '{fileName}'.");
 
-        var stdOutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stdErrTask = process.StandardError.ReadToEndAsync(cancellationToken);
-        await process.WaitForExitAsync(cancellationToken);
-        return new ProcessRunResult(process.ExitCode, await stdOutTask, await stdErrTask);
+        try
+        {
+            var stdOutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+            var stdErrTask = process.StandardError.ReadToEndAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken);
+            return new ProcessRunResult(process.ExitCode, await stdOutTask, await stdErrTask);
+        }
+        catch (OperationCanceledException)
+        {
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+            }
+            catch
+            {
+            }
+
+            throw;
+        }
     }
 
     private void RaiseBankChanged() => BankChanged?.Invoke(this, EventArgs.Empty);
 
     private readonly record struct ProcessRunResult(int ExitCode, string StandardOutput, string StandardError);
 }
+
+
 
 
 
