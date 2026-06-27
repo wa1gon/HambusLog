@@ -26,6 +26,9 @@ public sealed class AppConfiguration
 
     /// <summary>System-wide WSJT-X UDP bridge settings.</summary>
     public WsjtConfiguration Wsjt { get; set; } = new();
+
+    /// <summary>System-wide digital voice keyer banks keyed by log type.</summary>
+    public DigitalVoiceKeyerConfiguration DigitalVoiceKeyer { get; set; } = new();
 }
 
 public sealed class WindowPlacement
@@ -238,5 +241,26 @@ public sealed class WsjtConfiguration
     public bool AcceptOnlyLocalhost { get; set; } = true;
     public bool AutoPopulateLogInput { get; set; } = true;
     public int DebugQueueLength { get; set; } = 500;
+}
+
+public sealed class DigitalVoiceKeyerConfiguration
+{
+    public string OutputDevice { get; set; } = string.Empty;
+    public Dictionary<string, DigitalVoiceKeyerBankConfig> Banks { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class DigitalVoiceKeyerBankConfig
+{
+    public string LogTypeKey { get; set; } = string.Empty;
+    public List<DigitalVoiceKeyerRecordConfig> Records { get; set; } = [];
+}
+
+public sealed class DigitalVoiceKeyerRecordConfig
+{
+    public int SlotNumber { get; set; }
+    public string Label { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public string RecordingPath { get; set; } = string.Empty;
+    public bool IsRecording { get; set; }
 }
 

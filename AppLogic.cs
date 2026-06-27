@@ -9,6 +9,7 @@ public partial class App
     public static IDxClusterSpotPublisher DxClusterSpotPublisher { get; } = new DxClusterSpotPublisher();
     public static IWsjtBridgeService WsjtBridgeService { get; } = new WsjtBridgeService();
     public static ILogTypeSelectionService LogTypeSelectionService { get; } = new LogTypeSelectionService();
+    public static IDigitalVoiceKeyerService DigitalVoiceKeyerService { get; } = new DigitalVoiceKeyerService();
     public static IToastService Toasts { get; } = new ToastService();
 
     private static HamBusLogDbContext? _dbContext;
