@@ -14,7 +14,7 @@
         <ScrollViewer Grid.Row="0">
             <StackPanel Spacing="12">
                 <TextBlock Text="Edit QSO" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource AppForegroundBrush}" />
-                <Grid ColumnDefinitions="1*,1*,1*,1*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                <Grid ColumnDefinitions="1*,1*,1*,1*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
                     <StackPanel Grid.Column="0" Grid.Row="0" Spacing="3">
                         <TextBlock Text="Callsign" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" FontWeight="Bold" />
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
@@ -68,6 +68,14 @@
                     <StackPanel Grid.Column="3" Grid.Row="2" Spacing="3">
                         <TextBlock Text="Name" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
                         <TextBox Text="{Binding Name}" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="0" Grid.Row="3" Spacing="3">
+                        <TextBlock Text="Section" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
+                        <TextBox Text="{Binding Section}" TextChanged="OnUppercaseInputChanged" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Grid.Row="3" Spacing="3">
+                        <TextBlock Text="Class" Foreground="{DynamicResource AppForegroundBrush}" FontSize="12" />
+                        <TextBox Text="{Binding QsoClass}" TextChanged="OnUppercaseInputChanged" Background="{DynamicResource AppPanelBackgroundBrush}" Foreground="{DynamicResource AppForegroundBrush}" Padding="6" />
                     </StackPanel>
                 </Grid>
 

@@ -85,6 +85,7 @@ public sealed class ConfigProfile
     public bool StayOnTopAddContactWindow { get; set; }
     public bool StayOnTopArqpProgressWindow { get; set; }
     public bool StayOnTopArrlFdProgressWindow { get; set; }
+    public bool StayOnTopDigitalVoiceKeyerWindow { get; set; }
 }
 
 public sealed class ContestDefinitionConfig
@@ -246,6 +247,7 @@ public sealed class WsjtConfiguration
 public sealed class DigitalVoiceKeyerConfiguration
 {
     public string OutputDevice { get; set; } = string.Empty;
+    public bool CompactView { get; set; }
     public Dictionary<string, DigitalVoiceKeyerBankConfig> Banks { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
@@ -260,6 +262,7 @@ public sealed class DigitalVoiceKeyerRecordConfig
     public int SlotNumber { get; set; }
     public string Label { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
+    public int RepeatDelaySeconds { get; set; }
     public string RecordingPath { get; set; } = string.Empty;
     public bool IsRecording { get; set; }
 }

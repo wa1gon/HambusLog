@@ -11,4 +11,6 @@ public interface IQsoRepository
     Task AddAsync(Qso qso, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(Qso qso, CancellationToken cancellationToken = default);
+
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

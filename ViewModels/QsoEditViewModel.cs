@@ -17,6 +17,8 @@ public sealed partial class QsoEditViewModel : ObservableObject
     [ObservableProperty] private string _state = string.Empty;
     [ObservableProperty] private string _country = string.Empty;
     [ObservableProperty] private string _name = string.Empty;
+    [ObservableProperty] private string _section = string.Empty;
+    [ObservableProperty] private string _qsoClass = string.Empty;
 
     [ObservableProperty] private string _newDetailField = string.Empty;
     [ObservableProperty] private string _newDetailValue = string.Empty;
@@ -42,12 +44,17 @@ public sealed partial class QsoEditViewModel : ObservableObject
         Country = qso.Country ?? string.Empty;
         Name = qso.Details?.FirstOrDefault(x => string.Equals(x.FieldName, "NAME", StringComparison.OrdinalIgnoreCase))?.FieldValue
             ?? string.Empty;
+        Section = GetDetailValue(qso.Details, "SECTION", "ARRL_SECT", "ARRL-SECTION");
+        QsoClass = GetDetailValue(qso.Details, "CLASS", "FD_CLASS");
 
         Details.Clear();
         if (qso.Details is { Count: > 0 })
         {
             foreach (var detail in qso.Details)
             {
+                if (IsSectionOrClassField(detail.FieldName))
+                    continue;
+
                 Details.Add(new QsoDetail
                 {
                     FieldName = detail.FieldName,
@@ -122,6 +129,9 @@ public sealed partial class QsoEditViewModel : ObservableObject
             if (string.Equals(detail.FieldName, "NAME", StringComparison.OrdinalIgnoreCase))
                 continue;
 
+            if (IsSectionOrClassField(detail.FieldName))
+                continue;
+
             copy.Details.Add(new QsoDetail
             {
                 QsoId = id,
@@ -131,6 +141,8 @@ public sealed partial class QsoEditViewModel : ObservableObject
         }
 
         UpsertDetail(copy.Details, "NAME", Name);
+        UpsertDetail(copy.Details, "SECTION", (Section ?? string.Empty).Trim().ToUpperInvariant());
+        UpsertDetail(copy.Details, "CLASS", (QsoClass ?? string.Empty).Trim().ToUpperInvariant());
 
         return copy;
     }
@@ -192,5 +204,32 @@ public sealed partial class QsoEditViewModel : ObservableObject
         }
 
         existing.FieldValue = normalizedValue;
+    }
+
+    private static bool IsSectionOrClassField(string? fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(fieldName))
+            return false;
+
+        return string.Equals(fieldName, "SECTION", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(fieldName, "ARRL_SECT", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(fieldName, "ARRL-SECTION", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(fieldName, "CLASS", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(fieldName, "FD_CLASS", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetDetailValue(ICollection<QsoDetail>? details, params string[] fieldNames)
+    {
+        if (details is null || fieldNames is null || fieldNames.Length == 0)
+            return string.Empty;
+
+        foreach (var fieldName in fieldNames)
+        {
+            var value = details.FirstOrDefault(x => string.Equals(x.FieldName, fieldName, StringComparison.OrdinalIgnoreCase))?.FieldValue;
+            if (!string.IsNullOrWhiteSpace(value))
+                return value;
+        }
+
+        return string.Empty;
     }
 }

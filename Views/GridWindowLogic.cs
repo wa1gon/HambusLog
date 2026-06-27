@@ -17,39 +17,89 @@ public partial class GridWindow
         RebuildRepositoryBinding();
         App.DbContextReinitialized += OnDbContextReinitialized;
         App.QsoSaved += OnQsoSaved;
+        App.LogTypeSelectionService.SelectedContestChanged += OnSelectedContestChanged;
+        // Defer column visibility until window is loaded
+        this.Loaded += (_, _) => ApplyContestColumns();
     }
 
     protected override void OnClosed(EventArgs e)
     {
         App.DbContextReinitialized -= OnDbContextReinitialized;
         App.QsoSaved -= OnQsoSaved;
+        App.LogTypeSelectionService.SelectedContestChanged -= OnSelectedContestChanged;
         base.OnClosed(e);
+    }
+
+    private void OnSelectedContestChanged(object? sender, EventArgs e)
+    {
+        if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            ApplyContestColumns();
+            return;
+        }
+
+        Avalonia.Threading.Dispatcher.UIThread.Post(ApplyContestColumns);
+    }
+
+    private void ApplyContestColumns()
+    {
+        var contest = App.LogTypeSelectionService.GetSelectedContestDefinition();
+        var showFieldDayColumns = contest.UsesFieldDayExchange;
+
+        System.Diagnostics.Debug.WriteLine($"ApplyContestColumns: contest={contest.Key}, usesFieldDay={showFieldDayColumns}, totalColumns={QsoDataGrid.Columns.Count}");
+
+        // Search all columns for Section and Class
+        DataGridColumn? sectionColumn = null;
+        DataGridColumn? classColumn = null;
+
+        foreach (var col in QsoDataGrid.Columns)
+        {
+            var headerText = col.Header?.ToString() ?? string.Empty;
+            if (string.Equals(headerText, "Section", StringComparison.OrdinalIgnoreCase))
+                sectionColumn = col;
+            else if (string.Equals(headerText, "Class", StringComparison.OrdinalIgnoreCase))
+                classColumn = col;
+        }
+
+        System.Diagnostics.Debug.WriteLine($"  Found Section column: {sectionColumn is not null}, Class column: {classColumn is not null}");
+
+        if (sectionColumn is not null)
+            sectionColumn.IsVisible = showFieldDayColumns;
+        if (classColumn is not null)
+            classColumn.IsVisible = showFieldDayColumns;
     }
 
     private void OnQsoSaved(object? sender, Qso qso)
     {
-        if (_viewModel is null || qso is null)
+        if (_viewModel is null)
             return;
 
         // Already on UI thread if triggered from the manual log flow; WSJT comes from a
         // background task so marshal either way to be safe.
         if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
         {
-            AppendQsoIfNew(qso);
+            UpsertQso(qso);
             return;
         }
 
-        Avalonia.Threading.Dispatcher.UIThread.Post(() => AppendQsoIfNew(qso));
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => UpsertQso(qso));
     }
 
-    private void AppendQsoIfNew(Qso qso)
+    private void UpsertQso(Qso qso)
     {
         if (_viewModel is null)
             return;
 
-        // Avoid double-add: the manual log flow adds directly to LogEntries AND fires QsoSaved.
-        if (_viewModel.LogEntries.Any(x => x.Id == qso.Id))
+        var existingIndex = _viewModel.LogEntries
+            .Select((item, index) => new { item, index })
+            .FirstOrDefault(x => x.item.Id == qso.Id)
+            ?.index;
+
+        if (existingIndex is not null)
+        {
+            _viewModel.LogEntries[(int)existingIndex] = qso;
             return;
+        }
 
         _viewModel.LogEntries.Insert(0, qso);
     }
@@ -153,23 +203,7 @@ public partial class GridWindow
         {
             await _repository.UpdateAsync(updated);
             await _repository.SaveChangesAsync();
-
-            var existing = _viewModel.LogEntries.FirstOrDefault(x => x.Id == updated.Id);
-            if (existing is null)
-                return;
-
-            existing.Call = updated.Call;
-            existing.Band = updated.Band;
-            existing.Mode = updated.Mode;
-            existing.QsoDate = updated.QsoDate;
-            existing.Freq = updated.Freq;
-            existing.RstSent = updated.RstSent;
-            existing.RstRcvd = updated.RstRcvd;
-            existing.Details = updated.Details;
-
-            var index = _viewModel.LogEntries.IndexOf(existing);
-            _viewModel.LogEntries.RemoveAt(index);
-            _viewModel.LogEntries.Insert(index, existing);
+            App.RaiseQsoSaved(updated);
 
             App.Toasts.ShowSuccess("QSO updated", $"Changes saved for {updated.Call}");
         }
@@ -177,6 +211,32 @@ public partial class GridWindow
         {
             System.Diagnostics.Debug.WriteLine($"Error saving edited QSO: {ex.Message}");
             App.Toasts.ShowError("Update failed", ex.Message);
+        }
+    }
+
+    public async void OnDeleteRowClicked(object? sender, RoutedEventArgs e)
+    {
+        if (_repository is null || _viewModel is null)
+            return;
+
+        if (sender is not Button { DataContext: Qso qso })
+            return;
+
+        try
+        {
+            await _repository.DeleteAsync(qso.Id);
+            await _repository.SaveChangesAsync();
+
+            var inMemoryQso = _viewModel.LogEntries.FirstOrDefault(x => x.Id == qso.Id);
+            if (inMemoryQso is not null)
+                _viewModel.LogEntries.Remove(inMemoryQso);
+
+            App.Toasts.ShowSuccess("QSO deleted", $"Removed {qso.Call}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error deleting QSO: {ex.Message}");
+            App.Toasts.ShowError("Delete failed", ex.Message);
         }
     }
 }

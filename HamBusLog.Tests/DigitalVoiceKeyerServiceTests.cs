@@ -117,6 +117,37 @@ public sealed class DigitalVoiceKeyerServiceTests : IDisposable
         Assert.Equal("alsa_output.pci-0000_00_1f.3.analog-stereo", service.GetPreferredPlaybackDevice());
     }
 
+    [Fact]
+    public void SaveRecordsForLogType_PersistsRepeatDelaySeconds()
+    {
+        var service = new DigitalVoiceKeyerService();
+        var records = Enumerable.Range(1, 10)
+            .Select(slot => new DigitalVoiceKeyerRecord
+            {
+                SlotNumber = slot,
+                Label = $"Normal {slot}",
+                RepeatDelaySeconds = slot == 3 ? 7 : 0
+            })
+            .ToList();
+
+        service.SaveRecordsForLogType("NORMAL", records);
+
+        var loaded = service.GetRecordsForLogType("NORMAL");
+        Assert.Equal(7, loaded.Single(x => x.SlotNumber == 3).RepeatDelaySeconds);
+    }
+
+    [Fact]
+    public void SetCompactViewEnabled_PersistsInConfiguration()
+    {
+        var service = new DigitalVoiceKeyerService();
+
+        service.SetCompactViewEnabled(true);
+
+        var reloaded = AppConfigurationStore.Load();
+        Assert.True(reloaded.DigitalVoiceKeyer.CompactView);
+        Assert.True(service.GetCompactViewEnabled());
+    }
+
     public void Dispose()
     {
         try
@@ -136,6 +167,7 @@ public sealed class DigitalVoiceKeyerServiceTests : IDisposable
         }
     }
 }
+
 
 
 

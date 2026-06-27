@@ -358,6 +358,7 @@ public static class AppConfigurationStore
                 SlotNumber = slot,
                 Label = record.Label?.Trim() ?? string.Empty,
                 Message = record.Message?.Trim() ?? string.Empty,
+                RepeatDelaySeconds = Math.Max(0, record.RepeatDelaySeconds),
                 RecordingPath = record.RecordingPath?.Trim() ?? string.Empty,
                 IsRecording = record.IsRecording
             };
@@ -373,6 +374,7 @@ public static class AppConfigurationStore
                     SlotNumber = slot,
                     Label = $"{logTypeKey} {slot}",
                     Message = string.Empty,
+                    RepeatDelaySeconds = 0,
                     RecordingPath = string.Empty,
                     IsRecording = false
                 });
@@ -384,6 +386,7 @@ public static class AppConfigurationStore
                 SlotNumber = slot,
                 Label = string.IsNullOrWhiteSpace(record.Label) ? $"{logTypeKey} {slot}" : record.Label,
                 Message = record.Message,
+                RepeatDelaySeconds = Math.Max(0, record.RepeatDelaySeconds),
                 RecordingPath = record.RecordingPath?.Trim() ?? string.Empty,
                 IsRecording = record.IsRecording
             });

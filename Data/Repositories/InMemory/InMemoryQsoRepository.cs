@@ -27,6 +27,12 @@ public sealed class InMemoryQsoRepository : IQsoRepository, IUnitOfWork
         return Task.CompletedTask;
     }
 
+    public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        _items.RemoveAll(x => x.Id == id);
+        return Task.CompletedTask;
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         => Task.CompletedTask;
 }

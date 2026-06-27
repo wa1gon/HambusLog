@@ -18,6 +18,8 @@ public partial class MainWindow
     private ArqpProgressWindow? _arqpProgressWindow;
     private ArrlFdProgressWindow? _arrlFdProgressWindow;
     private LotwUploadWindow? _lotwUploadWindow;
+    private CancellationTokenSource? _dashboardPlaybackCts;
+    private int? _dashboardPlaybackSlot;
     private bool _isImportingAdif;
     private bool _isAppExitRequested;
     private bool _skipNextMenuSelectionChanged;
@@ -67,6 +69,8 @@ public partial class MainWindow
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
+        StopDashboardPlayback();
+
         if (_isAppExitRequested)
         {
             base.OnClosing(e);
@@ -212,19 +216,56 @@ public partial class MainWindow
         if (sender is not Button button || button.DataContext is not DigitalVoiceKeyerDashboardSlotViewModel slot)
             return;
 
+        if (_dashboardPlaybackCts is not null)
+        {
+            if (_dashboardPlaybackSlot == slot.SlotNumber)
+            {
+                StopDashboardPlayback();
+                return;
+            }
+
+            StopDashboardPlayback();
+        }
+
         var contest = App.LogTypeSelectionService.GetSelectedContestDefinition();
         if (!slot.HasRecording)
         {
             ToggleDigitalVoiceKeyerWindow();
-            App.Toasts.ShowInfo("Digital Voice Keyer", $"Slot {slot.SlotNumber} has no recording yet. Opened the DVK editor.");
             return;
         }
 
-        var result = await App.DigitalVoiceKeyerService.PlaySlotAsync(contest.Key, slot.SlotNumber);
-        if (result.Success)
-            App.Toasts.ShowSuccess("Digital Voice Keyer", result.Message);
-        else
-            App.Toasts.ShowInfo("Digital Voice Keyer", result.Message);
+        var cts = new CancellationTokenSource();
+        _dashboardPlaybackCts = cts;
+        _dashboardPlaybackSlot = slot.SlotNumber;
+
+        try
+        {
+            await App.DigitalVoiceKeyerService.PlaySlotAsync(contest.Key, slot.SlotNumber, cts.Token);
+            if (cts.IsCancellationRequested)
+                return;
+        }
+        finally
+        {
+            if (ReferenceEquals(_dashboardPlaybackCts, cts))
+            {
+                _dashboardPlaybackCts = null;
+                _dashboardPlaybackSlot = null;
+            }
+
+            cts.Dispose();
+        }
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && _dashboardPlaybackCts is not null)
+        {
+            StopDashboardPlayback();
+            e.Handled = true;
+            return;
+        }
+
+        base.OnKeyDown(e);
     }
 
     public void OnExitProgramClicked(object? sender, RoutedEventArgs e) => Close();
@@ -312,10 +353,27 @@ public partial class MainWindow
         if (_digitalVoiceKeyerWindow is null)
         {
             _digitalVoiceKeyerWindow = new DigitalVoiceKeyerWindow();
+            _digitalVoiceKeyerWindow.Opened += OnDigitalVoiceKeyerWindowOpened;
             _digitalVoiceKeyerWindow.Closed += (_, _) => _digitalVoiceKeyerWindow = null;
         }
 
-        ShowWithVisibleOwner(_digitalVoiceKeyerWindow);
+        _digitalVoiceKeyerWindow.Show();
+        PositionDigitalVoiceKeyerOnDashboardMonitor();
+        _digitalVoiceKeyerWindow.Activate();
+    }
+
+    private void OnDigitalVoiceKeyerWindowOpened(object? sender, EventArgs e)
+    {
+        PositionDigitalVoiceKeyerOnDashboardMonitor();
+    }
+
+    private void PositionDigitalVoiceKeyerOnDashboardMonitor()
+    {
+        if (_digitalVoiceKeyerWindow is null)
+            return;
+
+        _digitalVoiceKeyerWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+        _digitalVoiceKeyerWindow.Position = new PixelPoint(Position.X + 24, Position.Y + 24);
     }
 
     private void OpenCabrilloExportWindow()
@@ -425,6 +483,28 @@ public partial class MainWindow
     {
         window.Show();
         window.Activate();
+    }
+
+    private void StopDashboardPlayback()
+    {
+        var cts = _dashboardPlaybackCts;
+        _dashboardPlaybackCts = null;
+        _dashboardPlaybackSlot = null;
+
+        if (cts is null)
+            return;
+
+        try
+        {
+            cts.Cancel();
+        }
+        catch
+        {
+        }
+        finally
+        {
+            cts.Dispose();
+        }
     }
 
     private void ResetTreeSelection(object? sender)

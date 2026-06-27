@@ -51,6 +51,22 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
         }
     }
 
+    public bool GetCompactViewEnabled()
+    {
+        var config = AppConfigurationStore.Load();
+        return config.DigitalVoiceKeyer.CompactView;
+    }
+
+    public void SetCompactViewEnabled(bool enabled)
+    {
+        lock (_sync)
+        {
+            var config = AppConfigurationStore.Load();
+            config.DigitalVoiceKeyer.CompactView = enabled;
+            AppConfigurationStore.Save(config);
+        }
+    }
+
     public IReadOnlyList<DigitalVoiceKeyerRecord> GetRecordsForLogType(string? logTypeKey)
     {
         var normalizedLogTypeKey = NormalizeLogTypeKey(logTypeKey);
@@ -69,6 +85,7 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
                 SlotNumber = x.SlotNumber,
                 Label = x.Label,
                 Message = x.Message,
+                RepeatDelaySeconds = Math.Max(0, x.RepeatDelaySeconds),
                 RecordingPath = x.RecordingPath,
                 HasRecording = !string.IsNullOrWhiteSpace(x.RecordingPath) && File.Exists(x.RecordingPath),
                 IsRecording = string.Equals(_activeRecordingKey, MakeSessionKey(normalizedLogTypeKey, x.SlotNumber), StringComparison.OrdinalIgnoreCase)
@@ -324,6 +341,7 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
                 SlotNumber = slot,
                 Label = BuildDefaultLabel(logTypeKey, slot),
                 Message = string.Empty,
+                RepeatDelaySeconds = 0,
                 RecordingPath = string.Empty,
                 IsRecording = false
             });
@@ -349,6 +367,7 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
                 SlotNumber = slot,
                 Label = (record.Label ?? string.Empty).Trim(),
                 Message = (record.Message ?? string.Empty).Trim(),
+                RepeatDelaySeconds = Math.Max(0, record.RepeatDelaySeconds),
                 RecordingPath = (record.RecordingPath ?? string.Empty).Trim(),
                 IsRecording = record.IsRecording
             };
@@ -374,6 +393,7 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
                 SlotNumber = slot,
                 Label = (record.Label ?? string.Empty).Trim(),
                 Message = (record.Message ?? string.Empty).Trim(),
+                RepeatDelaySeconds = Math.Max(0, record.RepeatDelaySeconds),
                 RecordingPath = (record.RecordingPath ?? string.Empty).Trim(),
                 IsRecording = record.IsRecording
             };
@@ -396,6 +416,7 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
                     SlotNumber = slot,
                     Label = BuildDefaultLabel(logTypeKey, slot),
                     Message = string.Empty,
+                    RepeatDelaySeconds = 0,
                     RecordingPath = string.Empty,
                     IsRecording = false
                 });
@@ -407,6 +428,7 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
                 SlotNumber = slot,
                 Label = string.IsNullOrWhiteSpace(record.Label) ? BuildDefaultLabel(logTypeKey, slot) : record.Label,
                 Message = record.Message,
+                RepeatDelaySeconds = Math.Max(0, record.RepeatDelaySeconds),
                 RecordingPath = record.RecordingPath,
                 IsRecording = record.IsRecording
             });
@@ -429,8 +451,9 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
 
     private static string GetRecordingPath(string logTypeKey, int slot)
     {
-        var dataDir = App.GetDataDirectoryPath();
-        var folder = Path.Combine(dataDir, RecordingFolderName, logTypeKey);
+        var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var baseDir = Path.Combine(homeDir, "HamBusLog");
+        var folder = Path.Combine(baseDir, RecordingFolderName, logTypeKey);
         Directory.CreateDirectory(folder);
         return Path.Combine(folder, $"slot-{slot:00}.wav");
     }
@@ -550,16 +573,36 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
         if (!process.Start())
             throw new InvalidOperationException($"Failed to start process '{fileName}'.");
 
-        var stdOutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stdErrTask = process.StandardError.ReadToEndAsync(cancellationToken);
-        await process.WaitForExitAsync(cancellationToken);
-        return new ProcessRunResult(process.ExitCode, await stdOutTask, await stdErrTask);
+        try
+        {
+            var stdOutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+            var stdErrTask = process.StandardError.ReadToEndAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken);
+            return new ProcessRunResult(process.ExitCode, await stdOutTask, await stdErrTask);
+        }
+        catch (OperationCanceledException)
+        {
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+            }
+            catch
+            {
+            }
+
+            throw;
+        }
     }
 
     private void RaiseBankChanged() => BankChanged?.Invoke(this, EventArgs.Empty);
 
     private readonly record struct ProcessRunResult(int ExitCode, string StandardOutput, string StandardError);
 }
+
+
+
+
 
 
 
