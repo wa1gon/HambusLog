@@ -26,10 +26,28 @@ public class Qso
     // public Dictionary<string,QsoDetail> QsoDetails { get; set; } = new Dictionary<string,QsoDetail>();
 
     [NotMapped]
-    public string FieldDaySection => ResolveDetailValue("SECTION", "Section", "ARRL_SECT", "ARRL-SECTION", "fd_section");
+    public string FieldDaySection
+    {
+        get
+        {
+            var value = ResolveDetailValue("SECTION", "Section", "ARRL_SECT", "ARRL-SECTION", "fd_section");
+            if (!string.IsNullOrEmpty(value))
+                System.Diagnostics.Debug.WriteLine($"FieldDaySection for {Call}: '{value}' (found {Details?.Count} details)");
+            return value;
+        }
+    }
 
     [NotMapped]
-    public string FieldDayClass => ResolveDetailValue("CLASS", "Class", "FD_CLASS", "fd_class");
+    public string FieldDayClass
+    {
+        get
+        {
+            var value = ResolveDetailValue("CLASS", "Class", "FD_CLASS", "fd_class");
+            if (!string.IsNullOrEmpty(value))
+                System.Diagnostics.Debug.WriteLine($"FieldDayClass for {Call}: '{value}' (found {Details?.Count} details)");
+            return value;
+        }
+    }
 
     public override string ToString()
     {

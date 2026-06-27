@@ -20,8 +20,20 @@ public sealed class SqliteQsoRepository : IQsoRepository, IUnitOfWork
             _ = await _context.Database.CanConnectAsync(cancellationToken);
 
             var qsos = await _context.Qsos
+                .Include(q => q.Details)
                 .OrderByDescending(q => q.QsoDate)
                 .ToListAsync(cancellationToken);
+
+            System.Diagnostics.Debug.WriteLine($"Repository loaded {qsos.Count} QSOs with details");
+            foreach (var qso in qsos.Take(3))
+            {
+                System.Diagnostics.Debug.WriteLine($"  {qso.Call}: {qso.Details?.Count ?? 0} details");
+                if (qso.Details?.Count > 0)
+                {
+                    foreach (var detail in qso.Details)
+                        System.Diagnostics.Debug.WriteLine($"    - {detail.FieldName}={detail.FieldValue}");
+                }
+            }
 
             return qsos;
         }
@@ -77,6 +89,19 @@ public sealed class SqliteQsoRepository : IQsoRepository, IUnitOfWork
                 });
             }
         }
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var existing = await _context.Qsos
+            .Include(x => x.Details)
+            .Include(x => x.QslInfo)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (existing is null)
+            return;
+
+        _context.Qsos.Remove(existing);
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)

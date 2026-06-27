@@ -174,6 +174,12 @@ public partial class App
             WsjtBridgeService.LoggedQsoReceived += OnWsjtLoggedQsoReceived;
             desktop.Exit += (_, _) =>
             {
+                // Persist selected log type before exit
+                var config = AppConfigurationStore.Load();
+                var profile = AppConfigurationStore.GetActiveProfile(config);
+                profile.LastContestKey = LogTypeSelectionService.SelectedContestKey;
+                AppConfigurationStore.Save(config);
+
                 WsjtBridgeService.LoggedQsoReceived -= OnWsjtLoggedQsoReceived;
                 RigctldConnectionManager.Dispose();
                 DxClusterReader.Dispose();

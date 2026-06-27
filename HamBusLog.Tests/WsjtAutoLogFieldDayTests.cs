@@ -48,6 +48,28 @@ public sealed class WsjtAutoLogFieldDayTests
         Assert.DoesNotContain(qso.Details, d => d.FieldName == "Section");
     }
 
+    [Fact]
+    public void Qso_ComputedProperties_ResolveFieldDayClassAndSection()
+    {
+        var qso = new Qso
+        {
+            Id = Guid.NewGuid(),
+            Call = "K1ABC",
+            StationCallSign = "WA1GON",
+            QsoDate = DateTime.Now,
+            Band = "20M",
+            Mode = "FT8",
+            Details = new List<QsoDetail>
+            {
+                new() { FieldName = "Section", FieldValue = "EMA" },
+                new() { FieldName = "Class", FieldValue = "1D" }
+            }
+        };
+
+        Assert.Equal("EMA", qso.FieldDaySection);
+        Assert.Equal("1D", qso.FieldDayClass);
+    }
+
     private static Qso BuildQsoViaReflection(WsjtLoggedQso wsjt, ContestDefinition contest)
     {
         var method = typeof(App).GetMethod("BuildQsoFromWsjt", BindingFlags.Static | BindingFlags.NonPublic);
@@ -81,5 +103,6 @@ public sealed class WsjtAutoLogFieldDayTests
             ExchangeReceived: exchange);
     }
 }
+
 
 

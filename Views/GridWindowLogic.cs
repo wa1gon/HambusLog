@@ -18,7 +18,8 @@ public partial class GridWindow
         App.DbContextReinitialized += OnDbContextReinitialized;
         App.QsoSaved += OnQsoSaved;
         App.LogTypeSelectionService.SelectedContestChanged += OnSelectedContestChanged;
-        ApplyContestColumns();
+        // Defer column visibility until window is loaded
+        this.Loaded += (_, _) => ApplyContestColumns();
     }
 
     protected override void OnClosed(EventArgs e)
@@ -45,10 +46,22 @@ public partial class GridWindow
         var contest = App.LogTypeSelectionService.GetSelectedContestDefinition();
         var showFieldDayColumns = contest.UsesFieldDayExchange;
 
-        var sectionColumn = QsoDataGrid.Columns
-            .FirstOrDefault(x => string.Equals(x.Header?.ToString(), "Section", StringComparison.OrdinalIgnoreCase));
-        var classColumn = QsoDataGrid.Columns
-            .FirstOrDefault(x => string.Equals(x.Header?.ToString(), "Class", StringComparison.OrdinalIgnoreCase));
+        System.Diagnostics.Debug.WriteLine($"ApplyContestColumns: contest={contest.Key}, usesFieldDay={showFieldDayColumns}, totalColumns={QsoDataGrid.Columns.Count}");
+
+        // Search all columns for Section and Class
+        DataGridColumn? sectionColumn = null;
+        DataGridColumn? classColumn = null;
+
+        foreach (var col in QsoDataGrid.Columns)
+        {
+            var headerText = col.Header?.ToString() ?? string.Empty;
+            if (string.Equals(headerText, "Section", StringComparison.OrdinalIgnoreCase))
+                sectionColumn = col;
+            else if (string.Equals(headerText, "Class", StringComparison.OrdinalIgnoreCase))
+                classColumn = col;
+        }
+
+        System.Diagnostics.Debug.WriteLine($"  Found Section column: {sectionColumn is not null}, Class column: {classColumn is not null}");
 
         if (sectionColumn is not null)
             sectionColumn.IsVisible = showFieldDayColumns;
@@ -198,6 +211,32 @@ public partial class GridWindow
         {
             System.Diagnostics.Debug.WriteLine($"Error saving edited QSO: {ex.Message}");
             App.Toasts.ShowError("Update failed", ex.Message);
+        }
+    }
+
+    public async void OnDeleteRowClicked(object? sender, RoutedEventArgs e)
+    {
+        if (_repository is null || _viewModel is null)
+            return;
+
+        if (sender is not Button { DataContext: Qso qso })
+            return;
+
+        try
+        {
+            await _repository.DeleteAsync(qso.Id);
+            await _repository.SaveChangesAsync();
+
+            var inMemoryQso = _viewModel.LogEntries.FirstOrDefault(x => x.Id == qso.Id);
+            if (inMemoryQso is not null)
+                _viewModel.LogEntries.Remove(inMemoryQso);
+
+            App.Toasts.ShowSuccess("QSO deleted", $"Removed {qso.Call}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error deleting QSO: {ex.Message}");
+            App.Toasts.ShowError("Delete failed", ex.Message);
         }
     }
 }
