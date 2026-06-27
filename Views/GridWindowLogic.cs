@@ -58,28 +58,35 @@ public partial class GridWindow
 
     private void OnQsoSaved(object? sender, Qso qso)
     {
-        if (_viewModel is null || qso is null)
+        if (_viewModel is null)
             return;
 
         // Already on UI thread if triggered from the manual log flow; WSJT comes from a
         // background task so marshal either way to be safe.
         if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
         {
-            AppendQsoIfNew(qso);
+            UpsertQso(qso);
             return;
         }
 
-        Avalonia.Threading.Dispatcher.UIThread.Post(() => AppendQsoIfNew(qso));
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => UpsertQso(qso));
     }
 
-    private void AppendQsoIfNew(Qso qso)
+    private void UpsertQso(Qso qso)
     {
         if (_viewModel is null)
             return;
 
-        // Avoid double-add: the manual log flow adds directly to LogEntries AND fires QsoSaved.
-        if (_viewModel.LogEntries.Any(x => x.Id == qso.Id))
+        var existingIndex = _viewModel.LogEntries
+            .Select((item, index) => new { item, index })
+            .FirstOrDefault(x => x.item.Id == qso.Id)
+            ?.index;
+
+        if (existingIndex is not null)
+        {
+            _viewModel.LogEntries[(int)existingIndex] = qso;
             return;
+        }
 
         _viewModel.LogEntries.Insert(0, qso);
     }
@@ -183,23 +190,7 @@ public partial class GridWindow
         {
             await _repository.UpdateAsync(updated);
             await _repository.SaveChangesAsync();
-
-            var existing = _viewModel.LogEntries.FirstOrDefault(x => x.Id == updated.Id);
-            if (existing is null)
-                return;
-
-            existing.Call = updated.Call;
-            existing.Band = updated.Band;
-            existing.Mode = updated.Mode;
-            existing.QsoDate = updated.QsoDate;
-            existing.Freq = updated.Freq;
-            existing.RstSent = updated.RstSent;
-            existing.RstRcvd = updated.RstRcvd;
-            existing.Details = updated.Details;
-
-            var index = _viewModel.LogEntries.IndexOf(existing);
-            _viewModel.LogEntries.RemoveAt(index);
-            _viewModel.LogEntries.Insert(index, existing);
+            App.RaiseQsoSaved(updated);
 
             App.Toasts.ShowSuccess("QSO updated", $"Changes saved for {updated.Call}");
         }

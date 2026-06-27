@@ -9,6 +9,7 @@ public partial class SplashWindow : Window
     private const int SplashSeconds = 30;
     private const string SplashImageRelativePath = "images/hambus-large.png";
     private readonly CancellationTokenSource _cts = new();
+    private bool _isClosingOrClosed;
 
     /// <summary>The screen the splash was displayed on — read by AppLogic after Close().</summary>
     public Screen? HostScreen { get; private set; }
@@ -19,6 +20,7 @@ public partial class SplashWindow : Window
     public SplashWindow()
     {
         InitializeComponent();
+        AddHandler(InputElement.PointerPressedEvent, OnAnyPointerPressed, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
         SetSplashImage();
         SetVersionInfo();
     }
@@ -90,21 +92,18 @@ public partial class SplashWindow : Window
             Close();
     }
 
-    private void OnDismissClicked(object? sender, RoutedEventArgs e)
-    {
-        _cts.Cancel();
-        Close();
-    }
-
     protected override void OnClosed(EventArgs e)
     {
-        _cts.Cancel();
+        _isClosingOrClosed = true;
+        RemoveHandler(InputElement.PointerPressedEvent, OnAnyPointerPressed);
+        TryCancelCountdown();
         _cts.Dispose();
         base.OnClosed(e);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
+        _isClosingOrClosed = true;
         LastKnownPosition = Position;
         HostScreen = Screens.ScreenFromPoint(LastKnownPosition)
                      ?? Screens.ScreenFromWindow(this)
@@ -112,19 +111,35 @@ public partial class SplashWindow : Window
         base.OnClosing(e);
     }
 
-    private void OnSplashPointerPressed(object? sender, PointerPressedEventArgs e)
+    private void OnAnyPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (_isClosingOrClosed)
+            return;
+
         var point = e.GetCurrentPoint(this);
-        if (!point.Properties.IsLeftButtonPressed)
+        if (point.Pointer.Type != PointerType.Mouse)
             return;
 
-        // Don't hijack button clicks; only start drag from non-button surfaces.
-        if (e.Source is Button)
-            return;
+        _isClosingOrClosed = true;
+        // Any mouse click dismisses the splash immediately.
+        TryCancelCountdown();
+        Close();
+    }
 
-        BeginMoveDrag(e);
+    private void TryCancelCountdown()
+    {
+        try
+        {
+            if (!_cts.IsCancellationRequested)
+                _cts.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Ignore races from late UI events after splash teardown.
+        }
     }
 }
+
 
 
 
