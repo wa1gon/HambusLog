@@ -800,6 +800,53 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- ── WSJT-X Tab ─────────────────────────────────────── -->
+            <TabItem Header="WSJT-X">
+                <ScrollViewer Margin="12" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="10">
+
+                        <Border Padding="14" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="CardHeading" Text="WSJT-X UDP Listener" />
+                                <TextBlock Text="Set the UDP listen address and port. Use 0.0.0.0 to listen on all interfaces, or a multicast group address when receiving multicast traffic."
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="12" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="14" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                Background="{DynamicResource AppPanelBackgroundBrush}">
+                            <Grid ColumnDefinitions="180,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Listen address" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBox Grid.Row="0" Grid.Column="1"
+                                         Text="{Binding WsjtListenAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Watermark="0.0.0.0 or 239.0.0.1"
+                                         Width="260"
+                                         Padding="8,7" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Listen port" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBox Grid.Row="1" Grid.Column="1"
+                                         Text="{Binding WsjtListenPort, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Watermark="2237"
+                                         Width="120"
+                                         Padding="8,7" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Accept any host" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                    <CheckBox IsChecked="{Binding WsjtAcceptAnyHost, Mode=TwoWay}" />
+                                    <TextBlock Text="Allow packets from non-localhost addresses (required for multicast or remote WSJT-X)"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                               FontSize="11" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- ── Lookup Tab ─────────────────────────────────────── -->
             <TabItem Header="Lookup">
                 <ScrollViewer Margin="12" VerticalScrollBarVisibility="Auto">

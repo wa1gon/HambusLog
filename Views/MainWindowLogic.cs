@@ -203,6 +203,41 @@ public partial class MainWindow
 
     public void OnOpenNewContactClicked(object? sender, RoutedEventArgs e) => OpenNewContactWindow();
 
+    public void OnOpenProgressStatusClicked(object? sender, RoutedEventArgs e)
+    {
+        var contest = App.LogTypeSelectionService.GetSelectedContestDefinition();
+        var key  = contest.Key.Trim();
+        var adif = contest.AdifContestId.Trim();
+        var name = contest.DisplayName.Trim();
+
+        if (contest.UsesFieldDayExchange)
+        {
+            OpenArrlFdProgressWindow();
+            return;
+        }
+
+        if (IsArqpContestKey(key, adif, name))
+        {
+            OpenArqpProgressWindow();
+            return;
+        }
+
+        App.Toasts.ShowInfo("Progress status", "No contest progress window is available for the selected contest.");
+    }
+
+    private static bool IsArqpContestKey(string key, string adif, string name)
+    {
+        static bool IsArqp(string v)
+        {
+            if (string.IsNullOrWhiteSpace(v)) return false;
+            var u = v.Trim().ToUpperInvariant();
+            return u is "ARQP" or "AR-QSO-PARTY";
+        }
+        return IsArqp(key) || IsArqp(adif)
+               || name.Contains("Arkansas QSO Party", StringComparison.OrdinalIgnoreCase)
+               || name.Contains("ARQP", StringComparison.OrdinalIgnoreCase);
+    }
+
     public void OnOpenConfigurationClicked(object? sender, RoutedEventArgs e) => OpenConfigurationWindow();
 
     public async void OnImportAdifClicked(object? sender, RoutedEventArgs e) => await ImportAdifAsync();

@@ -314,7 +314,7 @@ public static class JadeTransferService
             if (HamBusLogModels.QsoDetailFieldFilters.IsExcluded(detail.FieldName))
                 continue;
 
-            var key = detail.FieldName.Trim().ToUpperInvariant();
+            var key = NormalizeJadeFieldName(detail.FieldName);
             if (!record.ContainsKey(key))
                 record[key] = detail.FieldValue;
         }
@@ -343,6 +343,21 @@ public static class JadeTransferService
         }
 
         return JsonSerializer.Serialize(record.Where(x => x.Value is not null).ToDictionary(x => x.Key, x => x.Value));
+    }
+
+    private static string NormalizeJadeFieldName(string fieldName)
+    {
+        var normalized = fieldName.Trim();
+        return normalized.ToUpperInvariant() switch
+        {
+            "ARRL_SECT" or "ARRL_SECTION" or "ARRL-SECTION" or "ARRL SECT" => "SECTION",
+            "CLASS" or "FD_CLASS" => "CLASS",
+            "NAME" => "NAME",
+            "COUNTRY" => "COUNTRY",
+            "STATE" => "STATE",
+            "COUNTY" => "COUNTY",
+            _ => normalized.ToUpperInvariant()
+        };
     }
 
     private static HamBusLogModels.Qso FromJadeRecord(Dictionary<string, string> fields, int recordNumber)
@@ -405,7 +420,7 @@ public static class JadeTransferService
                 default:
                     if (HamBusLogModels.QsoDetailFieldFilters.IsExcluded(name))
                         break;
-                    qso.Details.Add(new HamBusLogModels.QsoDetail { FieldName = field.Key, FieldValue = value });
+                    qso.Details.Add(new HamBusLogModels.QsoDetail { FieldName = NormalizeJadeFieldName(field.Key), FieldValue = value });
                     break;
             }
         }
@@ -470,5 +485,7 @@ public static class JadeTransferService
         return new HamBusLogData.AdifImportOptions(options?.Provider ?? HamBusLogData.DatabaseProvider.Sqlite, connectionString, defaultStationCallSign);
     }
 }
+
+
 
 

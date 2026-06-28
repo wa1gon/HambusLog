@@ -268,8 +268,8 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
     private void OnSelectedContestChanged(object? sender, EventArgs e)
     {
         var selected = _logTypeSelectionService.SelectedContestKey;
-        if (string.IsNullOrWhiteSpace(selected) || string.Equals(selected, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase))
-            return;
+        if (string.IsNullOrWhiteSpace(selected))
+            selected = ContestCatalog.NormalKey;
 
         _isApplyingGlobalLogType = true;
         try

@@ -2,7 +2,6 @@ using System.Buffers.Binary;
 using System.Text;
 using HamBusLog.Services;
 using HamBusLog.ViewModels;
-using Xunit;
 
 namespace HamBusLog.Tests;
 
@@ -184,5 +183,6 @@ public sealed class WsjtMessageParserTests
         return packet;
     }
 }
+
 
 

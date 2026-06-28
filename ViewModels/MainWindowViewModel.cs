@@ -112,12 +112,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             if (!SetProperty(ref _selectedLogType, value))
                 return;
 
+            OnPropertyChanged(nameof(ShowProgressButton));
+
             if (_isApplyingLogTypeFromService || value is null)
                 return;
 
             _logTypeSelectionService.SetSelectedContestKey(value.Key);
         }
     }
+
+    public bool ShowProgressButton
+        => SelectedLogType is { } selected
+           && !string.Equals(selected.Key, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase);
 
     public ActiveRadioOption? SelectedActiveRadio
     {
