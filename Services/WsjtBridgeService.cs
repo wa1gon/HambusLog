@@ -114,7 +114,7 @@ public sealed class WsjtBridgeService : IWsjtBridgeService
                 var listenPort = NormalizePort(wsjt.ListenPort);
 
                 udp = new UdpClient(new IPEndPoint(listenAddress, listenPort));
-                PublishTraffic("SYS", WsjtMessageType.Heartbeat, "hambuslog", $"Listening on {listenAddress}:{listenPort}", string.Empty, []);
+                PublishTraffic("SYS", WsjtMessageType.Status, "hambuslog", "WSJT listener ready", $"Listening on {listenAddress}:{listenPort}", []);
 
                 while (!ct.IsCancellationRequested)
                 {
@@ -146,6 +146,11 @@ public sealed class WsjtBridgeService : IWsjtBridgeService
             }
             catch (OperationCanceledException)
             {
+                break;
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
+            {
+                PublishTraffic("SYS", WsjtMessageType.Unknown, "hambuslog", "WSJT listener failed to bind", "Address already in use; another process is already listening on this UDP port.", []);
                 break;
             }
             catch (Exception ex)
@@ -230,6 +235,7 @@ public sealed class WsjtBridgeService : IWsjtBridgeService
         _lifecycleGate.Dispose();
     }
 }
+
 
 
 

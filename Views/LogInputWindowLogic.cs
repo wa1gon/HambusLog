@@ -121,24 +121,28 @@ public partial class LogInputWindow
     public void OnInputCallChanged(object? sender, TextChangedEventArgs e)
     {
         OnUppercaseInputChanged(sender, e);
+        UpdateDuplicateStatusFromInputCall();
+    }
 
+    public void OnInputCallLostFocus(object? sender, RoutedEventArgs e)
+    {
+        if (sender is TextBox textBox)
+        {
+            // Ensure the VM has the final callsign value at blur time before duplicate checks run.
+            _viewModel.InputCall = (textBox.Text ?? string.Empty).Trim().ToUpperInvariant();
+        }
+
+        UpdateDuplicateStatusFromInputCall();
+    }
+
+    private void UpdateDuplicateStatusFromInputCall()
+    {
         if (_viewModel.InputCall.Trim().Length < 3)
         {
             ClearDuplicateStatusIfPresent();
             return;
         }
 
-        if (_viewModel.TryGetDuplicateCallWarning(out var warning))
-        {
-            SetStatus(warning);
-            return;
-        }
-
-        ClearDuplicateStatusIfPresent();
-    }
-
-    public void OnInputCallLostFocus(object? sender, RoutedEventArgs e)
-    {
         if (_viewModel.TryGetDuplicateCallWarning(out var warning))
         {
             SetStatus(warning);
