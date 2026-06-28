@@ -1,8 +1,6 @@
-using HamBusLog.Hardware;
 using HamBusLog.Services;
 using HamBusLog.ViewModels;
 using Microsoft.EntityFrameworkCore;
-using Xunit;
 
 namespace HamBusLog.Tests;
 
@@ -131,7 +129,7 @@ public sealed class LogInputViewModelTests
 
         Assert.NotNull(qso);
         Assert.Equal(string.Empty, error);
-        Assert.Equal("NORMAL", qso!.ContestId);
+        Assert.Equal("NORMAL", qso.ContestId);
         Assert.Equal("59", qso.RstSent);
         Assert.Equal("59", qso.RstRcvd);
     }
@@ -159,8 +157,8 @@ public sealed class LogInputViewModelTests
 
         Assert.NotNull(qso);
         Assert.Equal(string.Empty, error);
-        Assert.Equal("ARRL-FIELD-DAY", qso!.ContestId);
-        Assert.Equal(string.Empty, qso!.RstSent);
+        Assert.Equal("ARRL-FIELD-DAY", qso.ContestId);
+        Assert.Equal(string.Empty, qso.RstSent);
         Assert.Equal(string.Empty, qso.RstRcvd);
         Assert.Contains(qso.Details, d => d.FieldName == "Section" && d.FieldValue == "EMA");
         Assert.Contains(qso.Details, d => d.FieldName == "Class" && d.FieldValue == "1D");

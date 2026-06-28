@@ -23,6 +23,7 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
     private string _inputCall    = string.Empty;
     private string _inputDate    = string.Empty;
     private string _inputTimeOn  = string.Empty;
+    private string _inputTimeOut = string.Empty;
     private string _inputBand    = string.Empty;
     private string _inputMode    = string.Empty;
     private string _inputFreq    = string.Empty;
@@ -105,8 +106,10 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
         SetSelectedContestKey(initialContestKey);
         LoadStationConfig();
         EnsureRstDefaults();
-        InputDate       = DateTime.UtcNow.ToString("yyyyMMdd");
-        InputTimeOn     = DateTime.UtcNow.ToString("HHmm");
+        var nowUtc = DateTime.UtcNow;
+        InputDate       = nowUtc.ToString("yyyyMMdd");
+        InputTimeOn     = nowUtc.ToString("HHmm");
+        InputTimeOut    = nowUtc.ToString("HHmm");
         ApplyActiveRigSnapshot();
 
         if (_wsjtAutoPopulateEnabled)
@@ -322,6 +325,7 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
     }
     public string InputDate    { get => _inputDate;    set => SetProperty(ref _inputDate,    value); }
     public string InputTimeOn  { get => _inputTimeOn;  set => SetProperty(ref _inputTimeOn,  value); }
+    public string InputTimeOut { get => _inputTimeOut; set => SetProperty(ref _inputTimeOut, value); }
      public string InputBand    { get => _inputBand;    set { if (SetProperty(ref _inputBand, value)) ValidateBand(); } }
      public string InputMode    { get => _inputMode;    set { if (SetProperty(ref _inputMode, (value ?? string.Empty).ToUpperInvariant())) ValidateMode(); } }
      public string InputFreq    { get => _inputFreq;    set => SetProperty(ref _inputFreq,    value); }
@@ -667,8 +671,10 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
     // ── Helpers ───────────────────────────────────────────────────────
     public void StampNow()
     {
-        InputDate   = DateTime.UtcNow.ToString("yyyyMMdd");
-        InputTimeOn = DateTime.UtcNow.ToString("HHmm");
+        var nowUtc = DateTime.UtcNow;
+        InputDate   = nowUtc.ToString("yyyyMMdd");
+        InputTimeOn = nowUtc.ToString("HHmm");
+        InputTimeOut = nowUtc.ToString("HHmm");
     }
 
     public void SetInitialCallsign(string? callsign)
@@ -743,7 +749,9 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
         if (_suspendRigAutoPopulateUntilUtc is not DateTime pauseUntil || DateTime.UtcNow >= pauseUntil)
             RefreshSelectedRadioInputs();
 
-        InputTimeOn = DateTime.UtcNow.ToString("HHmm");
+        var nowUtc = DateTime.UtcNow;
+        InputTimeOn = nowUtc.ToString("HHmm");
+        InputTimeOut = nowUtc.ToString("HHmm");
     }
 
     public void ApplyWsjtLoggedQso(WsjtLoggedQso qso)
