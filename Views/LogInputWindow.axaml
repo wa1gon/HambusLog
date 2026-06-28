@@ -231,26 +231,26 @@
 
                         <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
                                    IsVisible="{Binding IsFieldDay}"
-                                   Text="Field Day Required Exchange"
+                                   Text="Required Exchange"
                                    Foreground="{DynamicResource AppMutedForegroundBrush}"
                                    FontSize="11" />
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" IsVisible="{Binding ShowFieldDaySection}" Classes="FieldLabel" Text="Field Day Section" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" IsVisible="{Binding ShowFieldDayClass}" Classes="FieldLabel" Text="Class" VerticalAlignment="Center" />
                         <TextBox Grid.Row="3" Grid.Column="1"
-                                 Name="FieldDaySectionTextBox"
-                                 IsVisible="{Binding ShowFieldDaySection}"
-                                 Text="{Binding InputFieldDaySection}"
-                                 Watermark="EMA"
-                                 KeyDown="OnFieldDaySectionKeyDown"
-                                 TextChanged="OnUppercaseInputChanged" />
-
-                        <TextBlock Grid.Row="3" Grid.Column="3" IsVisible="{Binding ShowFieldDayClass}" Classes="FieldLabel" Text="Field Day Class" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="3" Grid.Column="4"
                                  Name="FieldDayClassTextBox"
                                  IsVisible="{Binding ShowFieldDayClass}"
                                  Text="{Binding InputFieldDayClass}"
                                  Watermark="1D"
                                  KeyDown="OnFieldDayClassKeyDown"
+                                 TextChanged="OnUppercaseInputChanged" />
+
+                        <TextBlock Grid.Row="3" Grid.Column="3" IsVisible="{Binding ShowFieldDaySection}" Classes="FieldLabel" Text="Section" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="3" Grid.Column="4"
+                                 Name="FieldDaySectionTextBox"
+                                 IsVisible="{Binding ShowFieldDaySection}"
+                                 Text="{Binding InputFieldDaySection}"
+                                 Watermark="EMA"
+                                 KeyDown="OnFieldDaySectionKeyDown"
                                  TextChanged="OnUppercaseInputChanged" />
 
                         <TextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="5"

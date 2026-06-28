@@ -69,7 +69,9 @@
                               MinWidth="300"
                               HorizontalAlignment="Left"
                               ItemsSource="{Binding AvailableOutputDevices}"
-                              SelectedItem="{Binding SelectedOutputDevice, Mode=TwoWay}" />
+                              SelectedItem="{Binding SelectedOutputDevice, Mode=TwoWay}"
+                              DisplayMemberBinding="{Binding DisplayName}"
+                              ToolTip.Tip="{Binding SelectedOutputDevice.Value}" />
                 </Grid>
             </Grid>
         </Border>
@@ -81,13 +83,13 @@
             <Grid RowDefinitions="Auto,*" RowSpacing="4" Margin="8">
                 <Grid Grid.Row="0"
                       IsVisible="{Binding IsDetailedView}"
-                      ColumnDefinitions="64,84,84,320,*,220" ColumnSpacing="8" Margin="2,0,2,4">
+                      ColumnDefinitions="64,84,84,320,*,300" ColumnSpacing="8" Margin="2,0,2,4">
                     <TextBlock Text="Slot" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                     <TextBlock Grid.Column="1" Text="Record" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                     <TextBlock Grid.Column="2" Text="Delete" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                     <TextBlock Grid.Column="3" Text="Button Label" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                     <TextBlock Grid.Column="4" Text="Recording" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AppMutedForegroundBrush}" />
-                    <TextBlock Grid.Column="5" Text="Play / Repeat (s)" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                    <TextBlock Grid.Column="5" Text="Test / Play / Repeat (s)" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AppMutedForegroundBrush}" />
                 </Grid>
 
                 <Grid Grid.Row="0"
@@ -108,7 +110,7 @@
                                         Padding="6"
                                         Margin="0,0,0,6">
                                     <Grid>
-                                    <Grid IsVisible="{Binding IsDetailedView}" ColumnDefinitions="64,84,84,320,*,220" ColumnSpacing="8" VerticalAlignment="Center">
+                                    <Grid IsVisible="{Binding IsDetailedView}" ColumnDefinitions="64,84,84,320,*,300" ColumnSpacing="8" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding SlotNumber, StringFormat=S{0:00}}"
                                                    VerticalAlignment="Center"
                                                    FontSize="11"
@@ -146,6 +148,13 @@
                                                    FontSize="11" />
 
                                         <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Button Content="Test"
+                                                    Click="OnSlotTestButtonClicked"
+                                                    Tag="{Binding SlotNumber}"
+                                                    MinWidth="56"
+                                                    ToolTip.Tip="Play to system default without keying transmit"
+                                                    Background="{DynamicResource AppButtonCautionBrush}"
+                                                    Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
                                             <Button Content="{Binding PlayButtonText}"
                                                     Click="OnSlotPlayButtonClicked"
                                                     PointerPressed="OnSlotPlayButtonPointerPressed"

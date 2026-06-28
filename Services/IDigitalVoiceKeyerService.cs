@@ -2,9 +2,7 @@ namespace HamBusLog.Services;
 
 public interface IDigitalVoiceKeyerService
 {
-    IReadOnlyList<DigitalVoiceKeyerRecord> GetRecordsForLogType(string? logTypeKey);
-
-    IReadOnlyList<string> GetAvailablePlaybackDevices();
+    IReadOnlyList<AudioPlaybackDeviceOption> GetAvailablePlaybackDevices();
 
     string GetPreferredPlaybackDevice();
 
@@ -14,11 +12,15 @@ public interface IDigitalVoiceKeyerService
 
     void SetCompactViewEnabled(bool enabled);
 
+    IReadOnlyList<DigitalVoiceKeyerRecord> GetRecordsForLogType(string? logTypeKey);
+
     void SaveRecordsForLogType(string? logTypeKey, IEnumerable<DigitalVoiceKeyerRecord> records);
 
     Task<DigitalVoiceKeyerOperationResult> RecordSlotAsync(string? logTypeKey, int slotNumber, CancellationToken cancellationToken = default);
 
     Task<DigitalVoiceKeyerOperationResult> PlaySlotAsync(string? logTypeKey, int slotNumber, CancellationToken cancellationToken = default);
+
+    Task<DigitalVoiceKeyerOperationResult> TestSlotAsync(string? logTypeKey, int slotNumber, CancellationToken cancellationToken = default);
 
     bool DeleteRecording(string? logTypeKey, int slotNumber);
 
@@ -40,6 +42,11 @@ public readonly record struct DigitalVoiceKeyerOperationResult(bool Success, str
 {
     public static DigitalVoiceKeyerOperationResult Ok(string message) => new(true, message);
     public static DigitalVoiceKeyerOperationResult Fail(string message) => new(false, message);
+}
+
+public sealed record AudioPlaybackDeviceOption(string Value, string DisplayName)
+{
+    public override string ToString() => DisplayName;
 }
 
 

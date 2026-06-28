@@ -92,6 +92,27 @@ public partial class DigitalVoiceKeyerWindow
         await _viewModel.RecordSlotAsync(slotNumber);
     }
 
+    private async void OnSlotTestButtonClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button)
+            return;
+
+        if (button.DataContext is not DigitalVoiceKeyerRowViewModel row)
+            return;
+
+        var slotNumber = ReadSlotNumber(button.Tag);
+        if (slotNumber <= 0)
+            return;
+
+        if (row.IsPlaying)
+        {
+            StopPlayback($"Stopped test playback for slot {slotNumber}.");
+            return;
+        }
+
+        StartPlayback(slotNumber, row, repeatWithDelay: false, testOnly: true);
+    }
+
     private async void OnSlotPlayButtonClicked(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button button)
@@ -110,7 +131,7 @@ public partial class DigitalVoiceKeyerWindow
             return;
         }
 
-        StartPlayback(slotNumber, row, repeatWithDelay: false);
+        StartPlayback(slotNumber, row, repeatWithDelay: false, testOnly: false);
     }
 
     private void OnSlotPlayButtonPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -132,7 +153,7 @@ public partial class DigitalVoiceKeyerWindow
             return;
         }
 
-        StartPlayback(slotNumber, row, repeatWithDelay: true);
+        StartPlayback(slotNumber, row, repeatWithDelay: true, testOnly: false);
         e.Handled = true;
     }
 
@@ -151,22 +172,24 @@ public partial class DigitalVoiceKeyerWindow
         _viewModel.DeleteRecording(slotNumber);
     }
 
-    private void StartPlayback(int slotNumber, DigitalVoiceKeyerRowViewModel row, bool repeatWithDelay)
+    private void StartPlayback(int slotNumber, DigitalVoiceKeyerRowViewModel row, bool repeatWithDelay, bool testOnly)
     {
         StopPlayback(null);
         row.IsPlaying = true;
         _activePlaybackRow = row;
         _activePlaybackCts = new CancellationTokenSource();
-        _ = RunPlayLoopAsync(slotNumber, row, repeatWithDelay, _activePlaybackCts.Token);
+        _ = RunPlayLoopAsync(slotNumber, row, repeatWithDelay, testOnly, _activePlaybackCts.Token);
     }
 
-    private async Task RunPlayLoopAsync(int slotNumber, DigitalVoiceKeyerRowViewModel row, bool repeatWithDelay, CancellationToken cancellationToken)
+    private async Task RunPlayLoopAsync(int slotNumber, DigitalVoiceKeyerRowViewModel row, bool repeatWithDelay, bool testOnly, CancellationToken cancellationToken)
     {
         try
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var result = await _viewModel.PlaySlotAsync(slotNumber, cancellationToken);
+                var result = testOnly
+                    ? await _viewModel.TestSlotAsync(slotNumber, cancellationToken)
+                    : await _viewModel.PlaySlotAsync(slotNumber, cancellationToken);
                 if (cancellationToken.IsCancellationRequested || !result.Success)
                     break;
 

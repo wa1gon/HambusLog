@@ -8,11 +8,11 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
     private readonly IDigitalVoiceKeyerService _voiceKeyerService;
     private readonly ILogTypeSelectionService _logTypeSelectionService;
     private readonly ObservableCollection<DigitalVoiceKeyerRowViewModel> _rows = [];
-    private readonly ObservableCollection<string> _availableOutputDevices = [];
+    private readonly ObservableCollection<AudioPlaybackDeviceOption> _availableOutputDevices = [];
     private readonly ObservableCollection<ContestDefinition> _availableLogTypes = [];
 
     private string _selectedLogTypeDisplayName = "Normal";
-    private string _selectedOutputDevice = DigitalVoiceKeyerService.SystemDefaultPlaybackDevice;
+    private AudioPlaybackDeviceOption _selectedOutputDevice = new(string.Empty, DigitalVoiceKeyerService.SystemDefaultPlaybackDevice);
     private ContestDefinition? _selectedLogType;
     private string _statusMessage = "Ready";
     private bool _isCompactView;
@@ -41,7 +41,7 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<DigitalVoiceKeyerRowViewModel> Rows => _rows;
 
-    public ObservableCollection<string> AvailableOutputDevices => _availableOutputDevices;
+    public ObservableCollection<AudioPlaybackDeviceOption> AvailableOutputDevices => _availableOutputDevices;
 
     public ObservableCollection<ContestDefinition> AvailableLogTypes => _availableLogTypes;
 
@@ -89,21 +89,19 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
 
     public bool IsDetailedView => !IsCompactView;
 
-    public string SelectedOutputDevice
+    public AudioPlaybackDeviceOption SelectedOutputDevice
     {
         get => _selectedOutputDevice;
         set
         {
-            var normalized = string.IsNullOrWhiteSpace(value)
-                ? DigitalVoiceKeyerService.SystemDefaultPlaybackDevice
-                : value.Trim();
+            var normalized = NormalizeOutputDevice(value);
             if (!SetProperty(ref _selectedOutputDevice, normalized))
                 return;
 
-            _voiceKeyerService.SetPreferredPlaybackDevice(normalized);
-            StatusMessage = string.Equals(normalized, DigitalVoiceKeyerService.SystemDefaultPlaybackDevice, StringComparison.Ordinal)
+            _voiceKeyerService.SetPreferredPlaybackDevice(normalized.Value);
+            StatusMessage = string.IsNullOrWhiteSpace(normalized.Value)
                 ? "Using system default playback device."
-                : $"Using playback device: {normalized}";
+                : $"Using playback device: {normalized.DisplayName}";
         }
     }
 
@@ -141,6 +139,14 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
         return result;
     }
 
+    public async Task<DigitalVoiceKeyerOperationResult> TestSlotAsync(int slotNumber, CancellationToken cancellationToken = default)
+    {
+        var logType = _logTypeSelectionService.GetSelectedContestDefinition();
+        var result = await _voiceKeyerService.TestSlotAsync(logType.Key, slotNumber, cancellationToken);
+        StatusMessage = result.Message;
+        return result;
+    }
+
     public void SetStatusMessage(string message)
         => StatusMessage = message?.Trim() ?? string.Empty;
 
@@ -165,16 +171,61 @@ public sealed class DigitalVoiceKeyerViewModel : ViewModelBase, IDisposable
     {
         var devices = _voiceKeyerService.GetAvailablePlaybackDevices();
         var selected = _voiceKeyerService.GetPreferredPlaybackDevice();
+        var normalizedSelectedValue = NormalizePlaybackDeviceValue(selected);
 
         _availableOutputDevices.Clear();
         foreach (var device in devices)
             _availableOutputDevices.Add(device);
 
-        if (!_availableOutputDevices.Contains(selected, StringComparer.OrdinalIgnoreCase))
-            _availableOutputDevices.Add(selected);
+        var selectedOption = FindOutputDevice(normalizedSelectedValue)
+            ?? CreateCanonicalOutputDevice(normalizedSelectedValue);
 
-        _selectedOutputDevice = selected;
+        if (!_availableOutputDevices.Any(x => string.Equals(x.Value, selectedOption.Value, StringComparison.OrdinalIgnoreCase)))
+            _availableOutputDevices.Add(selectedOption);
+
+        _selectedOutputDevice = selectedOption;
         OnPropertyChanged(nameof(SelectedOutputDevice));
+    }
+
+    private AudioPlaybackDeviceOption NormalizeOutputDevice(AudioPlaybackDeviceOption? option)
+    {
+        var normalizedValue = NormalizePlaybackDeviceValue(option?.Value);
+        if (string.IsNullOrWhiteSpace(normalizedValue))
+            return CreateCanonicalOutputDevice(string.Empty);
+
+        return new AudioPlaybackDeviceOption(
+            normalizedValue,
+            string.IsNullOrWhiteSpace(option?.DisplayName)
+                ? DigitalVoiceKeyerService.BuildPlaybackDeviceDisplayName(normalizedValue)
+                : option!.DisplayName.Trim());
+    }
+
+    private AudioPlaybackDeviceOption? FindOutputDevice(string? value)
+    {
+        var normalized = NormalizePlaybackDeviceValue(value);
+        return _availableOutputDevices.FirstOrDefault(x => string.Equals(x.Value, normalized, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static AudioPlaybackDeviceOption CreateCanonicalOutputDevice(string rawValue)
+    {
+        var normalized = NormalizePlaybackDeviceValue(rawValue);
+        return new AudioPlaybackDeviceOption(
+            normalized,
+            string.IsNullOrWhiteSpace(normalized)
+                ? DigitalVoiceKeyerService.SystemDefaultPlaybackDevice
+                : DigitalVoiceKeyerService.BuildPlaybackDeviceDisplayName(normalized));
+    }
+
+    private static string NormalizePlaybackDeviceValue(string? value)
+    {
+        var normalized = value?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalized)
+            || string.Equals(normalized, DigitalVoiceKeyerService.SystemDefaultPlaybackDevice, StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Empty;
+        }
+
+        return normalized;
     }
 
     private void RefreshAvailableLogTypes()

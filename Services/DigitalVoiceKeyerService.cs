@@ -12,20 +12,23 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
 
     public event EventHandler? BankChanged;
 
-    public IReadOnlyList<string> GetAvailablePlaybackDevices()
+    public IReadOnlyList<AudioPlaybackDeviceOption> GetAvailablePlaybackDevices()
     {
-        var devices = new List<string> { SystemDefaultPlaybackDevice };
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { SystemDefaultPlaybackDevice };
+        var devices = new List<AudioPlaybackDeviceOption>
+        {
+            new(string.Empty, SystemDefaultPlaybackDevice)
+        };
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { string.Empty };
 
         foreach (var device in EnumeratePactlSinks())
         {
-            if (seen.Add(device))
+            if (seen.Add(device.Value))
                 devices.Add(device);
         }
 
         foreach (var device in EnumerateAlsaPlaybackDevices())
         {
-            if (seen.Add(device))
+            if (seen.Add(device.Value))
                 devices.Add(device);
         }
 
@@ -36,7 +39,7 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
     {
         var config = AppConfigurationStore.Load();
         var normalized = NormalizePlaybackDevice(config.DigitalVoiceKeyer.OutputDevice);
-        return string.IsNullOrWhiteSpace(normalized) ? SystemDefaultPlaybackDevice : normalized;
+        return normalized;
     }
 
     public void SetPreferredPlaybackDevice(string? deviceName)
@@ -130,6 +133,17 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
     }
 
     public async Task<DigitalVoiceKeyerOperationResult> PlaySlotAsync(string? logTypeKey, int slotNumber, CancellationToken cancellationToken = default)
+        => await PlaySlotCoreAsync(logTypeKey, slotNumber, cancellationToken, forceSystemDefaultPlayback: false, shouldKeyTransmit: true);
+
+    public async Task<DigitalVoiceKeyerOperationResult> TestSlotAsync(string? logTypeKey, int slotNumber, CancellationToken cancellationToken = default)
+        => await PlaySlotCoreAsync(logTypeKey, slotNumber, cancellationToken, forceSystemDefaultPlayback: true, shouldKeyTransmit: false);
+
+    private async Task<DigitalVoiceKeyerOperationResult> PlaySlotCoreAsync(
+        string? logTypeKey,
+        int slotNumber,
+        CancellationToken cancellationToken,
+        bool forceSystemDefaultPlayback,
+        bool shouldKeyTransmit)
     {
         var normalizedLogTypeKey = NormalizeLogTypeKey(logTypeKey);
         slotNumber = NormalizeSlot(slotNumber);
@@ -140,17 +154,21 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
 
         string? txRadioName = null;
         var txEnabled = false;
+        var preferredDevice = forceSystemDefaultPlayback ? string.Empty : GetConfiguredPlaybackDevice();
+        shouldKeyTransmit = shouldKeyTransmit && !string.IsNullOrWhiteSpace(preferredDevice);
 
         try
         {
-            txRadioName = GetPrimaryConnectedRadioName();
-            if (!string.IsNullOrWhiteSpace(txRadioName))
+            if (shouldKeyTransmit)
             {
-                await App.RigctldConnectionManager.SetTransmitByNameAsync(txRadioName, true, cancellationToken);
-                txEnabled = true;
+                txRadioName = GetPrimaryConnectedRadioName();
+                if (!string.IsNullOrWhiteSpace(txRadioName))
+                {
+                    await App.RigctldConnectionManager.SetTransmitByNameAsync(txRadioName, true, cancellationToken);
+                    txEnabled = true;
+                }
             }
 
-            var preferredDevice = GetConfiguredPlaybackDevice();
             ProcessRunResult? lastFailure = null;
             foreach (var attempt in BuildPlaybackAttempts(slotPath, preferredDevice))
             {
@@ -551,39 +569,124 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
         yield return ("aplay", $"\"{escapedPath}\"");
     }
 
-    private static IEnumerable<string> EnumeratePactlSinks()
+    private static IEnumerable<AudioPlaybackDeviceOption> EnumeratePactlSinks()
     {
-        if (!TryRunProcessCapture("pactl", "list short sinks", out var output))
+        if (!TryRunProcessCapture("pactl", "list sinks", out var output))
             return [];
 
-        var devices = new List<string>();
-        foreach (var rawLine in output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        var devices = new List<AudioPlaybackDeviceOption>();
+        string? currentName = null;
+        string? currentDescription = null;
+
+        void FlushCurrent()
         {
-            var parts = rawLine.Split('\t', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (parts.Length >= 2 && !string.IsNullOrWhiteSpace(parts[1]))
-                devices.Add(parts[1]);
+            if (string.IsNullOrWhiteSpace(currentName))
+                return;
+
+            devices.Add(new AudioPlaybackDeviceOption(
+                currentName,
+                BuildPlaybackDeviceDisplayName(currentName, currentDescription)));
+            currentName = null;
+            currentDescription = null;
         }
 
+        foreach (var rawLine in output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (rawLine.StartsWith("Sink #", StringComparison.OrdinalIgnoreCase))
+            {
+                FlushCurrent();
+                continue;
+            }
+
+            if (rawLine.StartsWith("Name:", StringComparison.OrdinalIgnoreCase))
+            {
+                currentName = rawLine["Name:".Length..].Trim();
+                continue;
+            }
+
+            if (rawLine.StartsWith("Description:", StringComparison.OrdinalIgnoreCase))
+            {
+                currentDescription = rawLine["Description:".Length..].Trim();
+                continue;
+            }
+        }
+
+        FlushCurrent();
         return devices;
     }
 
-    private static IEnumerable<string> EnumerateAlsaPlaybackDevices()
+    private static IEnumerable<AudioPlaybackDeviceOption> EnumerateAlsaPlaybackDevices()
     {
         if (!TryRunProcessCapture("aplay", "-L", out var output))
             return [];
 
-        var devices = new List<string>();
+        var devices = new List<AudioPlaybackDeviceOption>();
+        string? currentName = null;
+        var currentDescription = new List<string>();
+
+        void FlushCurrent()
+        {
+            if (string.IsNullOrWhiteSpace(currentName))
+                return;
+
+            var description = string.Join(" ", currentDescription).Trim();
+            devices.Add(new AudioPlaybackDeviceOption(
+                currentName,
+                BuildPlaybackDeviceDisplayName(currentName, description)));
+            currentName = null;
+            currentDescription.Clear();
+        }
+
         foreach (var rawLine in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
-            if (string.IsNullOrWhiteSpace(rawLine) || char.IsWhiteSpace(rawLine[0]))
+            if (string.IsNullOrWhiteSpace(rawLine))
                 continue;
+
+            if (!char.IsWhiteSpace(rawLine[0]))
+            {
+                FlushCurrent();
+                currentName = rawLine.Trim();
+                continue;
+            }
 
             var candidate = rawLine.Trim();
             if (!string.IsNullOrWhiteSpace(candidate))
-                devices.Add(candidate);
+                currentDescription.Add(candidate);
         }
 
+        FlushCurrent();
         return devices;
+    }
+
+    public static string BuildPlaybackDeviceDisplayName(string value, string? description = null)
+    {
+        var trimmedValue = (value ?? string.Empty).Trim();
+        var trimmedDescription = (description ?? string.Empty).Trim();
+
+        if (string.IsNullOrWhiteSpace(trimmedValue))
+            return SystemDefaultPlaybackDevice;
+
+        if (!string.IsNullOrWhiteSpace(trimmedDescription))
+        {
+            if (!string.Equals(trimmedValue, trimmedDescription, StringComparison.OrdinalIgnoreCase))
+                return $"{trimmedDescription} ({trimmedValue})";
+
+            return trimmedDescription;
+        }
+
+        return HumanizeDeviceName(trimmedValue);
+    }
+
+    private static string HumanizeDeviceName(string deviceName)
+    {
+        var cleaned = Regex.Replace(deviceName, "[_\\.]+", " ");
+        cleaned = Regex.Replace(cleaned, "-+", " ");
+        cleaned = Regex.Replace(cleaned, "\\s+", " ").Trim();
+
+        if (string.IsNullOrWhiteSpace(cleaned))
+            return deviceName;
+
+        return char.ToUpperInvariant(cleaned[0]) + cleaned[1..];
     }
 
     private static bool TryRunProcessCapture(string fileName, string arguments, out string output)
