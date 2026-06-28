@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:HamBusLog.Views"
         x:Class="HamBusLog.Views.LogInputWindow"
-        Title="{Binding CurrentContestDisplayName, StringFormat=New Contact - {0}}"
+        Title="{Binding CurrentContestDisplayName, StringFormat=New QSO - {0}}"
         RequestedThemeVariant="Dark"
         Background="{DynamicResource AppWindowBackgroundBrush}"
         Foreground="{DynamicResource AppForegroundBrush}"
@@ -102,7 +102,7 @@
                         BorderThickness="1"
                         IsVisible="{Binding IsFieldDay}">
                     <Grid ColumnDefinitions="Auto,220,16,Auto,170"
-                          RowDefinitions="Auto,Auto,Auto"
+                          RowDefinitions="Auto,Auto,Auto,Auto"
                           ColumnSpacing="12"
                           RowSpacing="10">
                         <TextBlock Grid.Row="0" Grid.ColumnSpan="5"
@@ -128,6 +128,21 @@
 
                         <TextBlock Grid.Row="2" Grid.Column="3" Classes="FieldLabel" Text="Section" VerticalAlignment="Center" />
                         <TextBox Grid.Row="2" Grid.Column="4" Text="{Binding InputFieldDaySection}" Watermark="EMA" TextChanged="OnUppercaseInputChanged" />
+
+                        <StackPanel Grid.Row="3"
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="5"
+                                    Orientation="Horizontal"
+                                    Spacing="8"
+                                    HorizontalAlignment="Right">
+                            <Button Name="FieldDayFirstPanelLogQsoButton"
+                                    Content="Log QSO"
+                                    Padding="10,6"
+                                    Click="OnLogQsoClicked" />
+                            <Button Content="Clear"
+                                    Padding="10,6"
+                                    Click="OnClearClicked" />
+                        </StackPanel>
                     </Grid>
                 </Border>
 
@@ -169,7 +184,7 @@
                             BorderBrush="{DynamicResource AppBorderBrush}"
                             BorderThickness="1">
                         <Grid ColumnDefinitions="Auto,220,16,Auto,170"
-                              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                               RowSpacing="10">
                             <TextBlock Grid.Row="0" Grid.ColumnSpan="5"
                                        Classes="SectionHeading"
@@ -217,7 +232,22 @@
                             <TextBlock Grid.Row="4" Grid.Column="3" Classes="FieldLabel" Text="Operator" VerticalAlignment="Center" />
                             <TextBox Grid.Row="4" Grid.Column="4" Text="{Binding InputOperator}" Watermark="Defaults to station call" TextChanged="OnUppercaseInputChanged" />
 
-                            <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5"
+                            <StackPanel Grid.Row="5"
+                                        Grid.Column="0"
+                                        Grid.ColumnSpan="5"
+                                        Orientation="Horizontal"
+                                        Spacing="8"
+                                        HorizontalAlignment="Right">
+                                <Button Name="NormalFirstPanelLogQsoButton"
+                                        Content="Log QSO"
+                                        Padding="10,6"
+                                        Click="OnLogQsoClicked" />
+                                <Button Content="Clear"
+                                        Padding="10,6"
+                                        Click="OnClearClicked" />
+                            </StackPanel>
+
+                            <TextBlock Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="5"
                                        Text="These are always required for every log entry."
                                        Foreground="{DynamicResource AppMutedForegroundBrush}"
                                        FontSize="11" />
@@ -333,7 +363,7 @@
         <Border Grid.Row="2" Padding="0,10,0,0"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="0,1,0,0">
-            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
                 <Button Grid.Column="0"
                         Name="LogQsoButton"
                         Content="Log QSO"
@@ -342,15 +372,7 @@
                         Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
                         Padding="20,9" CornerRadius="6"
                         FontWeight="Bold" FontSize="13" />
-                <Button Grid.Column="1"
-                        Content="Clear"
-                        Click="OnClearClicked"
-                        Background="{DynamicResource AppWarningBrush}"
-                        Foreground="{DynamicResource AppHeaderBackgroundBrush}"
-                        BorderBrush="{DynamicResource AppWarningBrush}"
-                        BorderThickness="1"
-                        Padding="16,9" CornerRadius="6" />
-                <Grid Grid.Column="2" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" VerticalAlignment="Center">
+                <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" VerticalAlignment="Center">
                         <TextBlock Grid.Row="0" Name="StatusLabel"
                                    Foreground="{DynamicResource AppErrorBrush}"
                                    FontSize="12"
@@ -383,19 +405,19 @@
                         </StackPanel>
                         </Border>
                 </Grid>
-                <Button Grid.Column="3"
+                <Button Grid.Column="2"
                         Content="Spot"
                         Click="OnSpotClicked"
                         Background="{DynamicResource AppButtonCautionBrush}"
                         Foreground="{DynamicResource AppButtonCautionForegroundBrush}"
                         Padding="16,9" CornerRadius="6" />
-                <Button Grid.Column="4"
+                <Button Grid.Column="3"
                         Content="Self-Spot"
                         Click="OnSelfSpotClicked"
                         Background="{DynamicResource AppButtonCautionBrush}"
                         Foreground="{DynamicResource AppButtonCautionForegroundBrush}"
                         Padding="16,9" CornerRadius="6" />
-                <Button Grid.Column="5"
+                <Button Grid.Column="4"
                         Content="Cancel"
                         Click="OnCancelClicked"
                         Background="Transparent"

@@ -130,8 +130,7 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
                 return;
 
             ApplyContestFilter();
-            var storedContestKey = ActiveConfigProfile().LastContestKey;
-            var initialContestKey = ResolveInitialContestKey(storedContestKey);
+            var initialContestKey = ResolveInitialContestKey(_selectedContestKey);
             SetSelectedContestKey(initialContestKey);
         }
     }
@@ -749,9 +748,7 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
         if (_suspendRigAutoPopulateUntilUtc is not DateTime pauseUntil || DateTime.UtcNow >= pauseUntil)
             RefreshSelectedRadioInputs();
 
-        var nowUtc = DateTime.UtcNow;
-        InputTimeOn = nowUtc.ToString("HHmm");
-        InputTimeOut = nowUtc.ToString("HHmm");
+        InputTimeOut = DateTime.UtcNow.ToString("HHmm");
     }
 
     public void ApplyWsjtLoggedQso(WsjtLoggedQso qso)
@@ -1059,6 +1056,12 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
                 .ToList();
         }
 
+        var selected = FindContestDefinition(_selectedContestKey)
+                       ?? FindContestDefinition(ActiveConfigProfile().LastContestKey)
+                       ?? FindContestDefinition(_logTypeSelectionService.SelectedContestKey);
+        if (selected is not null && filtered.All(x => !string.Equals(x.Key, selected.Key, StringComparison.OrdinalIgnoreCase)))
+            filtered.Add(selected);
+
         if (filtered.Count == 0)
             filtered = _contestDefinitions.ToList();
 
@@ -1071,10 +1074,11 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
         if (!string.IsNullOrWhiteSpace(storedContestKey))
         {
             var stored = storedContestKey.Trim();
-            if (FilteredContestDefinitions.Any(x =>
-                    string.Equals(x.Key, stored, StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(x.AdifContestId, stored, StringComparison.OrdinalIgnoreCase)))
-                return stored;
+            var match = _contestDefinitions.FirstOrDefault(x =>
+                string.Equals(x.Key, stored, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(x.AdifContestId, stored, StringComparison.OrdinalIgnoreCase));
+            if (match is not null)
+                return match.Key;
         }
 
         return FilteredContestDefinitions.FirstOrDefault()?.Key

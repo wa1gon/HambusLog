@@ -1,5 +1,6 @@
 using HamBusLog.Data;
 using HamBusLog.Models;
+using HamBusLog.Services;
 using HamBusLog.ViewModels;
 using HamBusLog.Wa1gonLib.Models;
 
@@ -111,6 +112,58 @@ public sealed class ConfigurationViewModelRigRadioTests : IDisposable
         Assert.Equal("portable.sqlite3", profile.DatabaseFileName);
         Assert.Equal(expectedPath, profile.DatabaseFilePath);
         Assert.Equal($"Data Source={expectedPath}", profile.ConnectionString);
+    }
+
+    [Fact]
+    public void Load_NormalizesStoredLastContestKey_ToCanonicalContestKey()
+    {
+        var config = CreateConfiguration();
+        config.Profiles["default"].LastContestKey = ContestCatalog.ArrlFieldDayAdifId;
+        SaveConfiguration(config);
+
+        var loaded = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(loaded);
+
+        Assert.Equal(ContestCatalog.ArrlFieldDayKey, profile.LastContestKey);
+    }
+
+    [Fact]
+    public void LogTypeSelectionService_PersistsSelectedContest_WhenItChanges()
+    {
+        var config = CreateConfiguration();
+        config.Profiles["default"].LastContestKey = ContestCatalog.NormalKey;
+        SaveConfiguration(config);
+
+        var service = new LogTypeSelectionService();
+        service.SetSelectedContestKey(ContestCatalog.ArrlFieldDayAdifId);
+
+        var saved = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(saved);
+
+        Assert.Equal(ContestCatalog.ArrlFieldDayKey, profile.LastContestKey);
+    }
+
+    [Fact]
+    public void GridViewModel_PersistsSelectedContestType_ThroughLogTypeSelectionService()
+    {
+        var config = CreateConfiguration();
+        config.Profiles["default"].LastContestKey = ContestCatalog.NormalKey;
+        SaveConfiguration(config);
+
+        var service = new LogTypeSelectionService();
+        using var viewModel = new GridViewModel(new EmptyQsoRepository(), service);
+
+        Assert.Equal(ContestType.Normal, viewModel.SelectedContestType);
+
+        viewModel.SelectedContestType = ContestType.ArrlFieldDay;
+
+        var saved = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(saved);
+        Assert.Equal(ContestCatalog.ArrlFieldDayKey, profile.LastContestKey);
+
+        var reloadedService = new LogTypeSelectionService();
+        using var reloadedViewModel = new GridViewModel(new EmptyQsoRepository(), reloadedService);
+        Assert.Equal(ContestType.ArrlFieldDay, reloadedViewModel.SelectedContestType);
     }
 
     [Fact]
@@ -850,6 +903,24 @@ public sealed class ConfigurationViewModelRigRadioTests : IDisposable
 
         if (File.Exists(_configPath))
             File.Delete(_configPath);
+    }
+
+    private sealed class EmptyQsoRepository : IQsoRepository
+    {
+        public Task<IReadOnlyList<Qso>> GetAllAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<Qso>>([]);
+
+        public Task<Qso?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+            => Task.FromResult<Qso?>(null);
+
+        public Task AddAsync(Qso qso, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
+        public Task UpdateAsync(Qso qso, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
+        public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
     }
 }
 

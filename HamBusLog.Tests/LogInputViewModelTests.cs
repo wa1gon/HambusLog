@@ -54,17 +54,19 @@ public sealed class LogInputViewModelTests
     }
 
     [Fact]
-    public void RefreshAutoFields_UpdatesTimeOn()
+    public void RefreshAutoFields_UpdatesTimeOutButPreservesTimeOn()
     {
         var viewModel = new LogInputViewModel
         {
-            InputTimeOn = "9999"
+            InputTimeOn = "1930",
+            InputTimeOut = "9999"
         };
 
         viewModel.RefreshAutoFields();
 
-        Assert.NotEqual("9999", viewModel.InputTimeOn);
-        Assert.Matches("^[0-9]{4}$", viewModel.InputTimeOn);
+        Assert.Equal("1930", viewModel.InputTimeOn);
+        Assert.NotEqual("9999", viewModel.InputTimeOut);
+        Assert.Matches("^[0-9]{4}$", viewModel.InputTimeOut);
     }
 
     [Fact]

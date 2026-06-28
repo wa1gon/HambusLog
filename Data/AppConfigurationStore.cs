@@ -47,6 +47,7 @@ public static class AppConfigurationStore
             EnsureWsjtConfiguration(config);
             EnsureDigitalVoiceKeyerConfiguration(config);
             EnsureContestConfiguration(config, out contestFieldsBackfilled);
+            NormalizeContestSelections(config);
 
             if (!ContainsActiveProfileProperty(json)
                 || !ContainsContestsProperty(json)
@@ -82,6 +83,7 @@ public static class AppConfigurationStore
             EnsureWsjtConfiguration(configuration);
             EnsureDigitalVoiceKeyerConfiguration(configuration);
             EnsureContestConfiguration(configuration);
+            NormalizeContestSelections(configuration);
             NormalizeLookupForSave(configuration);
 
             var directory = Path.GetDirectoryName(ConfigFilePath);
@@ -413,6 +415,41 @@ public static class AppConfigurationStore
             ? string.Empty
             : WeakSecretProtector.Encrypt(ciphertext);
         qrz.LegacyPassword = null;
+    }
+
+    private static void NormalizeContestSelections(AppConfiguration config)
+    {
+        if (config.Profiles.Count == 0)
+            return;
+
+        foreach (var profile in config.Profiles.Values)
+        {
+            if (profile is null)
+                continue;
+
+            profile.LastContestKey = NormalizeContestKey(config, profile.LastContestKey);
+        }
+    }
+
+    private static string NormalizeContestKey(AppConfiguration config, string? contestKey)
+    {
+        var normalized = string.IsNullOrWhiteSpace(contestKey)
+            ? ContestCatalog.NormalKey
+            : contestKey.Trim();
+
+        var match = (config.Contests ?? [])
+            .FirstOrDefault(x => x is not null
+                                 && (!string.IsNullOrWhiteSpace(x.Key)
+                                     || !string.IsNullOrWhiteSpace(x.AdifContestId))
+                                 && (string.Equals(x.Key, normalized, StringComparison.OrdinalIgnoreCase)
+                                     || string.Equals(x.AdifContestId, normalized, StringComparison.OrdinalIgnoreCase)));
+
+        if (match is null)
+            return ContestCatalog.NormalKey;
+
+        return string.IsNullOrWhiteSpace(match.Key)
+            ? match.AdifContestId.Trim()
+            : match.Key.Trim();
     }
 
     private static void EnsureContestConfiguration(AppConfiguration config)
