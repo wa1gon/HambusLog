@@ -221,7 +221,13 @@
                         <TextBox Grid.Row="5" Grid.Column="4" IsVisible="{Binding ShowCounty}" Text="{Binding InputCounty}" Watermark="PUL" TextChanged="OnUppercaseInputChanged" />
 
                         <TextBlock Grid.Row="6" Grid.Column="0" IsVisible="{Binding ShowGrid}" Classes="FieldLabel" Text="Grid" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="6" Grid.Column="1" IsVisible="{Binding ShowGrid}" Text="{Binding InputGrid}" Watermark="FN42" TextChanged="OnUppercaseInputChanged" />
+                        <TextBox Grid.Row="6" Grid.Column="1"
+                                 Name="GridTextBox"
+                                 IsVisible="{Binding ShowGrid}"
+                                 Text="{Binding InputGrid}"
+                                 Watermark="FN42"
+                                 KeyDown="OnGridFieldKeyDown"
+                                 TextChanged="OnUppercaseInputChanged" />
 
                         <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
                                    IsVisible="{Binding IsFieldDay}"
@@ -231,16 +237,20 @@
 
                         <TextBlock Grid.Row="3" Grid.Column="0" IsVisible="{Binding ShowFieldDaySection}" Classes="FieldLabel" Text="Field Day Section" VerticalAlignment="Center" />
                         <TextBox Grid.Row="3" Grid.Column="1"
+                                 Name="FieldDaySectionTextBox"
                                  IsVisible="{Binding ShowFieldDaySection}"
                                  Text="{Binding InputFieldDaySection}"
                                  Watermark="EMA"
+                                 KeyDown="OnFieldDaySectionKeyDown"
                                  TextChanged="OnUppercaseInputChanged" />
 
                         <TextBlock Grid.Row="3" Grid.Column="3" IsVisible="{Binding ShowFieldDayClass}" Classes="FieldLabel" Text="Field Day Class" VerticalAlignment="Center" />
                         <TextBox Grid.Row="3" Grid.Column="4"
+                                 Name="FieldDayClassTextBox"
                                  IsVisible="{Binding ShowFieldDayClass}"
                                  Text="{Binding InputFieldDayClass}"
                                  Watermark="1D"
+                                 KeyDown="OnFieldDayClassKeyDown"
                                  TextChanged="OnUppercaseInputChanged" />
 
                         <TextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="5"
@@ -265,6 +275,7 @@
                 BorderThickness="0,1,0,0">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
                 <Button Grid.Column="0"
+                        Name="LogQsoButton"
                         Content="Log QSO"
                         Click="OnLogQsoClicked"
                         Background="{DynamicResource AppButtonNormalBrush}"

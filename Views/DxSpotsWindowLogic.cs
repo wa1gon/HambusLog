@@ -191,6 +191,7 @@ public partial class DxSpotsWindow
         {
             await _repository.AddAsync(qso);
             await _repository.SaveChangesAsync();
+            App.RaiseQsoSaved(qso);
             App.Toasts.ShowSuccess("QSO saved", $"{qso.Call} logged on {qso.Band} {qso.Mode}");
         }
         catch (Exception ex)

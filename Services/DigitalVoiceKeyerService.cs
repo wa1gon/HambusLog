@@ -138,8 +138,18 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
         if (!File.Exists(slotPath))
             return DigitalVoiceKeyerOperationResult.Fail($"No recording found for slot {slotNumber}.");
 
+        string? txRadioName = null;
+        var txEnabled = false;
+
         try
         {
+            txRadioName = GetPrimaryConnectedRadioName();
+            if (!string.IsNullOrWhiteSpace(txRadioName))
+            {
+                await App.RigctldConnectionManager.SetTransmitByNameAsync(txRadioName, true, cancellationToken);
+                txEnabled = true;
+            }
+
             var preferredDevice = GetConfiguredPlaybackDevice();
             ProcessRunResult? lastFailure = null;
             foreach (var attempt in BuildPlaybackAttempts(slotPath, preferredDevice))
@@ -165,6 +175,20 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
         catch (Exception ex)
         {
             return DigitalVoiceKeyerOperationResult.Fail(ex.Message);
+        }
+        finally
+        {
+            if (txEnabled && !string.IsNullOrWhiteSpace(txRadioName))
+            {
+                try
+                {
+                    await App.RigctldConnectionManager.SetTransmitByNameAsync(txRadioName, false, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to reset TX state for {txRadioName}: {ex.Message}");
+                }
+            }
         }
     }
 
@@ -462,6 +486,43 @@ public sealed class DigitalVoiceKeyerService : IDigitalVoiceKeyerService
     {
         var config = AppConfigurationStore.Load();
         return NormalizePlaybackDevice(config.DigitalVoiceKeyer.OutputDevice);
+    }
+
+    private static string? GetPrimaryConnectedRadioName()
+    {
+        try
+        {
+            var snapshot = App.RigctldConnectionManager.GetSnapshot();
+            var connected = snapshot
+                .Where(x => x.IsConnected && !string.IsNullOrWhiteSpace(x.RadioName))
+                .ToList();
+
+            if (connected.Count == 0)
+                return null;
+
+            var config = AppConfigurationStore.Load();
+            var rigctld = AppConfigurationStore.GetRigctld(config);
+            var activeNames = rigctld.ActiveRadioNames
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (!string.IsNullOrWhiteSpace(rigctld.ActiveRadioName))
+                activeNames.Add(rigctld.ActiveRadioName.Trim());
+
+            var activeConnected = connected.FirstOrDefault(x => activeNames.Contains(x.RadioName));
+            if (activeConnected is not null)
+                return activeConnected.RadioName;
+
+            return connected
+                .OrderByDescending(x => x.LastUpdatedUtc)
+                .Select(x => x.RadioName)
+                .FirstOrDefault();
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static string NormalizePlaybackDevice(string? deviceName)

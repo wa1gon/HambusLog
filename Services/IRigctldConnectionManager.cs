@@ -31,6 +31,16 @@ public interface IRigctldConnectionManager : IDisposable
     Task<string> SetModeByNameAsync(string radioName, string mode, CancellationToken ct = default);
 
     /// <summary>
+    /// Sets TX state (PTT) for a radio by its tag name.
+    /// </summary>
+    Task<string> SetTransmitByTagAsync(string tagName, bool transmitEnabled, CancellationToken ct = default);
+
+    /// <summary>
+    /// Sets TX state (PTT) for a radio by its name.
+    /// </summary>
+    Task<string> SetTransmitByNameAsync(string radioName, bool transmitEnabled, CancellationToken ct = default);
+
+    /// <summary>
     /// Refreshes active connections based on the current configuration.
     /// </summary>
     Task RefreshActiveConnectionsAsync();

@@ -470,6 +470,7 @@ public partial class MainWindow
             _qsoRepository ??= new SqliteQsoRepository(App.DbContext);
             await _qsoRepository.AddAsync(qso);
             await _qsoRepository.SaveChangesAsync();
+            App.RaiseQsoSaved(qso);
             App.Toasts.ShowSuccess("QSO saved", $"{qso.Call} logged on {qso.Band} {qso.Mode}");
         }
         catch (Exception ex)

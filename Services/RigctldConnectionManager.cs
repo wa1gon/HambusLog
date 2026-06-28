@@ -25,7 +25,7 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
 
         var trimmedRadioName = radioName.Trim();
         var hz = (long)Math.Round(frequencyMhz * 1_000_000m);
-        var command = new ControlCommand(ControlCommandType.SetFrequency, hz, null);
+        var command = new ControlCommand(ControlCommandType.SetFrequency, hz, null, null);
         await EnqueueControlCommandAsync(trimmedRadioName, command, ct);
         return $"{trimmedRadioName}: frequency set to {frequencyMhz:0.######} MHz";
     }
@@ -42,9 +42,23 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
 
         var trimmedRadioName = radioName.Trim();
         var normalizedMode = mode.Trim().ToUpperInvariant();
-        var command = new ControlCommand(ControlCommandType.SetMode, null, normalizedMode);
+        var command = new ControlCommand(ControlCommandType.SetMode, null, normalizedMode, null);
         await EnqueueControlCommandAsync(trimmedRadioName, command, ct);
         return $"{trimmedRadioName}: mode set to {normalizedMode}";
+    }
+
+    public Task<string> SetTransmitByTagAsync(string tagName, bool transmitEnabled, CancellationToken ct = default)
+        => SetTransmitByNameAsync(tagName, transmitEnabled, ct);
+
+    public async Task<string> SetTransmitByNameAsync(string radioName, bool transmitEnabled, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(radioName))
+            throw new ArgumentException("Radio name is required.", nameof(radioName));
+
+        var trimmedRadioName = radioName.Trim();
+        var command = new ControlCommand(ControlCommandType.SetTransmit, null, null, transmitEnabled);
+        await EnqueueControlCommandAsync(trimmedRadioName, command, ct);
+        return $"{trimmedRadioName}: transmit {(transmitEnabled ? "enabled" : "disabled")}";
     }
 
     public async Task RefreshActiveConnectionsAsync()
@@ -187,6 +201,7 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
             while (worker.Commands.TryDequeue(out var pending))
                 pending.Completion.TrySetException(new IOException("Radio service stopped before command execution."));
 
+            worker.CommandSignal.Dispose();
             worker.Cts.Dispose();
             lock (_gate)
             {
@@ -244,7 +259,7 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
                     }
 
                     UpdateState(radio, true, mode, frequencyMhz, queryError);
-                    await Task.Delay(TimeSpan.FromSeconds(1), ct);
+                    await WaitForNextPollOrCommandAsync(worker, ct);
                 }
             }
             catch (OperationCanceledException)
@@ -281,6 +296,7 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
             throw new InvalidOperationException($"Radio '{radioName}' is not connected.");
 
         worker.Commands.Enqueue(command);
+        worker.CommandSignal.Release();
         try
         {
             await command.Completion.Task.WaitAsync(ct);
@@ -309,6 +325,10 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
                         await client.SetModeAsync(command.Mode);
                         command.Completion.TrySetResult();
                         break;
+                    case ControlCommandType.SetTransmit when command.TransmitEnabled is not null:
+                        await client.SetTransmitAsync(command.TransmitEnabled.Value);
+                        command.Completion.TrySetResult();
+                        break;
                     default:
                         command.Completion.TrySetException(new InvalidOperationException("Invalid control command."));
                         break;
@@ -324,6 +344,13 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
                     throw;
             }
         }
+    }
+
+    private static async Task WaitForNextPollOrCommandAsync(Worker worker, CancellationToken ct)
+    {
+        // Preserve the 1s snapshot refresh cadence but wake immediately for control commands.
+        if (worker.Commands.IsEmpty)
+            await worker.CommandSignal.WaitAsync(TimeSpan.FromSeconds(1), ct);
     }
 
     private void UpdateState(RigRadioConfig radio, bool connected, string? mode, decimal? frequencyMhz, string? error)
@@ -454,27 +481,31 @@ public sealed class RigctldConnectionManager : IRigctldConnectionManager
         public RigRadioConfig Radio { get; }
         public CancellationTokenSource Cts { get; }
         public ConcurrentQueue<ControlCommand> Commands { get; } = new();
+        public SemaphoreSlim CommandSignal { get; } = new(0, int.MaxValue);
         public Task LoopTask { get; set; } = Task.CompletedTask;
     }
 
     private enum ControlCommandType
     {
         SetFrequency,
-        SetMode
+        SetMode,
+        SetTransmit
     }
 
     private sealed class ControlCommand
     {
-        public ControlCommand(ControlCommandType type, long? frequencyHz, string? mode)
+        public ControlCommand(ControlCommandType type, long? frequencyHz, string? mode, bool? transmitEnabled)
         {
             Type = type;
             FrequencyHz = frequencyHz;
             Mode = mode;
+            TransmitEnabled = transmitEnabled;
         }
 
         public ControlCommandType Type { get; }
         public long? FrequencyHz { get; }
         public string? Mode { get; }
+        public bool? TransmitEnabled { get; }
         public TaskCompletionSource Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 }

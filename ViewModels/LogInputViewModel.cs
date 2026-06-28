@@ -261,13 +261,6 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
         EnforceArkansasCountyRule();
         EnsureRstDefaults();
 
-        var profile = ActiveConfigProfile();
-        if (!string.Equals(profile.LastContestKey, normalized, StringComparison.OrdinalIgnoreCase))
-        {
-            profile.LastContestKey = normalized;
-            AppConfigurationStore.Save(_appConfig);
-        }
-
         if (!_isApplyingGlobalLogType)
             _logTypeSelectionService.SetSelectedContestKey(normalized);
     }

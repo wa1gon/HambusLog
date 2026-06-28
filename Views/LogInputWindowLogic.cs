@@ -74,6 +74,50 @@ public partial class LogInputWindow
         textBox.CaretIndex = Math.Min(caret, upper.Length);
     }
 
+    public void OnGridFieldKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (!ShouldHandleForwardTab(e) || !_viewModel.IsFieldDay)
+            return;
+
+        if (this.FindControl<TextBox>("FieldDayClassTextBox") is { IsVisible: true } classBox)
+        {
+            classBox.Focus();
+            e.Handled = true;
+        }
+    }
+
+    public void OnFieldDayClassKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (!ShouldHandleForwardTab(e) || !_viewModel.IsFieldDay)
+            return;
+
+        if (this.FindControl<TextBox>("FieldDaySectionTextBox") is { IsVisible: true } sectionBox)
+        {
+            sectionBox.Focus();
+            e.Handled = true;
+        }
+    }
+
+    public void OnFieldDaySectionKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (!ShouldHandleForwardTab(e) || !_viewModel.IsFieldDay)
+            return;
+
+        if (this.FindControl<Button>("LogQsoButton") is { IsVisible: true } logQsoButton)
+        {
+            logQsoButton.Focus();
+            e.Handled = true;
+        }
+    }
+
+    private static bool ShouldHandleForwardTab(KeyEventArgs e)
+    {
+        if (e.Key != Key.Tab)
+            return false;
+
+        return (e.KeyModifiers & KeyModifiers.Shift) == 0;
+    }
+
     public void OnInputCallChanged(object? sender, TextChangedEventArgs e)
     {
         OnUppercaseInputChanged(sender, e);
