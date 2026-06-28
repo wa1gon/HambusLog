@@ -552,7 +552,9 @@ public static class AppConfigurationStore
             // enforce required section/class fields used by LogInputViewModel.
             if (string.Equals(contest.ExchangeType, "fieldday", StringComparison.OrdinalIgnoreCase))
             {
-                if (!existingFieldKeys.Contains("fd_section"))
+                var fieldDaySection = contest.RequiredFields.FirstOrDefault(x =>
+                    string.Equals(x.Key, "fd_section", StringComparison.OrdinalIgnoreCase));
+                if (fieldDaySection is null)
                 {
                     contest.RequiredFields.Add(new ContestFieldRequirementConfig
                     {
@@ -563,8 +565,15 @@ public static class AppConfigurationStore
                     existingFieldKeys.Add("fd_section");
                     contestFieldsBackfilled = true;
                 }
+                else if (!string.Equals(fieldDaySection.DetailFieldName, "Section", StringComparison.OrdinalIgnoreCase))
+                {
+                    fieldDaySection.DetailFieldName = "Section";
+                    contestFieldsBackfilled = true;
+                }
 
-                if (!existingFieldKeys.Contains("fd_class"))
+                var fieldDayClass = contest.RequiredFields.FirstOrDefault(x =>
+                    string.Equals(x.Key, "fd_class", StringComparison.OrdinalIgnoreCase));
+                if (fieldDayClass is null)
                 {
                     contest.RequiredFields.Add(new ContestFieldRequirementConfig
                     {
@@ -573,6 +582,11 @@ public static class AppConfigurationStore
                         DetailFieldName = "Class"
                     });
                     existingFieldKeys.Add("fd_class");
+                    contestFieldsBackfilled = true;
+                }
+                else if (!string.Equals(fieldDayClass.DetailFieldName, "Class", StringComparison.OrdinalIgnoreCase))
+                {
+                    fieldDayClass.DetailFieldName = "Class";
                     contestFieldsBackfilled = true;
                 }
             }

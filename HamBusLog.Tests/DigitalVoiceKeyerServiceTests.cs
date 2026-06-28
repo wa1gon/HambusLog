@@ -118,6 +118,28 @@ public sealed class DigitalVoiceKeyerServiceTests : IDisposable
     }
 
     [Fact]
+    public void SetPreferredPlaybackDevice_SystemDefaultPersistsAsEmptyRawValue()
+    {
+        var service = new DigitalVoiceKeyerService();
+
+        service.SetPreferredPlaybackDevice(DigitalVoiceKeyerService.SystemDefaultPlaybackDevice);
+
+        var reloaded = AppConfigurationStore.Load();
+        Assert.Equal(string.Empty, reloaded.DigitalVoiceKeyer.OutputDevice);
+        Assert.Equal(string.Empty, service.GetPreferredPlaybackDevice());
+    }
+
+    [Fact]
+    public void GetPreferredPlaybackDevice_SystemDefaultReturnsEmptyString()
+    {
+        var service = new DigitalVoiceKeyerService();
+
+        service.SetPreferredPlaybackDevice(DigitalVoiceKeyerService.SystemDefaultPlaybackDevice);
+
+        Assert.Equal(string.Empty, service.GetPreferredPlaybackDevice());
+    }
+
+    [Fact]
     public void SaveRecordsForLogType_PersistsRepeatDelaySeconds()
     {
         var service = new DigitalVoiceKeyerService();
@@ -146,6 +168,26 @@ public sealed class DigitalVoiceKeyerServiceTests : IDisposable
         var reloaded = AppConfigurationStore.Load();
         Assert.True(reloaded.DigitalVoiceKeyer.CompactView);
         Assert.True(service.GetCompactViewEnabled());
+    }
+
+    [Fact]
+    public void BuildPlaybackDeviceDisplayName_UsesFriendlyDescriptionWhenAvailable()
+    {
+        var display = DigitalVoiceKeyerService.BuildPlaybackDeviceDisplayName(
+            "alsa_output.pci-0000_00_1f.3.analog-stereo",
+            "Built-in Audio Analog Stereo");
+
+        Assert.Equal(
+            "Built-in Audio Analog Stereo (alsa_output.pci-0000_00_1f.3.analog-stereo)",
+            display);
+    }
+
+    [Fact]
+    public void BuildPlaybackDeviceDisplayName_HumanizesRawDeviceNameWhenNoDescriptionExists()
+    {
+        var display = DigitalVoiceKeyerService.BuildPlaybackDeviceDisplayName("alsa_output.usb-Logitech_USB_Headset-00.analog-stereo");
+
+        Assert.Contains("Usb Logitech USB Headset", display, StringComparison.OrdinalIgnoreCase);
     }
 
     public void Dispose()

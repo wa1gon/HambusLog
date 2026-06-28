@@ -112,9 +112,23 @@ public sealed class WsjtBridgeService : IWsjtBridgeService
 
                 var listenAddress = ParseAddress(wsjt.ListenAddress);
                 var listenPort = NormalizePort(wsjt.ListenPort);
+                var multicastMode = IsMulticastAddress(listenAddress);
+                var addressFamily = listenAddress.AddressFamily;
 
-                udp = new UdpClient(new IPEndPoint(listenAddress, listenPort));
-                PublishTraffic("SYS", WsjtMessageType.Heartbeat, "hambuslog", $"Listening on {listenAddress}:{listenPort}", string.Empty, []);
+                udp = multicastMode
+                    ? new UdpClient(addressFamily)
+                    : new UdpClient(new IPEndPoint(listenAddress, listenPort));
+
+                if (multicastMode)
+                {
+                    udp.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                    udp.Client.Bind(new IPEndPoint(addressFamily == AddressFamily.InterNetworkV6 ? IPAddress.IPv6Any : IPAddress.Any, listenPort));
+                    udp.JoinMulticastGroup(listenAddress);
+                }
+
+                PublishTraffic("SYS", WsjtMessageType.Status, "hambuslog", "WSJT listener ready", multicastMode
+                    ? $"Listening for multicast on {listenAddress}:{listenPort}"
+                    : $"Listening on {listenAddress}:{listenPort}", []);
 
                 while (!ct.IsCancellationRequested)
                 {
@@ -123,7 +137,7 @@ public sealed class WsjtBridgeService : IWsjtBridgeService
                     var remote = result.RemoteEndPoint;
                     var remoteAddress = remote.Address;
 
-                    if (wsjt.AcceptOnlyLocalhost && !IPAddress.IsLoopback(remoteAddress))
+                    if (wsjt.AcceptOnlyLocalhost && !multicastMode && !IPAddress.IsLoopback(remoteAddress))
                     {
                         PublishTraffic("RX", WsjtMessageType.Unknown, remote.ToString(), "Dropped non-local packet", string.Empty, payload);
                         continue;
@@ -146,6 +160,11 @@ public sealed class WsjtBridgeService : IWsjtBridgeService
             }
             catch (OperationCanceledException)
             {
+                break;
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
+            {
+                PublishTraffic("SYS", WsjtMessageType.Unknown, "hambuslog", "WSJT listener failed to bind", "Address already in use; another process is already listening on this UDP port.", []);
                 break;
             }
             catch (Exception ex)
@@ -216,6 +235,11 @@ public sealed class WsjtBridgeService : IWsjtBridgeService
     private static int NormalizePort(int value)
         => value <= 0 ? 2237 : value;
 
+    private static bool IsMulticastAddress(IPAddress address)
+        => address.AddressFamily == AddressFamily.InterNetwork
+           ? address.GetAddressBytes()[0] is >= 224 and <= 239
+           : address.IsIPv6Multicast;
+
     public void Dispose()
     {
         try
@@ -230,6 +254,9 @@ public sealed class WsjtBridgeService : IWsjtBridgeService
         _lifecycleGate.Dispose();
     }
 }
+
+
+
 
 
 

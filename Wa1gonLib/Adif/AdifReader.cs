@@ -204,7 +204,7 @@ public class AdifReader
                 default:
                     qso.Details.Add(new QsoDetail
                     {
-                        FieldName = field.Key,
+                        FieldName = field.Key.Trim().ToUpperInvariant(),
                         FieldValue = value
                     });
                     break;

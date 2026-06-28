@@ -2,7 +2,6 @@ using HamBusLog.Data;
 using HamBusLog.Models;
 using HamBusLog.ViewModels;
 using HamBusLog.Wa1gonLib.Models;
-using Xunit;
 
 namespace HamBusLog.Tests;
 

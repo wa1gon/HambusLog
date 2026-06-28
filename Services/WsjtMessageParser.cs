@@ -4,7 +4,7 @@ using System.Buffers.Binary;
 using System.Text;
 
 /// <summary>
-/// Parses WSJT-X UDP network datagrams (schema 2/3) into structured messages.
+/// Decodes WSJT-X UDP Message Protocol datagrams (schema 2/3) into structured messages.
 /// Wire format: big-endian. QByteArray = int32-length + UTF-8 bytes (-1 = null/empty).
 /// bool = 1 byte, quint32/qint32 = 4 bytes, quint64 = 8 bytes, double = 8 bytes IEEE-754.
 /// QDateTime = qint64 Julian-day (8) + quint32 msecs-since-midnight (4) + quint8 spec (1);
@@ -12,34 +12,20 @@ using System.Text;
 /// </summary>
 public sealed class WsjtMessageParser
 {
-    private const uint Magic = 0xADBCCBDA;
-
     public bool TryParse(byte[] datagram, out WsjtParsedMessage parsed)
     {
         parsed = new WsjtParsedMessage(WsjtMessageType.Unknown, 0, string.Empty,
             "Invalid packet", string.Empty, datagram, string.Empty);
 
-        if (datagram is null || datagram.Length < 16)
+        if (!WsjtUdpMessageProtocol.TryParse(datagram, out var packet))
             return false;
 
         try
         {
-            var span   = datagram.AsSpan();
-            var offset = 0;
+            var (summary, decoded, loggedAdif) = DecodeByType(packet.MessageType, packet.SchemaVersion, packet.Payload.AsSpan(), 0);
 
-            var magic = ReadUInt32(span, ref offset);
-            if (magic != Magic)
-                return false;
-
-            var schema    = (int)ReadUInt32(span, ref offset);
-            var typeValue = (int)ReadUInt32(span, ref offset);
-            var clientId  = ReadNetworkString(span, ref offset);
-            var msgType   = ToMessageType(typeValue);
-
-            var (summary, decoded, loggedAdif) = DecodeByType(msgType, schema, span, offset);
-
-            parsed = new WsjtParsedMessage(msgType, schema, clientId,
-                summary, decoded, datagram, loggedAdif);
+            parsed = new WsjtParsedMessage(packet.MessageType, packet.SchemaVersion, packet.ClientId,
+                summary, decoded, packet.RawDatagram, loggedAdif);
             return true;
         }
         catch
@@ -89,8 +75,6 @@ public sealed class WsjtMessageParser
         var mode         = ReadNetworkString(span, ref offset);
         var dxCall       = ReadNetworkString(span, ref offset);
         var report       = ReadNetworkString(span, ref offset);
-        var txMode       = ReadNetworkString(span, ref offset);
-        var txEnabled    = ReadBool(span, ref offset);
         var transmitting = ReadBool(span, ref offset);
         var decoding     = ReadBool(span, ref offset);
         var rxDf         = ReadUInt32(span, ref offset);
@@ -104,10 +88,10 @@ public sealed class WsjtMessageParser
         // schema >= 3 optional tail: fast(bool) + specOp(byte) + freqTol(u32) + trPeriod(u32)
         // + configName + txMessage — tolerant reads
         string configName = string.Empty, txMessage = string.Empty;
-        if (TryReadBool(span, ref offset, out _) &&
-            TryReadByte(span, ref offset, out _)  &&
-            TryReadUInt32(span, ref offset, out _) &&
-            TryReadUInt32(span, ref offset, out _))
+        if (TryReadBool(span, ref offset) &&
+            TryReadByte(span, ref offset)  &&
+            TryReadUInt32(span, ref offset) &&
+            TryReadUInt32(span, ref offset))
         {
             configName = TryReadNetworkString(span, ref offset);
             txMessage  = TryReadNetworkString(span, ref offset);
@@ -155,7 +139,7 @@ public sealed class WsjtMessageParser
     private static (string, string, string) DecodeClear(
         ReadOnlySpan<byte> span, int offset, int schema)
     {
-        var window = schema >= 3 && offset < span.Length ? (int)span[offset] : 0;
+        var window = schema >= 3 && offset < span.Length ? span[offset] : (byte)0;
         return ("Clear", window > 0 ? $"clear  window={window}" : "clear", string.Empty);
     }
 
@@ -315,7 +299,7 @@ public sealed class WsjtMessageParser
     }
 
     private static string ReadField(IReadOnlyDictionary<string, string> f, string key)
-        => f.TryGetValue(key, out var v) ? v?.Trim() ?? string.Empty : string.Empty;
+        => f.TryGetValue(key, out var v) ? v.Trim() : string.Empty;
 
     private static string NormalizeToken(string value)
     {
@@ -328,8 +312,8 @@ public sealed class WsjtMessageParser
 
     private static DateTimeOffset? ParseUtc(string adifDate, string adifTime)
     {
-        var d = (adifDate ?? string.Empty).Trim();
-        var t = (adifTime ?? string.Empty).Trim();
+        var d = adifDate.Trim();
+        var t = adifTime.Trim();
         if (d.Length != 8 || t.Length < 4) return null;
         if (t.Length > 6) t = t[..6];
         if (t.Length == 4) t += "00";
@@ -340,9 +324,6 @@ public sealed class WsjtMessageParser
             return new DateTimeOffset(parsed, TimeSpan.Zero);
         return null;
     }
-
-    private static WsjtMessageType ToMessageType(int value)
-        => Enum.IsDefined(typeof(WsjtMessageType), value) ? (WsjtMessageType)value : WsjtMessageType.Unknown;
 
     // ── Binary primitives ─────────────────────────────────────────────────────
 
@@ -380,17 +361,18 @@ public sealed class WsjtMessageParser
         return span[offset++] != 0;
     }
 
-    private static bool TryReadBool(ReadOnlySpan<byte> span, ref int offset, out bool v)
-    { if (offset >= span.Length) { v = false; return false; } v = span[offset++] != 0; return true; }
+    private static bool TryReadBool(ReadOnlySpan<byte> span, ref int offset)
+    { if (offset >= span.Length) return false; _ = span[offset++] != 0; return true; }
 
-    private static bool TryReadByte(ReadOnlySpan<byte> span, ref int offset, out byte v)
-    { if (offset >= span.Length) { v = 0; return false; } v = span[offset++]; return true; }
+    private static bool TryReadByte(ReadOnlySpan<byte> span, ref int offset)
+    { if (offset >= span.Length) return false; _ = span[offset++]; return true; }
 
-    private static bool TryReadUInt32(ReadOnlySpan<byte> span, ref int offset, out uint v)
+    private static bool TryReadUInt32(ReadOnlySpan<byte> span, ref int offset)
     {
-        if (offset + 4 > span.Length) { v = 0; return false; }
-        v = BinaryPrimitives.ReadUInt32BigEndian(span[offset..(offset + 4)]);
-        offset += 4; return true;
+        if (offset + 4 > span.Length) return false;
+        _ = BinaryPrimitives.ReadUInt32BigEndian(span[offset..(offset + 4)]);
+        offset += 4;
+        return true;
     }
 
     internal static string ReadNetworkString(ReadOnlySpan<byte> span, ref int offset)
@@ -423,4 +405,6 @@ public sealed class WsjtMessageParser
             offset += 4;
     }
 }
+
+
 

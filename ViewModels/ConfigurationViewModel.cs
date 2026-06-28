@@ -65,6 +65,9 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
     private string _clusterPassword = string.Empty;
     private string _clusterCommand = string.Empty;
     private int _clusterQueueLength = 500;
+    private string _wsjtListenAddress = "0.0.0.0";
+    private int _wsjtListenPort = 2237;
+    private bool _wsjtAcceptAnyHost;
     private string _qrzUserName = string.Empty;
     private string _qrzPassword = string.Empty;
     private string _qrzConfirmPassword = string.Empty;
@@ -603,6 +606,24 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _clusterQueueLength, value);
     }
 
+    public string WsjtListenAddress
+    {
+        get => _wsjtListenAddress;
+        set => SetProperty(ref _wsjtListenAddress, value ?? string.Empty);
+    }
+
+    public int WsjtListenPort
+    {
+        get => _wsjtListenPort;
+        set => SetProperty(ref _wsjtListenPort, value);
+    }
+
+    public bool WsjtAcceptAnyHost
+    {
+        get => _wsjtAcceptAnyHost;
+        set => SetProperty(ref _wsjtAcceptAnyHost, value);
+    }
+
     public string QrzUserName
     {
         get => _qrzUserName;
@@ -791,6 +812,13 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 Command = ClusterCommand.Trim(),
                 QueueLength = ClusterQueueLength <= 0 ? 500 : ClusterQueueLength
             };
+
+            _appConfig.Wsjt ??= new WsjtConfiguration();
+            _appConfig.Wsjt.ListenAddress = string.IsNullOrWhiteSpace(WsjtListenAddress)
+                ? "0.0.0.0"
+                : WsjtListenAddress.Trim();
+            _appConfig.Wsjt.ListenPort = WsjtListenPort <= 0 ? 2237 : WsjtListenPort;
+            _appConfig.Wsjt.AcceptOnlyLocalhost = !WsjtAcceptAnyHost;
 
             _appConfig.CallsignLookup ??= new CallsignLookupConfiguration();
             _appConfig.CallsignLookup.Qrz ??= new QrzLookupConfiguration();
@@ -1023,6 +1051,11 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
         ClusterPassword = cluster.Password ?? string.Empty;
         ClusterCommand = cluster.Command ?? string.Empty;
         ClusterQueueLength = cluster.QueueLength <= 0 ? 500 : cluster.QueueLength;
+
+        var wsjt = _appConfig.Wsjt ?? new WsjtConfiguration();
+        WsjtListenAddress = string.IsNullOrWhiteSpace(wsjt.ListenAddress) ? "0.0.0.0" : wsjt.ListenAddress;
+        WsjtListenPort = wsjt.ListenPort <= 0 ? 2237 : wsjt.ListenPort;
+        WsjtAcceptAnyHost = !wsjt.AcceptOnlyLocalhost;
 
         LoadLookupSettings();
 

@@ -74,27 +74,75 @@ public partial class LogInputWindow
         textBox.CaretIndex = Math.Min(caret, upper.Length);
     }
 
+    public void OnGridFieldKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (!ShouldHandleForwardTab(e) || !_viewModel.IsFieldDay)
+            return;
+
+        if (this.FindControl<TextBox>("FieldDayClassTextBox") is { IsVisible: true } classBox)
+        {
+            classBox.Focus();
+            e.Handled = true;
+        }
+    }
+
+    public void OnFieldDayClassKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (!ShouldHandleForwardTab(e) || !_viewModel.IsFieldDay)
+            return;
+
+        if (this.FindControl<TextBox>("FieldDaySectionTextBox") is { IsVisible: true } sectionBox)
+        {
+            sectionBox.Focus();
+            e.Handled = true;
+        }
+    }
+
+    public void OnFieldDaySectionKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (!ShouldHandleForwardTab(e) || !_viewModel.IsFieldDay)
+            return;
+
+        if (this.FindControl<Button>("LogQsoButton") is { IsVisible: true } logQsoButton)
+        {
+            logQsoButton.Focus();
+            e.Handled = true;
+        }
+    }
+
+    private static bool ShouldHandleForwardTab(KeyEventArgs e)
+    {
+        if (e.Key != Key.Tab)
+            return false;
+
+        return (e.KeyModifiers & KeyModifiers.Shift) == 0;
+    }
+
     public void OnInputCallChanged(object? sender, TextChangedEventArgs e)
     {
         OnUppercaseInputChanged(sender, e);
+        UpdateDuplicateStatusFromInputCall();
+    }
 
+    public void OnInputCallLostFocus(object? sender, RoutedEventArgs e)
+    {
+        if (sender is TextBox textBox)
+        {
+            // Ensure the VM has the final callsign value at blur time before duplicate checks run.
+            _viewModel.InputCall = (textBox.Text ?? string.Empty).Trim().ToUpperInvariant();
+        }
+
+        UpdateDuplicateStatusFromInputCall();
+    }
+
+    private void UpdateDuplicateStatusFromInputCall()
+    {
         if (_viewModel.InputCall.Trim().Length < 3)
         {
             ClearDuplicateStatusIfPresent();
             return;
         }
 
-        if (_viewModel.TryGetDuplicateCallWarning(out var warning))
-        {
-            SetStatus(warning);
-            return;
-        }
-
-        ClearDuplicateStatusIfPresent();
-    }
-
-    public void OnInputCallLostFocus(object? sender, RoutedEventArgs e)
-    {
         if (_viewModel.TryGetDuplicateCallWarning(out var warning))
         {
             SetStatus(warning);

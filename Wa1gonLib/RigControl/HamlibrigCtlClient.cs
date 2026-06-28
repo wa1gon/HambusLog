@@ -77,6 +77,13 @@ public class HamLibRigCtlClient(string _host, int _port) : IDisposable, IRigCont
         Mode = trimmedMode;
     }
 
+    public async Task SetTransmitAsync(bool transmitEnabled)
+    {
+        EnsureConnected();
+        await SendCommandAsync($"T {(transmitEnabled ? 1 : 0)}\n");
+        await EnsureCommandSucceededAsync("set transmit state");
+    }
+
     private async Task EnsureCommandSucceededAsync(string operation)
     {
         var seenLines = new List<string>();

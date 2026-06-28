@@ -59,6 +59,7 @@
                       IsReadOnly="True"
                       GridLinesVisibility="All"
                       CanUserReorderColumns="True"
+                      CanUserResizeColumns="True"
                       CanUserSortColumns="True"
                       HeadersVisibility="Column"
                       RowHeight="30"
@@ -95,6 +96,7 @@
         </Border>
     </Grid>
 </Window>
+
 
 
 

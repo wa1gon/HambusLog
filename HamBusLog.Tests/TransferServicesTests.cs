@@ -38,6 +38,20 @@ public sealed class TransferServicesTests : IDisposable
     }
 
     [Fact]
+    public void AdifReader_NormalizesDetailFieldNames_ToUppercaseCanonicalNames()
+    {
+        var adif = "<CALL:5>W1AW <QSO_DATE:8>20260628 <TIME_ON:4>1230 <BAND:3>20M <MODE:3>CW <section:3>ema <arrl_sect:3>ema <EOR>";
+
+        var parsed = AdifReader.ReadFromString($"<EOH>{adif}");
+
+        Assert.Single(parsed);
+        var details = parsed[0].Details.ToList();
+        Assert.Contains(details, d => string.Equals(d.FieldName, "SECTION", StringComparison.Ordinal));
+        Assert.Contains(details, d => string.Equals(d.FieldName, "ARRL_SECT", StringComparison.Ordinal));
+        Assert.All(details, d => Assert.Equal(d.FieldName, d.FieldName.ToUpperInvariant()));
+    }
+
+    [Fact]
     public void LotwDownloadTemplate_ReplacesPlaceholders()
     {
         var rendered = LotwUploadService.RenderTemplate(
@@ -260,6 +274,42 @@ public sealed class TransferServicesTests : IDisposable
         Assert.Equal("FT8", record["MODE"]?.ToString());
         Assert.Equal("Japan", record["COUNTRY"]?.ToString());
         Assert.Equal("339", record["DXCC"]?.ToString());
+    }
+
+    [Fact]
+    public async Task JadeExport_UsesSectionFieldName_InsteadOfArrlSect()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        var srcDbPath = Path.Combine(_tempDirectory, "src-section.sqlite");
+        var jadePath = Path.Combine(_tempDirectory, "section.json");
+
+        var sourceConn = $"Data Source={srcDbPath}";
+
+        await using (var src = HamBusLogDbContextFactory.Create(DatabaseProvider.Sqlite, sourceConn))
+        {
+            await src.Database.EnsureCreatedAsync();
+            src.Qsos.Add(new Qso
+            {
+                Id = Guid.NewGuid(),
+                Call = "K1ABC",
+                StationCallSign = "N0CALL",
+                QsoDate = DateTime.SpecifyKind(new DateTime(2026, 5, 3, 18, 30, 0), DateTimeKind.Utc),
+                Band = "20M",
+                Mode = "CW",
+                Freq = 14.025m,
+                Details = [new QsoDetail { FieldName = "arrl_sect", FieldValue = "EMA" }]
+            });
+            await src.SaveChangesAsync();
+        }
+
+        await HamBusLog.Wa1gonLib.Exchange.JadeTransferService.ExportToFileAsync(
+            jadePath,
+            new AdifImportOptions(DatabaseProvider.Sqlite, sourceConn));
+
+        var json = await File.ReadAllTextAsync(jadePath);
+        Assert.DoesNotContain("ARRL_SECT", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ARRL_SECTION", json, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"SECTION\"", json, StringComparison.OrdinalIgnoreCase);
     }
 
     public void Dispose()

@@ -223,11 +223,16 @@
                             </StackPanel>
                         </Border>
                         <WrapPanel ItemSpacing="8" HorizontalAlignment="Right">
+                            <Button Classes="QuickAction" Content="Progress Status"
+                                    IsVisible="{Binding ShowProgressButton}"
+                                    Click="OnOpenProgressStatusClicked"
+                                    Background="{DynamicResource AppButtonCautionBrush}"
+                                    Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
                             <Button Classes="QuickAction" Content="Open Grid"
                                     Click="OnOpenGridClicked"
                                     Background="{DynamicResource AppButtonNormalBrush}"
                                     Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
-                            <Button Classes="QuickAction" Content="New Contact"
+                            <Button Classes="QuickAction" Content="New QSO"
                                     Click="OnOpenNewContactClicked"
                                     Background="{DynamicResource AppButtonNormalBrush}"
                                     Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
@@ -435,7 +440,7 @@
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource AppMutedForegroundBrush}"
                                        FontSize="12" />
-                            <TextBlock Text="• New Contact opens the log-entry window directly."
+                            <TextBlock Text="• New QSO opens the log-entry window directly."
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource AppMutedForegroundBrush}"
                                        FontSize="12" />

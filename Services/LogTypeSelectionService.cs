@@ -52,9 +52,11 @@ public sealed class LogTypeSelectionService : ILogTypeSelectionService
             ? ContestCatalog.NormalKey
             : contestKey.Trim();
 
-        return ContestCatalog.GetByKey(normalized) is null
-            ? ContestCatalog.NormalKey
-            : normalized;
+        var match = ContestCatalog.GetAll().FirstOrDefault(x =>
+            string.Equals(x.Key, normalized, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(x.AdifContestId, normalized, StringComparison.OrdinalIgnoreCase));
+
+        return match?.Key ?? ContestCatalog.NormalKey;
     }
 
     private static void PersistSelection(string selectedContestKey)
