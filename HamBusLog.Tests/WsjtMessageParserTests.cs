@@ -86,6 +86,36 @@ public sealed class WsjtMessageParserTests
     }
 
     [Fact]
+    public void ApplyWsjtLoggedQso_UsesPacketModeWhenSubmodeIsBlank()
+    {
+        using var vm = new LogInputViewModel();
+        var qso = new WsjtLoggedQso(
+            "<EOR>",
+            "K1ABC",
+            new DateTimeOffset(2026, 6, 24, 12, 30, 45, TimeSpan.Zero),
+            "20M",
+            "Q65",
+            string.Empty,
+            "-5",
+            "-8",
+            "14.074",
+            "FN31",
+            "FN42",
+            "MA",
+            "MID",
+            "USA",
+            "DARRYL",
+            "K1OWN",
+            "K1OP",
+            string.Empty);
+
+        vm.ApplyWsjtLoggedQso(qso);
+
+        Assert.Equal("Q65", vm.InputMode);
+        Assert.Equal("FN31", vm.InputGrid);
+    }
+
+    [Fact]
     public void TryParse_DecodePacket_WithPlaceholderMode_DoesNotEmitModeTilde()
     {
         var parser = new WsjtMessageParser();

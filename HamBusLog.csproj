@@ -35,9 +35,13 @@
     <Compile Remove="**/bin/**/*.cs" />
     <Compile Remove="HamBusLog.Tests/**/*.cs" />
     <Compile Remove="ContestLicenseTool/**/*.cs" />
+    <Compile Remove="hambusweb/**/*.cs" />
     <Compile Remove="Wa1gonAbstracts/**/*.cs" />
     <Compile Remove="Wa1gonLib/**/*.cs" />
     <Compile Remove="Wa1gonLib.Tests/**/*.cs" />
+    <Content Remove="hambusweb/**" />
+    <EmbeddedResource Remove="hambusweb/**" />
+    <None Remove="hambusweb/**" />
     <Compile Include="Wa1gonLib/Adif/AdifReader.cs" />
     <Compile Include="Wa1gonLib/Adif/AdifWriter.cs" />
     <Compile Include="Wa1gonLib/ApiClients/ApiOptions.cs" />
@@ -87,6 +91,10 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
     <PackageReference Include="System.IO.Ports" Version="10.0.0" />
     <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

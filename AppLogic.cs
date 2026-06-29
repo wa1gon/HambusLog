@@ -16,6 +16,10 @@ public partial class App
     private static string _dbConnectionString = string.Empty;
     private static readonly object _dbContextSync = new();
     private static readonly object _dxClusterLogSync = new();
+    private static readonly object _wsjtDuplicateToastSync = new();
+    private static readonly Dictionary<string, DateTime> _recentWsjtDuplicateToastUtc = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly TimeSpan _wsjtDuplicateToastCooldown = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan _wsjtDuplicateToastRetention = TimeSpan.FromMinutes(2);
     public static event EventHandler? DbContextReinitialized;
     public static event EventHandler<Qso>? QsoSaved;
 
@@ -161,6 +165,7 @@ public partial class App
         {
             // Keep alive during splash before the main window exists.
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            Log.Information("Initializing HamBusLog framework");
             ApplyThemeFromActiveProfile();
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
@@ -168,22 +173,19 @@ public partial class App
             RigCatalogStore.InitializeFromConfiguration();
             ClearDxClusterLogs();
             LogDxClusterNonSpot("SYS", "Application started");
+            Log.Information("Starting DX Cluster and rig control services");
             _ = RigctldConnectionManager.RefreshActiveConnectionsAsync();
             _ = DxClusterReader.StartAsync();
             _ = WsjtBridgeService.StartAsync();
             WsjtBridgeService.LoggedQsoReceived += OnWsjtLoggedQsoReceived;
             desktop.Exit += (_, _) =>
             {
-                // Persist selected log type before exit
-                var config = AppConfigurationStore.Load();
-                var profile = AppConfigurationStore.GetActiveProfile(config);
-                profile.LastContestKey = LogTypeSelectionService.SelectedContestKey;
-                AppConfigurationStore.Save(config);
-
+                Log.Information("Application shutdown initiated");
                 WsjtBridgeService.LoggedQsoReceived -= OnWsjtLoggedQsoReceived;
                 RigctldConnectionManager.Dispose();
                 DxClusterReader.Dispose();
                 WsjtBridgeService.Dispose();
+                Log.Information("Services disposed, application closing");
             };
 
             var splash = new SplashWindow();
@@ -192,6 +194,7 @@ public partial class App
             // When splash closes: open the main window on the same monitor the splash was on.
             splash.Closed += (_, _) =>
             {
+                Log.Information("Splash window closed, opening main window");
                 var mainWindow = new MainWindow
                 {
                     DataContext = new MainWindowViewModel(),
@@ -255,7 +258,24 @@ public partial class App
                 using var context = CreateTransientDbContext();
                 if (await QsoImportDuplicateDetector.IsDuplicateAsync(context, qso))
                 {
+                    var duplicateMessage = BuildWsjtDuplicateWarningMessage(qso, contest);
                     System.Diagnostics.Debug.WriteLine($"WSJT-X duplicate skipped: {qso.Call} {qso.Band} {qso.Mode} {qso.QsoDate:yyyy-MM-dd HH:mm:ss}");
+
+                    if (ShouldShowWsjtDuplicateToast(qso, contest, DateTime.UtcNow))
+                    {
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            try
+                            {
+                                Toasts.ShowWarning("WSJT-X duplicate", duplicateMessage, TimeSpan.FromSeconds(8));
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"WSJT-X duplicate toast failed: {ex.Message}");
+                            }
+                        });
+                    }
+
                     return;
                 }
 
@@ -354,6 +374,62 @@ public partial class App
         }
 
         return qso;
+    }
+
+    private static string BuildWsjtDuplicateWarningMessage(Qso qso, ContestDefinition contest)
+    {
+        var call = qso.Call?.Trim().ToUpperInvariant() ?? string.Empty;
+        var band = qso.Band?.Trim().ToUpperInvariant() ?? string.Empty;
+        var mode = qso.Mode?.Trim().ToUpperInvariant() ?? string.Empty;
+        var contestName = contest.DisplayName?.Trim() ?? string.Empty;
+
+        var summary = $"Skipped duplicate {call}";
+        if (!string.IsNullOrWhiteSpace(band))
+            summary += $" on {band}";
+        if (!string.IsNullOrWhiteSpace(mode))
+            summary += $" {mode}";
+        if (!string.IsNullOrWhiteSpace(contestName))
+            summary += $" ({contestName})";
+
+        return summary + ".";
+    }
+
+    private static bool ShouldShowWsjtDuplicateToast(Qso qso, ContestDefinition contest, DateTime utcNow)
+    {
+        var toastKey = BuildWsjtDuplicateToastKey(qso, contest);
+        if (string.IsNullOrWhiteSpace(toastKey))
+            return false;
+
+        lock (_wsjtDuplicateToastSync)
+        {
+            var expiration = utcNow - _wsjtDuplicateToastRetention;
+            var expiredKeys = _recentWsjtDuplicateToastUtc
+                .Where(x => x.Value < expiration)
+                .Select(x => x.Key)
+                .ToList();
+            foreach (var expiredKey in expiredKeys)
+                _recentWsjtDuplicateToastUtc.Remove(expiredKey);
+
+            if (_recentWsjtDuplicateToastUtc.TryGetValue(toastKey, out var lastShownUtc)
+                && utcNow - lastShownUtc < _wsjtDuplicateToastCooldown)
+                return false;
+
+            _recentWsjtDuplicateToastUtc[toastKey] = utcNow;
+            return true;
+        }
+    }
+
+    private static string BuildWsjtDuplicateToastKey(Qso qso, ContestDefinition contest)
+    {
+        var call = qso.Call?.Trim().ToUpperInvariant() ?? string.Empty;
+        var band = qso.Band?.Trim().ToUpperInvariant() ?? string.Empty;
+        var mode = qso.Mode?.Trim().ToUpperInvariant() ?? string.Empty;
+        var contestKey = contest.Key?.Trim().ToUpperInvariant() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(call))
+            return string.Empty;
+
+        return string.Join("|", [call, band, mode, contestKey]);
     }
 
     private static bool TryParseFieldDayExchange(string? rawExchange, out string fieldDayClass, out string fieldDaySection)

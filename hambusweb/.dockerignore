@@ -1,0 +1,11 @@
+obj/
+bin/
+.vs/
+.idea/
+*.user
+*.suo
+.git/
+.gitignore
+**/[Tt]emp/
+**/*.log
+

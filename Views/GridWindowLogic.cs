@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using HamBusLog.Wa1gonLib.Models;
 
 namespace HamBusLog.Views;
@@ -133,8 +134,13 @@ public partial class GridWindow
             return;
         }
 
-        if (App.ActivateOpenWindow<LogInputWindow>())
+        var existingWindow = App.FindOpenWindow<LogInputWindow>();
+        if (existingWindow is not null)
+        {
+            _logInputWindow = existingWindow;
+            ShowLogInputWindow(existingWindow);
             return;
+        }
 
         _logInputWindow = new LogInputWindow();
         _logInputWindow.Closed += (_, _) => _logInputWindow = null;
@@ -144,8 +150,23 @@ public partial class GridWindow
             // Save to database
             await SaveQsoAsync(qso);
         };
-        _logInputWindow.Show();
-        _logInputWindow.Activate();
+        ShowLogInputWindow(_logInputWindow);
+    }
+
+    private void ShowLogInputWindow(LogInputWindow window)
+    {
+        if (window.IsVisible)
+        {
+            window.Activate();
+            return;
+        }
+
+        if (IsVisible)
+            window.Show(this);
+        else
+            window.Show();
+
+        Dispatcher.UIThread.Post(window.Activate);
     }
     
     private async Task SaveQsoAsync(Qso qso)

@@ -1,0 +1,76 @@
+﻿@page "/roadmap"
+@rendermode InteractiveServer
+
+<PageTitle>Roadmap</PageTitle>
+
+<h1>Roadmap</h1>
+
+<p class="page-intro">
+    This page is interactive on the server side. Use the filters below to focus the near-term HamBus suite work you want to review.
+</p>
+
+<div class="roadmap-toolbar">
+    <div class="btn-group" role="group" aria-label="Roadmap area filter">
+        <button class="btn @(selectedArea is null ? "btn-primary" : "btn-outline-primary")" @onclick="ShowAll">All</button>
+        <button class="btn @(selectedArea == "Web" ? "btn-primary" : "btn-outline-primary")" @onclick="ShowWeb">Web</button>
+        <button class="btn @(selectedArea == "Desktop" ? "btn-primary" : "btn-outline-primary")" @onclick="ShowDesktop">Desktop</button>
+        <button class="btn @(selectedArea == "Docs" ? "btn-primary" : "btn-outline-primary")" @onclick="ShowDocs">Docs</button>
+    </div>
+
+    <label class="form-check-label roadmap-toggle">
+        <input class="form-check-input me-2" type="checkbox" @bind="showPlannedOnly" />
+        Show planned work only
+    </label>
+</div>
+
+<p class="text-muted">Showing <strong>@FilteredItems.Count</strong> roadmap item(s).</p>
+
+<div class="roadmap-list">
+    @foreach (var item in FilteredItems)
+    {
+        <article class="feature-card roadmap-item">
+            <div class="roadmap-item-header">
+                <div>
+                    <span class="status-pill @(item.Status == "Shipped" ? "status-live" : "status-planned")">@item.Status</span>
+                    <h2>@item.Title</h2>
+                </div>
+                <span class="roadmap-area">@item.Area</span>
+            </div>
+            <p>@item.Description</p>
+        </article>
+    }
+</div>
+
+@code {
+    private string? selectedArea;
+    private bool showPlannedOnly;
+
+    private IReadOnlyList<RoadmapItem> Items { get; } =
+    [
+        new("HamBus suite landing pages", "Web", "Shipped", "Initial Blazor Server site scaffold with product-focused navigation and branding."),
+        new("Static documentation pages", "Docs", "Shipped", "Direct HTML pages served from wwwroot for simple product, docs, or legal content."),
+        new("HamBusLog download center", "Web", "Planned", "Add release-specific download, install, and change-summary pages for the desktop application."),
+        new("Contest workflow docs", "Docs", "Planned", "Publish Field Day, Cabrillo export, and WSJT-X workflow guides for operators."),
+        new("Shared suite status dashboard", "Desktop", "Planned", "Expose live station or sync status features through future interactive pages.")
+    ];
+
+    private IReadOnlyList<RoadmapItem> FilteredItems => Items
+        .Where(item => selectedArea is null || string.Equals(item.Area, selectedArea, StringComparison.Ordinal))
+        .Where(item => !showPlannedOnly || string.Equals(item.Status, "Planned", StringComparison.Ordinal))
+        .ToArray();
+
+    private void SetArea(string? area)
+    {
+        selectedArea = area;
+    }
+
+    private void ShowAll() => SetArea(null);
+
+    private void ShowWeb() => SetArea("Web");
+
+    private void ShowDesktop() => SetArea("Desktop");
+
+    private void ShowDocs() => SetArea("Docs");
+
+    private sealed record RoadmapItem(string Title, string Area, string Status, string Description);
+}

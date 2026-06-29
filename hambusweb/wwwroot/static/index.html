@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HamBus Static Pages</title>
+    <meta name="description" content="Static pages served by the HamBus web project.">
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+    <main class="container py-5">
+        <div class="hero-panel">
+            <div class="hero-copy">
+                <span class="hero-kicker">Static content</span>
+                <h1>HamBus static pages</h1>
+                <p class="hero-lead">
+                    This page is plain HTML served directly from <code>wwwroot/static</code>. It coexists with
+                    the interactive Blazor routes in the same ASP.NET Core app.
+                </p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="/">Back to Blazor home</a>
+                    <a class="btn btn-outline-primary" href="/static/hambuslog.html">Open HamBusLog static page</a>
+                </div>
+            </div>
+
+            <div class="hero-card">
+                <h2>Why keep static pages?</h2>
+                <ul class="feature-list">
+                    <li>Simple product sheets and release notes</li>
+                    <li>Legal, privacy, and support pages</li>
+                    <li>Fast-loading content with no component dependencies</li>
+                </ul>
+            </div>
+        </div>
+
+        <section class="content-section">
+            <div class="section-heading">
+                <h2>Suggested uses</h2>
+                <p>Good candidates for direct HTML inside the new web project.</p>
+            </div>
+
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <h3>Download pages</h3>
+                    <p>Platform-specific install instructions and links for HamBusLog release builds.</p>
+                </article>
+                <article class="feature-card">
+                    <h3>Documentation entry points</h3>
+                    <p>Contest setup guides or quick-start instructions that don’t need interactivity.</p>
+                </article>
+                <article class="feature-card">
+                    <h3>Marketing pages</h3>
+                    <p>Simple announcements for new HamBus suite tools as they come online.</p>
+                </article>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
+

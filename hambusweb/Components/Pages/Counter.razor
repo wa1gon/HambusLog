@@ -1,0 +1,72 @@
+﻿@page "/products"
+
+<PageTitle>Products</PageTitle>
+
+<h1>Products</h1>
+
+<p class="page-intro">
+    HamBus Suite currently includes one flagship desktop product, with this web project ready to host richer suite content over time.
+</p>
+
+<div class="feature-grid">
+    <article class="feature-card product-card">
+        <div class="product-card-header">
+            <span class="status-pill status-live">Live</span>
+            <h2>HamBusLog</h2>
+        </div>
+        <p>
+            The current HamBus desktop application for QSO logging, contest workflows, DX spot monitoring,
+            rig control, and import/export operations.
+        </p>
+        <ul class="feature-list">
+            <li>Avalonia desktop UI</li>
+            <li>SQLite and PostgreSQL-backed persistence support</li>
+            <li>WSJT-X auto-log integration and duplicate handling</li>
+            <li>Contest-aware entry and Cabrillo export</li>
+        </ul>
+        <div class="hero-actions">
+            <a class="btn btn-primary" href="/static/hambuslog.html">Static product page</a>
+        </div>
+    </article>
+
+    <article class="feature-card product-card">
+        <div class="product-card-header">
+            <span class="status-pill status-planned">Foundation</span>
+            <h2>HamBusWeb</h2>
+        </div>
+        <p>
+            This new web project gives the suite a place for landing pages, docs, download instructions,
+            and future interactive experiences such as dashboards or account-backed features.
+        </p>
+        <ul class="feature-list">
+            <li>Blazor Server rendering for interactive pages</li>
+            <li>Plain static HTML under <code>wwwroot</code></li>
+            <li>Ready for future product pages and documentation</li>
+        </ul>
+        <div class="hero-actions">
+            <a class="btn btn-outline-primary" href="/static/index.html">See static-site guide</a>
+        </div>
+    </article>
+</div>
+
+<section class="content-section">
+    <div class="section-heading">
+        <h2>Next likely additions</h2>
+        <p>Common uses for the suite site as the product family grows.</p>
+    </div>
+
+    <div class="feature-grid">
+        <article class="feature-card">
+            <h3>Documentation hub</h3>
+            <p>Setup guides, contest workflows, release notes, and troubleshooting content.</p>
+        </article>
+        <article class="feature-card">
+            <h3>Download center</h3>
+            <p>Published builds, package instructions, and version-specific notes for each platform.</p>
+        </article>
+        <article class="feature-card">
+            <h3>Suite expansion</h3>
+            <p>Future HamBus tools can each get their own product page without changing the site architecture.</p>
+        </article>
+    </div>
+</section>
