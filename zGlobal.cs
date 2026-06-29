@@ -41,3 +41,4 @@ global using Wa1gonLib.Models;
 global using System.Net.Http;
 global using System.Net.Http.Json;
 global using Microsoft.Extensions.Logging;
+global using Serilog;

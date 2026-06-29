@@ -165,6 +165,7 @@ public partial class App
         {
             // Keep alive during splash before the main window exists.
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            Log.Information("Initializing HamBusLog framework");
             ApplyThemeFromActiveProfile();
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
@@ -172,17 +173,19 @@ public partial class App
             RigCatalogStore.InitializeFromConfiguration();
             ClearDxClusterLogs();
             LogDxClusterNonSpot("SYS", "Application started");
+            Log.Information("Starting DX Cluster and rig control services");
             _ = RigctldConnectionManager.RefreshActiveConnectionsAsync();
             _ = DxClusterReader.StartAsync();
             _ = WsjtBridgeService.StartAsync();
             WsjtBridgeService.LoggedQsoReceived += OnWsjtLoggedQsoReceived;
             desktop.Exit += (_, _) =>
             {
-
+                Log.Information("Application shutdown initiated");
                 WsjtBridgeService.LoggedQsoReceived -= OnWsjtLoggedQsoReceived;
                 RigctldConnectionManager.Dispose();
                 DxClusterReader.Dispose();
                 WsjtBridgeService.Dispose();
+                Log.Information("Services disposed, application closing");
             };
 
             var splash = new SplashWindow();
@@ -191,6 +194,7 @@ public partial class App
             // When splash closes: open the main window on the same monitor the splash was on.
             splash.Closed += (_, _) =>
             {
+                Log.Information("Splash window closed, opening main window");
                 var mainWindow = new MainWindow
                 {
                     DataContext = new MainWindowViewModel(),
