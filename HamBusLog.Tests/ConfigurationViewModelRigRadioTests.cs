@@ -144,26 +144,50 @@ public sealed class ConfigurationViewModelRigRadioTests : IDisposable
     }
 
     [Fact]
-    public void GridViewModel_PersistsSelectedContestType_ThroughLogTypeSelectionService()
+    public void Load_NormalContest_RemovesLegacyExtraRequiredFields()
     {
         var config = CreateConfiguration();
-        config.Profiles["default"].LastContestKey = ContestCatalog.NormalKey;
+        config.Contests =
+        [
+            new ContestDefinitionConfig
+            {
+                Key = ContestCatalog.NormalKey,
+                DisplayName = "Normal",
+                AdifContestId = ContestCatalog.NormalKey,
+                ExchangeType = "normal",
+                RequiredFields =
+                [
+                    new ContestFieldRequirementConfig { Key = ContestFieldKeys.RstSent, Label = "RST Sent" },
+                    new ContestFieldRequirementConfig { Key = ContestFieldKeys.RstRecv, Label = "RST Rec" },
+                    new ContestFieldRequirementConfig { Key = ContestFieldKeys.Country, Label = "Country" },
+                    new ContestFieldRequirementConfig { Key = ContestFieldKeys.Name, Label = "Name", DetailFieldName = "Name" },
+                    new ContestFieldRequirementConfig { Key = ContestFieldKeys.State, Label = "State" },
+                    new ContestFieldRequirementConfig { Key = ContestFieldKeys.County, Label = "County", DetailFieldName = "County" }
+                ]
+            }
+        ];
         SaveConfiguration(config);
 
-        var service = new LogTypeSelectionService();
-        using var viewModel = new GridViewModel(new EmptyQsoRepository(), service);
+        var loaded = AppConfigurationStore.Load();
+        var normal = loaded.Contests.Single(x => string.Equals(x.Key, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase));
 
-        Assert.Equal(ContestType.Normal, viewModel.SelectedContestType);
+        Assert.Empty(normal.RequiredFields);
+    }
 
-        viewModel.SelectedContestType = ContestType.ArrlFieldDay;
+    [Fact]
+    public void LogInputViewModel_UsesGlobalNormalSelection_WhenProfileStillHasFieldDayStored()
+    {
+        var config = CreateConfiguration();
+        config.Profiles["default"].LastContestKey = ContestCatalog.ArrlFieldDayKey;
+        SaveConfiguration(config);
 
-        var saved = AppConfigurationStore.Load();
-        var profile = AppConfigurationStore.GetActiveProfile(saved);
-        Assert.Equal(ContestCatalog.ArrlFieldDayKey, profile.LastContestKey);
+        App.LogTypeSelectionService.SetSelectedContestKey(ContestCatalog.NormalKey);
 
-        var reloadedService = new LogTypeSelectionService();
-        using var reloadedViewModel = new GridViewModel(new EmptyQsoRepository(), reloadedService);
-        Assert.Equal(ContestType.ArrlFieldDay, reloadedViewModel.SelectedContestType);
+        using var vm = new LogInputViewModel();
+
+        Assert.Equal(ContestType.Normal, vm.SelectedContestType);
+        Assert.False(vm.IsFieldDay);
+        Assert.True(vm.IsNormalContest);
     }
 
     [Fact]
@@ -905,23 +929,6 @@ public sealed class ConfigurationViewModelRigRadioTests : IDisposable
             File.Delete(_configPath);
     }
 
-    private sealed class EmptyQsoRepository : IQsoRepository
-    {
-        public Task<IReadOnlyList<Qso>> GetAllAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult<IReadOnlyList<Qso>>([]);
-
-        public Task<Qso?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-            => Task.FromResult<Qso?>(null);
-
-        public Task AddAsync(Qso qso, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
-
-        public Task UpdateAsync(Qso qso, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
-
-        public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
-    }
 }
 
 

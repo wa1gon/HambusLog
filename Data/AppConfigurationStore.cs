@@ -585,6 +585,30 @@ public static class AppConfigurationStore
                 }
             }
 
+            if (string.Equals(contest.Key, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(contest.AdifContestId, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase))
+            {
+                var removed = contest.RequiredFields.RemoveAll(x =>
+                    string.Equals(x.Key, ContestFieldKeys.RstSent, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(x.Key, ContestFieldKeys.RstRecv, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(x.Key, ContestFieldKeys.Country, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(x.Key, ContestFieldKeys.Name, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(x.Key, ContestFieldKeys.State, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(x.Key, ContestFieldKeys.County, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(x.Key, ContestFieldKeys.Exchange, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(x.Key, ContestFieldKeys.FieldDaySection, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(x.Key, ContestFieldKeys.FieldDayClass, StringComparison.OrdinalIgnoreCase));
+
+                if (removed > 0)
+                {
+                    contestFieldsBackfilled = true;
+                    existingFieldKeys = contest.RequiredFields
+                        .Where(x => !string.IsNullOrWhiteSpace(x.Key))
+                        .Select(x => x.Key.Trim())
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                }
+            }
+
             // For any Field Day contest profile (including custom keys like "FD"),
             // enforce required section/class fields used by LogInputViewModel.
             if (string.Equals(contest.ExchangeType, "fieldday", StringComparison.OrdinalIgnoreCase))
@@ -651,15 +675,7 @@ public static class AppConfigurationStore
                 AdifContestId = "NORMAL",
                 LicenseKey = string.Empty,
                 ExchangeType = "normal",
-                RequiredFields =
-                [
-                    new ContestFieldRequirementConfig { Key = "rst_sent", Label = "RST Sent" },
-                    new ContestFieldRequirementConfig { Key = "rst_recv", Label = "RST Rec" },
-                    new ContestFieldRequirementConfig { Key = "country", Label = "Country" },
-                    new ContestFieldRequirementConfig { Key = "name", Label = "Name", DetailFieldName = "Name" },
-                    new ContestFieldRequirementConfig { Key = "state", Label = "State" },
-                    new ContestFieldRequirementConfig { Key = "county", Label = "County", DetailFieldName = "County" }
-                ]
+                RequiredFields = []
             },
             new ContestDefinitionConfig
             {
