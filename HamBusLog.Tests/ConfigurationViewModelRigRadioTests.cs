@@ -1,5 +1,6 @@
 using HamBusLog.Data;
 using HamBusLog.Models;
+using HamBusLog.Services;
 using HamBusLog.ViewModels;
 using HamBusLog.Wa1gonLib.Models;
 
@@ -111,6 +112,82 @@ public sealed class ConfigurationViewModelRigRadioTests : IDisposable
         Assert.Equal("portable.sqlite3", profile.DatabaseFileName);
         Assert.Equal(expectedPath, profile.DatabaseFilePath);
         Assert.Equal($"Data Source={expectedPath}", profile.ConnectionString);
+    }
+
+    [Fact]
+    public void Load_NormalizesStoredLastContestKey_ToCanonicalContestKey()
+    {
+        var config = CreateConfiguration();
+        config.Profiles["default"].LastContestKey = ContestCatalog.ArrlFieldDayAdifId;
+        SaveConfiguration(config);
+
+        var loaded = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(loaded);
+
+        Assert.Equal(ContestCatalog.ArrlFieldDayKey, profile.LastContestKey);
+    }
+
+    [Fact]
+    public void LogTypeSelectionService_PersistsSelectedContest_WhenItChanges()
+    {
+        var config = CreateConfiguration();
+        config.Profiles["default"].LastContestKey = ContestCatalog.NormalKey;
+        SaveConfiguration(config);
+
+        var service = new LogTypeSelectionService();
+        service.SetSelectedContestKey(ContestCatalog.ArrlFieldDayAdifId);
+
+        var saved = AppConfigurationStore.Load();
+        var profile = AppConfigurationStore.GetActiveProfile(saved);
+
+        Assert.Equal(ContestCatalog.ArrlFieldDayKey, profile.LastContestKey);
+    }
+
+    [Fact]
+    public void Load_NormalContest_RemovesLegacyExtraRequiredFields()
+    {
+        var config = CreateConfiguration();
+        config.Contests =
+        [
+            new ContestDefinitionConfig
+            {
+                Key = ContestCatalog.NormalKey,
+                DisplayName = "Normal",
+                AdifContestId = ContestCatalog.NormalKey,
+                ExchangeType = "normal",
+                RequiredFields =
+                [
+                    new ContestFieldRequirementConfig { Key = ContestFieldKeys.RstSent, Label = "RST Sent" },
+                    new ContestFieldRequirementConfig { Key = ContestFieldKeys.RstRecv, Label = "RST Rec" },
+                    new ContestFieldRequirementConfig { Key = ContestFieldKeys.Country, Label = "Country" },
+                    new ContestFieldRequirementConfig { Key = ContestFieldKeys.Name, Label = "Name", DetailFieldName = "Name" },
+                    new ContestFieldRequirementConfig { Key = ContestFieldKeys.State, Label = "State" },
+                    new ContestFieldRequirementConfig { Key = ContestFieldKeys.County, Label = "County", DetailFieldName = "County" }
+                ]
+            }
+        ];
+        SaveConfiguration(config);
+
+        var loaded = AppConfigurationStore.Load();
+        var normal = loaded.Contests.Single(x => string.Equals(x.Key, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase));
+
+        Assert.Empty(normal.RequiredFields);
+    }
+
+    [Fact]
+    public void LogInputViewModel_UsesGlobalNormalSelection_WhenProfileStillHasFieldDayStored()
+    {
+        var config = CreateConfiguration();
+        config.Profiles["default"].LastContestKey = ContestCatalog.ArrlFieldDayKey;
+        SaveConfiguration(config);
+
+        App.LogTypeSelectionService.SetSelectedContestKey(ContestCatalog.NormalKey);
+
+        using var vm = new LogInputViewModel();
+
+        Assert.Equal(ContestType.Normal, vm.SelectedContestType);
+        Assert.False(vm.IsFieldDay);
+        Assert.True(vm.IsNormalContest);
     }
 
     [Fact]
@@ -851,6 +928,7 @@ public sealed class ConfigurationViewModelRigRadioTests : IDisposable
         if (File.Exists(_configPath))
             File.Delete(_configPath);
     }
+
 }
 
 

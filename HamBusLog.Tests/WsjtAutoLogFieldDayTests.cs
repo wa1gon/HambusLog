@@ -70,6 +70,41 @@ public sealed class WsjtAutoLogFieldDayTests
         Assert.Equal("1D", qso.FieldDayClass);
     }
 
+    [Fact]
+    public void BuildWsjtDuplicateWarningMessage_FormatsUserVisibleToastText()
+    {
+        var wsjt = BuildLoggedQso(rstSent: "-05", rstRcvd: "-08", exchange: "");
+        var contest = ContestCatalog.Get(ContestType.Normal);
+        var qso = BuildQsoViaReflection(wsjt, contest);
+
+        var method = typeof(App).GetMethod("BuildWsjtDuplicateWarningMessage", BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+
+        var value = method!.Invoke(null, [qso, contest]);
+        var message = Assert.IsType<string>(value);
+
+        Assert.Equal("Skipped duplicate K1ABC on 20M FT8 (Normal).", message);
+    }
+
+    [Fact]
+    public void ShouldShowWsjtDuplicateToast_ThrottlesRepeatedDuplicateNotifications()
+    {
+        var wsjt = BuildLoggedQso(rstSent: "-05", rstRcvd: "-08", exchange: "");
+        var contest = ContestCatalog.Get(ContestType.Normal);
+        var qso = BuildQsoViaReflection(wsjt, contest);
+
+        var method = typeof(App).GetMethod("ShouldShowWsjtDuplicateToast", BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+
+        var first = Assert.IsType<bool>(method!.Invoke(null, [qso, contest, new DateTime(2026, 6, 28, 12, 0, 0, DateTimeKind.Utc)]));
+        var second = Assert.IsType<bool>(method.Invoke(null, [qso, contest, new DateTime(2026, 6, 28, 12, 0, 5, DateTimeKind.Utc)]));
+        var third = Assert.IsType<bool>(method.Invoke(null, [qso, contest, new DateTime(2026, 6, 28, 12, 0, 16, DateTimeKind.Utc)]));
+
+        Assert.True(first);
+        Assert.False(second);
+        Assert.True(third);
+    }
+
     private static Qso BuildQsoViaReflection(WsjtLoggedQso wsjt, ContestDefinition contest)
     {
         var method = typeof(App).GetMethod("BuildQsoFromWsjt", BindingFlags.Static | BindingFlags.NonPublic);

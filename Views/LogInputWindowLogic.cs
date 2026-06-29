@@ -9,6 +9,7 @@ public partial class LogInputWindow
 {
     private readonly LogInputViewModel _viewModel;
     private readonly DispatcherTimer _activeRigRefreshTimer = new() { Interval = TimeSpan.FromSeconds(5) };
+    private string _lastDuplicateToastMessage = string.Empty;
 
     /// <summary>Raised when the user successfully logs a QSO.</summary>
     public event EventHandler<Qso>? QsoLogged;
@@ -103,7 +104,7 @@ public partial class LogInputWindow
         if (!ShouldHandleForwardTab(e) || !_viewModel.IsFieldDay)
             return;
 
-        if (this.FindControl<Button>("LogQsoButton") is { IsVisible: true } logQsoButton)
+        if (this.FindControl<Button>("FieldDayFirstPanelLogQsoButton") is { IsVisible: true } logQsoButton)
         {
             logQsoButton.Focus();
             e.Handled = true;
@@ -121,7 +122,11 @@ public partial class LogInputWindow
     public void OnInputCallChanged(object? sender, TextChangedEventArgs e)
     {
         OnUppercaseInputChanged(sender, e);
-        UpdateDuplicateStatusFromInputCall();
+
+        if (sender is TextBox textBox)
+            _viewModel.InputCall = (textBox.Text ?? string.Empty).Trim().ToUpperInvariant();
+
+        UpdateDuplicateStatus(showToast: true);
     }
 
     public void OnInputCallLostFocus(object? sender, RoutedEventArgs e)
@@ -132,24 +137,31 @@ public partial class LogInputWindow
             _viewModel.InputCall = (textBox.Text ?? string.Empty).Trim().ToUpperInvariant();
         }
 
-        UpdateDuplicateStatusFromInputCall();
+        UpdateDuplicateStatus(showToast: true);
     }
 
-    private void UpdateDuplicateStatusFromInputCall()
+    private void UpdateDuplicateStatus(bool showToast)
     {
         if (_viewModel.InputCall.Trim().Length < 3)
         {
             ClearDuplicateStatusIfPresent();
+            _lastDuplicateToastMessage = string.Empty;
             return;
         }
 
         if (_viewModel.TryGetDuplicateCallWarning(out var warning))
         {
-            SetStatus(warning);
+            if (showToast && !string.Equals(_lastDuplicateToastMessage, warning, StringComparison.Ordinal))
+            {
+                App.Toasts.ShowWarning("Possible duplicate", warning);
+                _lastDuplicateToastMessage = warning;
+            }
+
             return;
         }
 
         ClearDuplicateStatusIfPresent();
+        _lastDuplicateToastMessage = string.Empty;
     }
 
     private void ClearDuplicateStatusIfPresent()
@@ -179,6 +191,7 @@ public partial class LogInputWindow
 
         QsoLogged?.Invoke(this, qso);
         _viewModel.PrepareForNextLogEntry();
+        _lastDuplicateToastMessage = string.Empty;
         SetStatus("QSO logged.");
         App.Toasts.ShowSuccess("QSO logged", $"{qso.Call} on {qso.Band} {qso.Mode}");
     }
@@ -188,6 +201,7 @@ public partial class LogInputWindow
     public void OnClearClicked(object? sender, RoutedEventArgs e)
     {
         _viewModel.PrepareForNextLogEntry();
+        _lastDuplicateToastMessage = string.Empty;
         SetStatus(string.Empty);
     }
 
@@ -335,6 +349,14 @@ public partial class LogInputWindow
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName is nameof(LogInputViewModel.InputCall)
+            or nameof(LogInputViewModel.InputBand)
+            or nameof(LogInputViewModel.InputMode)
+            or nameof(LogInputViewModel.InputFreq))
+        {
+            UpdateDuplicateStatus(showToast: true);
+        }
+
         if (e.PropertyName is nameof(LogInputViewModel.SelectedContestDefinition)
             or nameof(LogInputViewModel.CurrentContestDefinition)
             or nameof(LogInputViewModel.CurrentContestAdifId)

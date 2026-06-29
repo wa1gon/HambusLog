@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:HamBusLog.Views"
         x:Class="HamBusLog.Views.LogInputWindow"
-        Title="New Contact"
+        Title="{Binding CurrentContestDisplayName, StringFormat=New QSO - {0}}"
         RequestedThemeVariant="Dark"
         Background="{DynamicResource AppWindowBackgroundBrush}"
         Foreground="{DynamicResource AppForegroundBrush}"
@@ -12,7 +12,6 @@
         MinHeight="560"
         WindowStartupLocation="CenterOwner">
     <Window.Resources>
-        <views:ContestTypeConverter x:Key="ContestTypeConverter" />
     </Window.Resources>
     <Window.Styles>
         <Style Selector="TextBlock.FieldLabel">
@@ -100,16 +99,18 @@
                         CornerRadius="8"
                         Background="{DynamicResource AppPanelBackgroundBrush}"
                         BorderBrush="{DynamicResource AppBorderBrush}"
-                        BorderThickness="1">
+                        BorderThickness="1"
+                        IsVisible="{Binding IsFieldDay}">
                     <Grid ColumnDefinitions="Auto,220,16,Auto,170"
-                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                          RowDefinitions="Auto,Auto,Auto,Auto"
+                          ColumnSpacing="12"
                           RowSpacing="10">
                         <TextBlock Grid.Row="0" Grid.ColumnSpan="5"
                                    Classes="SectionHeading"
-                                   Text="REQUIRED FIELDS" />
+                                   Text="CONTEST ENTRY" />
 
                         <TextBlock Grid.Row="1" Grid.Column="0" Classes="FieldLabel" Text="Call" VerticalAlignment="Center" />
-                        <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                        <Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" ColumnDefinitions="*,Auto" ColumnSpacing="8">
                             <TextBox Grid.Column="0"
                                      Text="{Binding InputCall}"
                                      Watermark="K1ABC"
@@ -122,38 +123,26 @@
                                     Click="OnLookupClicked" />
                         </Grid>
 
-                        <TextBlock Grid.Row="1" Grid.Column="3" Classes="FieldLabel" Text="Date (YYYYMMDD)" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="1" Grid.Column="4" Text="{Binding InputDate}" Watermark="20260504" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Classes="FieldLabel" Text="Class" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding InputFieldDayClass}" Watermark="1D" TextChanged="OnUppercaseInputChanged" />
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Classes="FieldLabel" Text="Time On (HHMM)" VerticalAlignment="Center" />
-                        <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                            <TextBox Grid.Column="0" Text="{Binding InputTimeOn}" Watermark="1930" />
-                            <Button Grid.Column="1" Content="Now" Click="OnStampNowClicked" Padding="10,6" />
-                        </Grid>
+                        <TextBlock Grid.Row="2" Grid.Column="3" Classes="FieldLabel" Text="Section" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="2" Grid.Column="4" Text="{Binding InputFieldDaySection}" Watermark="EMA" TextChanged="OnUppercaseInputChanged" />
 
-                        <TextBlock Grid.Row="2" Grid.Column="3" Classes="FieldLabel" Text="Frequency (MHz)" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="2" Grid.Column="4" Text="{Binding InputFreq}" Watermark="14.250" />
-
-                        <TextBlock Grid.Row="3" Grid.Column="0" Classes="FieldLabel" Text="Band" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding InputBand}" Watermark="20M" />
-
-                        <TextBlock Grid.Row="3" Grid.Column="3" Classes="FieldLabel" Text="Mode" VerticalAlignment="Center" />
-                        <ComboBox Grid.Row="3" Grid.Column="4"
-                                  ItemsSource="{Binding AvailableModes}"
-                                  SelectedItem="{Binding InputMode}"
-                                  IsTextSearchEnabled="True"
-                                  VerticalAlignment="Center" />
-
-                        <TextBlock Grid.Row="4" Grid.Column="0" Classes="FieldLabel" Text="Station Call" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding StationCallSign}" IsReadOnly="True" />
-
-                        <TextBlock Grid.Row="4" Grid.Column="3" Classes="FieldLabel" Text="Operator" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="4" Grid.Column="4" Text="{Binding InputOperator}" Watermark="Defaults to station call" TextChanged="OnUppercaseInputChanged" />
-
-                        <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5"
-                                   Text="These are always required for every log entry."
-                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                   FontSize="11" />
+                        <StackPanel Grid.Row="3"
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="5"
+                                    Orientation="Horizontal"
+                                    Spacing="8"
+                                    HorizontalAlignment="Right">
+                            <Button Name="FieldDayFirstPanelLogQsoButton"
+                                    Content="Log QSO"
+                                    Padding="10,6"
+                                    Click="OnLogQsoClicked" />
+                            <Button Content="Clear"
+                                    Padding="10,6"
+                                    Click="OnClearClicked" />
+                        </StackPanel>
                     </Grid>
                 </Border>
 
@@ -161,103 +150,214 @@
                         CornerRadius="8"
                         Background="{DynamicResource AppPanelBackgroundBrush}"
                         BorderBrush="{DynamicResource AppBorderBrush}"
-                        BorderThickness="1">
+                        BorderThickness="1"
+                        IsVisible="{Binding IsFieldDay}">
                     <Grid ColumnDefinitions="Auto,170,16,Auto,170"
-                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                          RowDefinitions="Auto,Auto,Auto"
+                          ColumnSpacing="12"
                           RowSpacing="10">
                         <TextBlock Grid.Row="0" Grid.ColumnSpan="5"
                                    Classes="SectionHeading"
-                                   Text="CONTEST REQUIREMENTS" />
+                                   Text="OPERATING INFO" />
 
-                        <TextBlock Grid.Row="1" Grid.ColumnSpan="5"
-                                   Text="{Binding CurrentContestDisplayName, StringFormat=Selected: {0}}"
-                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                   FontSize="11" />
-                        <TextBlock Grid.Row="1" Grid.Column="4"
-                                   HorizontalAlignment="Right"
-                                   Text="{Binding CurrentContestAdifId, StringFormat=ADIF: {0}}"
-                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                   FontSize="11" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Classes="FieldLabel" Text="Band" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding InputBand}" Watermark="20M" />
 
-                        <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
-                                   IsVisible="{Binding ShowLegacyNormalExchangeFields}"
-                                   Text="Normal Contest Required Exchange"
-                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                   FontSize="11" />
+                        <TextBlock Grid.Row="1" Grid.Column="3" Classes="FieldLabel" Text="Frequency (MHz)" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="1" Grid.Column="4" Text="{Binding InputFreq}" Watermark="14.250" />
 
-                        <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
-                                   IsVisible="{Binding ShowExchangeHelp}"
-                                   Text="{Binding ExchangeHelpText}"
-                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                   FontSize="11" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Classes="FieldLabel" Text="Operator" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding InputOperator}" Watermark="Defaults to station call" TextChanged="OnUppercaseInputChanged" />
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" IsVisible="{Binding ShowRstSent}" Classes="FieldLabel" Text="RST Sent" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="3" Grid.Column="1" IsVisible="{Binding ShowRstSent}" Text="{Binding InputSent}" Watermark="59" />
-
-                        <TextBlock Grid.Row="3" Grid.Column="3" IsVisible="{Binding ShowRstRecv}" Classes="FieldLabel" Text="RST Rec" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="3" Grid.Column="4" IsVisible="{Binding ShowRstRecv}" Text="{Binding InputRec}" Watermark="59" />
-
-                        <TextBlock Grid.Row="4" Grid.Column="0" IsVisible="{Binding ShowCountry}" Classes="FieldLabel" Text="Country" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="4" Grid.Column="1" IsVisible="{Binding ShowCountry}" Text="{Binding InputCountry}" Watermark="USA" TextChanged="OnUppercaseInputChanged" />
-
-                        <TextBlock Grid.Row="4" Grid.Column="3" IsVisible="{Binding ShowName}" Classes="FieldLabel" Text="Name" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="4" Grid.Column="4" IsVisible="{Binding ShowName}" Text="{Binding InputName}" Watermark="Darryl" />
-
-                        <TextBlock Grid.Row="5" Grid.Column="0" IsVisible="{Binding ShowState}" Classes="FieldLabel" Text="State/Prov" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="5" Grid.Column="1" IsVisible="{Binding ShowState}" Text="{Binding InputState}" Watermark="MA" TextChanged="OnUppercaseInputChanged" />
-
-                        <TextBlock Grid.Row="5" Grid.Column="0" IsVisible="{Binding ShowExchange}" Classes="FieldLabel" Text="{Binding ExchangeLabel}" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="5" Grid.Column="1" IsVisible="{Binding ShowExchange}" Text="{Binding InputExchange}" Watermark="{Binding ExchangeWatermark}" TextChanged="OnUppercaseInputChanged" />
-
-                        <TextBlock Grid.Row="5" Grid.Column="3" IsVisible="{Binding ShowCounty}" Classes="FieldLabel" Text="County" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="5" Grid.Column="4" IsVisible="{Binding ShowCounty}" Text="{Binding InputCounty}" Watermark="PUL" TextChanged="OnUppercaseInputChanged" />
-
-                        <TextBlock Grid.Row="6" Grid.Column="0" IsVisible="{Binding ShowGrid}" Classes="FieldLabel" Text="Grid" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="6" Grid.Column="1"
-                                 Name="GridTextBox"
-                                 IsVisible="{Binding ShowGrid}"
-                                 Text="{Binding InputGrid}"
-                                 Watermark="FN42"
-                                 KeyDown="OnGridFieldKeyDown"
-                                 TextChanged="OnUppercaseInputChanged" />
-
-                        <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
-                                   IsVisible="{Binding IsFieldDay}"
-                                   Text="Required Exchange"
-                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                   FontSize="11" />
-
-                        <TextBlock Grid.Row="3" Grid.Column="0" IsVisible="{Binding ShowFieldDayClass}" Classes="FieldLabel" Text="Class" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="3" Grid.Column="1"
-                                 Name="FieldDayClassTextBox"
-                                 IsVisible="{Binding ShowFieldDayClass}"
-                                 Text="{Binding InputFieldDayClass}"
-                                 Watermark="1D"
-                                 KeyDown="OnFieldDayClassKeyDown"
-                                 TextChanged="OnUppercaseInputChanged" />
-
-                        <TextBlock Grid.Row="3" Grid.Column="3" IsVisible="{Binding ShowFieldDaySection}" Classes="FieldLabel" Text="Section" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="3" Grid.Column="4"
-                                 Name="FieldDaySectionTextBox"
-                                 IsVisible="{Binding ShowFieldDaySection}"
-                                 Text="{Binding InputFieldDaySection}"
-                                 Watermark="EMA"
-                                 KeyDown="OnFieldDaySectionKeyDown"
-                                 TextChanged="OnUppercaseInputChanged" />
-
-                        <TextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="5"
-                                   IsVisible="{Binding HasContestError}"
-                                   Text="{Binding ContestError}"
-                                   Foreground="{DynamicResource AppErrorBrush}"
-                                   FontSize="11" />
-
-                        <TextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="5"
-                                   IsVisible="{Binding !HasContestError}"
-                                   Text="Card #2 changes based on selected Log Type."
-                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                   FontSize="11" />
+                        <TextBlock Grid.Row="2" Grid.Column="3" Classes="FieldLabel" Text="Time On (HHMM)" VerticalAlignment="Center" />
+                        <Grid Grid.Row="2" Grid.Column="4" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <TextBox Grid.Column="0" Text="{Binding InputTimeOn}" Watermark="1930" />
+                            <Button Grid.Column="1" Content="Now" Click="OnStampNowClicked" Padding="10,6" />
+                        </Grid>
                     </Grid>
                 </Border>
+
+                <StackPanel Spacing="10" IsVisible="{Binding !IsFieldDay}">
+                    <Border Padding="12"
+                            CornerRadius="8"
+                            Background="{DynamicResource AppPanelBackgroundBrush}"
+                            BorderBrush="{DynamicResource AppBorderBrush}"
+                            BorderThickness="1">
+                        <Grid ColumnDefinitions="Auto,220,16,Auto,170"
+                              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                              RowSpacing="10">
+                            <TextBlock Grid.Row="0" Grid.ColumnSpan="5"
+                                       Classes="SectionHeading"
+                                       Text="REQUIRED FIELDS" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Classes="FieldLabel" Text="Call" VerticalAlignment="Center" />
+                            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <TextBox Grid.Column="0"
+                                         Text="{Binding InputCall}"
+                                         Watermark="K1ABC"
+                                         TextChanged="OnInputCallChanged"
+                                         LostFocus="OnInputCallLostFocus" />
+                                <Button Grid.Column="1"
+                                        Content="Lookup"
+                                        Padding="10,6"
+                                        MinWidth="70"
+                                        Click="OnLookupClicked" />
+                            </Grid>
+
+                            <TextBlock Grid.Row="1" Grid.Column="3" Classes="FieldLabel" Text="Date (YYYYMMDD)" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="1" Grid.Column="4" Text="{Binding InputDate}" Watermark="20260504" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Classes="FieldLabel" Text="Time On (HHMM)" VerticalAlignment="Center" />
+                            <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <TextBox Grid.Column="0" Text="{Binding InputTimeOn}" Watermark="1930" />
+                                <Button Grid.Column="1" Content="Now" Click="OnStampNowClicked" Padding="10,6" />
+                            </Grid>
+
+                            <TextBlock Grid.Row="2" Grid.Column="3" Classes="FieldLabel" Text="Frequency (MHz)" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="2" Grid.Column="4" Text="{Binding InputFreq}" Watermark="14.250" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Classes="FieldLabel" Text="Band" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding InputBand}" Watermark="20M" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="3" Classes="FieldLabel" Text="Mode" VerticalAlignment="Center" />
+                            <ComboBox Grid.Row="3" Grid.Column="4"
+                                      ItemsSource="{Binding AvailableModes}"
+                                      SelectedItem="{Binding InputMode}"
+                                      IsTextSearchEnabled="True"
+                                      VerticalAlignment="Center" />
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Classes="FieldLabel" Text="Station Call" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding StationCallSign}" IsReadOnly="True" />
+
+                            <TextBlock Grid.Row="4" Grid.Column="3" Classes="FieldLabel" Text="Operator" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="4" Grid.Column="4" Text="{Binding InputOperator}" Watermark="Defaults to station call" TextChanged="OnUppercaseInputChanged" />
+
+                            <StackPanel Grid.Row="5"
+                                        Grid.Column="0"
+                                        Grid.ColumnSpan="5"
+                                        Orientation="Horizontal"
+                                        Spacing="8"
+                                        HorizontalAlignment="Right">
+                                <Button Name="NormalFirstPanelLogQsoButton"
+                                        Content="Log QSO"
+                                        Padding="10,6"
+                                        Click="OnLogQsoClicked" />
+                                <Button Content="Clear"
+                                        Padding="10,6"
+                                        Click="OnClearClicked" />
+                            </StackPanel>
+
+                            <TextBlock Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="5"
+                                       Text="These are always required for every log entry."
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       FontSize="11" />
+                        </Grid>
+                    </Border>
+
+                    <Border Padding="12"
+                            CornerRadius="8"
+                            Background="{DynamicResource AppPanelBackgroundBrush}"
+                            BorderBrush="{DynamicResource AppBorderBrush}"
+                            BorderThickness="1">
+                        <Grid ColumnDefinitions="Auto,170,16,Auto,170"
+                              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                              RowSpacing="10">
+                            <TextBlock Grid.Row="0" Grid.ColumnSpan="5"
+                                       Classes="SectionHeading"
+                                       Text="{Binding SupplementalFieldsSectionTitle}" />
+
+                            <TextBlock Grid.Row="1" Grid.ColumnSpan="5"
+                                       IsVisible="{Binding ShowContestMetadata}"
+                                       Text="{Binding CurrentContestDisplayName, StringFormat=Selected: {0}}"
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       FontSize="11" />
+                            <TextBlock Grid.Row="1" Grid.Column="4"
+                                       IsVisible="{Binding ShowContestMetadata}"
+                                       HorizontalAlignment="Right"
+                                       Text="{Binding CurrentContestAdifId, StringFormat=ADIF: {0}}"
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       FontSize="11" />
+
+                            <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
+                                       IsVisible="{Binding ShowLegacyExchangeRequirementLabel}"
+                                       Text="Normal Contest Required Exchange"
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       FontSize="11" />
+
+                            <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
+                                       IsVisible="{Binding ShowExchangeHelp}"
+                                       Text="{Binding ExchangeHelpText}"
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       FontSize="11" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" IsVisible="{Binding ShowRstSent}" Classes="FieldLabel" Text="RST Sent" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="3" Grid.Column="1" IsVisible="{Binding ShowRstSent}" Text="{Binding InputSent}" Watermark="59" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="3" IsVisible="{Binding ShowRstRecv}" Classes="FieldLabel" Text="RST Rec" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="3" Grid.Column="4" IsVisible="{Binding ShowRstRecv}" Text="{Binding InputRec}" Watermark="59" />
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" IsVisible="{Binding ShowCountry}" Classes="FieldLabel" Text="Country" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="4" Grid.Column="1" IsVisible="{Binding ShowCountry}" Text="{Binding InputCountry}" Watermark="USA" TextChanged="OnUppercaseInputChanged" />
+
+                            <TextBlock Grid.Row="4" Grid.Column="3" IsVisible="{Binding ShowName}" Classes="FieldLabel" Text="Name" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="4" Grid.Column="4" IsVisible="{Binding ShowName}" Text="{Binding InputName}" Watermark="Darryl" />
+
+                            <TextBlock Grid.Row="5" Grid.Column="0" IsVisible="{Binding ShowState}" Classes="FieldLabel" Text="State/Prov" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="5" Grid.Column="1" IsVisible="{Binding ShowState}" Text="{Binding InputState}" Watermark="MA" TextChanged="OnUppercaseInputChanged" />
+
+                            <TextBlock Grid.Row="5" Grid.Column="0" IsVisible="{Binding ShowExchange}" Classes="FieldLabel" Text="{Binding ExchangeLabel}" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="5" Grid.Column="1" IsVisible="{Binding ShowExchange}" Text="{Binding InputExchange}" Watermark="{Binding ExchangeWatermark}" TextChanged="OnUppercaseInputChanged" />
+
+                            <TextBlock Grid.Row="5" Grid.Column="3" IsVisible="{Binding ShowCounty}" Classes="FieldLabel" Text="County" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="5" Grid.Column="4" IsVisible="{Binding ShowCounty}" Text="{Binding InputCounty}" Watermark="PUL" TextChanged="OnUppercaseInputChanged" />
+
+                            <TextBlock Grid.Row="6" Grid.Column="0" IsVisible="{Binding ShowGrid}" Classes="FieldLabel" Text="Grid" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="6" Grid.Column="1"
+                                     Name="GridTextBox"
+                                     IsVisible="{Binding ShowGrid}"
+                                     Text="{Binding InputGrid}"
+                                     Watermark="FN42"
+                                     KeyDown="OnGridFieldKeyDown"
+                                     TextChanged="OnUppercaseInputChanged" />
+
+                            <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
+                                       IsVisible="{Binding IsFieldDay}"
+                                       Text="Required Exchange"
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       FontSize="11" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" IsVisible="{Binding ShowFieldDayClass}" Classes="FieldLabel" Text="Class" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="3" Grid.Column="1"
+                                     Name="FieldDayClassTextBox"
+                                     IsVisible="{Binding ShowFieldDayClass}"
+                                     Text="{Binding InputFieldDayClass}"
+                                     Watermark="1D"
+                                     KeyDown="OnFieldDayClassKeyDown"
+                                     TextChanged="OnUppercaseInputChanged" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="3" IsVisible="{Binding ShowFieldDaySection}" Classes="FieldLabel" Text="Section" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="3" Grid.Column="4"
+                                     Name="FieldDaySectionTextBox"
+                                     IsVisible="{Binding ShowFieldDaySection}"
+                                     Text="{Binding InputFieldDaySection}"
+                                     Watermark="EMA"
+                                     KeyDown="OnFieldDaySectionKeyDown"
+                                     TextChanged="OnUppercaseInputChanged" />
+
+                            <TextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="5"
+                                       IsVisible="{Binding HasContestError}"
+                                       Text="{Binding ContestError}"
+                                       Foreground="{DynamicResource AppErrorBrush}"
+                                       FontSize="11" />
+
+                            <TextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="5"
+                                       IsVisible="{Binding !HasContestError}"
+                                       Text="Card #2 changes based on selected Log Type."
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       FontSize="11" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
             </StackPanel>
         </ScrollViewer>
 
@@ -265,7 +365,7 @@
         <Border Grid.Row="2" Padding="0,10,0,0"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="0,1,0,0">
-            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
                 <Button Grid.Column="0"
                         Name="LogQsoButton"
                         Content="Log QSO"
@@ -274,26 +374,26 @@
                         Foreground="{DynamicResource AppButtonNormalForegroundBrush}"
                         Padding="20,9" CornerRadius="6"
                         FontWeight="Bold" FontSize="13" />
-                <Button Grid.Column="1"
-                        Content="Clear"
-                        Click="OnClearClicked"
-                        Background="{DynamicResource AppWarningBrush}"
-                        Foreground="{DynamicResource AppHeaderBackgroundBrush}"
-                        BorderBrush="{DynamicResource AppWarningBrush}"
-                        BorderThickness="1"
-                        Padding="16,9" CornerRadius="6" />
-                <Grid Grid.Column="2" RowDefinitions="Auto,Auto" RowSpacing="6" VerticalAlignment="Center">
-                    <TextBlock Grid.Row="0" Name="StatusLabel"
-                               Foreground="{DynamicResource AppErrorBrush}"
-                               FontSize="12"
-                               HorizontalAlignment="Center" />
-                    <Border Grid.Row="1"
-                            Padding="10,8"
-                            CornerRadius="8"
-                            Background="{DynamicResource AppPanelBackgroundBrush}"
-                            BorderBrush="{DynamicResource AppBorderBrush}"
-                            BorderThickness="1"
-                            HorizontalAlignment="Center">
+                <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" VerticalAlignment="Center">
+                        <TextBlock Grid.Row="0" Name="StatusLabel"
+                                   Foreground="{DynamicResource AppErrorBrush}"
+                                   FontSize="12"
+                                   HorizontalAlignment="Center" />
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                            <TextBlock Text="Time Out" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="11" VerticalAlignment="Center" />
+                            <TextBox Text="{Binding InputTimeOut}"
+                                     Width="64"
+                                     IsReadOnly="True"
+                                     Padding="8,6"
+                                     VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Border Grid.Row="2"
+                                Padding="10,8"
+                                CornerRadius="8"
+                                Background="{DynamicResource AppPanelBackgroundBrush}"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                BorderThickness="1"
+                                HorizontalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="Spot remark"
                                        Foreground="{DynamicResource AppMutedForegroundBrush}"
@@ -305,21 +405,21 @@
                                      Padding="8,6"
                                      VerticalAlignment="Center" />
                         </StackPanel>
-                    </Border>
+                        </Border>
                 </Grid>
-                <Button Grid.Column="3"
+                <Button Grid.Column="2"
                         Content="Spot"
                         Click="OnSpotClicked"
                         Background="{DynamicResource AppButtonCautionBrush}"
                         Foreground="{DynamicResource AppButtonCautionForegroundBrush}"
                         Padding="16,9" CornerRadius="6" />
-                <Button Grid.Column="4"
+                <Button Grid.Column="3"
                         Content="Self-Spot"
                         Click="OnSelfSpotClicked"
                         Background="{DynamicResource AppButtonCautionBrush}"
                         Foreground="{DynamicResource AppButtonCautionForegroundBrush}"
                         Padding="16,9" CornerRadius="6" />
-                <Button Grid.Column="5"
+                <Button Grid.Column="4"
                         Content="Cancel"
                         Click="OnCancelClicked"
                         Background="Transparent"
