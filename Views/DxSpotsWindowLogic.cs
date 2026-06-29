@@ -1,3 +1,5 @@
+using Avalonia.Threading;
+
 namespace HamBusLog.Views;
 
 public partial class DxSpotsWindow
@@ -175,14 +177,34 @@ public partial class DxSpotsWindow
             return;
         }
 
-        if (App.ActivateOpenWindow<LogInputWindow>())
+        var existingWindow = App.FindOpenWindow<LogInputWindow>();
+        if (existingWindow is not null)
+        {
+            _logInputWindow = existingWindow;
+            ShowLogInputWindow(existingWindow);
             return;
+        }
 
         _logInputWindow = new LogInputWindow(callsign, frequencyMhz, spotInfo);
         _logInputWindow.Closed += (_, _) => _logInputWindow = null;
         _logInputWindow.QsoLogged += async (_, qso) => await SaveQsoAsync(qso);
-        _logInputWindow.Show();
-        _logInputWindow.Activate();
+        ShowLogInputWindow(_logInputWindow);
+    }
+
+    private void ShowLogInputWindow(LogInputWindow window)
+    {
+        if (window.IsVisible)
+        {
+            window.Activate();
+            return;
+        }
+
+        if (IsVisible)
+            window.Show(this);
+        else
+            window.Show();
+
+        Dispatcher.UIThread.Post(window.Activate);
     }
 
     private async Task SaveQsoAsync(Qso qso)

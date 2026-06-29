@@ -8,8 +8,9 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
 {
     private static readonly IReadOnlyList<string> AvailableModesStatic =
     [
-        "USB", "LSB", "FM", "AM", "FT8", "FT4", "RTTY", "PSK31", "PSK63", 
-        "OLIVIA", "JS8", "MFSK", "PACKET", "HELL", "THOR", "DOMINO", "DIGITAL", "CW"
+        "USB", "LSB", "FM", "AM", "FT8", "FT4", "FST4", "FST4W", "Q65", "JT65", "JT9", "MSK144", "WSPR",
+        "RTTY", "PSK31", "PSK63", "OLIVIA", "JS8", "MFSK", "PACKET", "PKTUSB", "PKTLSB", "DIGU", "DIGL",
+        "HELL", "THOR", "DOMINO", "DIGITAL", "CW"
     ];
 
     private readonly CallValidator   _callValidator   = new();
@@ -61,6 +62,7 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
     private bool _isApplyingGlobalLogType;
     private readonly bool _wsjtAutoPopulateEnabled;
     private DateTime? _suspendRigAutoPopulateUntilUtc;
+    private string _wsjtModeOverride = string.Empty;
 
     // ----- station / operator config -----
     private string _stationCallSign = string.Empty;
@@ -97,8 +99,7 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
         var storedContestKey = ActiveConfigProfile().LastContestKey;
         var initialContestKey = ResolveInitialContestKey(storedContestKey);
         var globalContestKey = _logTypeSelectionService.SelectedContestKey;
-        if (!string.Equals(globalContestKey, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase)
-            && FindContestDefinition(globalContestKey) is not null)
+        if (FindContestDefinition(globalContestKey) is not null)
         {
             initialContestKey = globalContestKey;
         }
@@ -241,9 +242,13 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(SelectedContestDefinition));
         OnPropertyChanged(nameof(IsFieldDay));
         OnPropertyChanged(nameof(IsNormalContest));
+        OnPropertyChanged(nameof(IsGeneralLogType));
         OnPropertyChanged(nameof(UsesUnifiedExchange));
         OnPropertyChanged(nameof(ShowLegacyNormalExchangeFields));
         OnPropertyChanged(nameof(ShowUnifiedExchangeField));
+        OnPropertyChanged(nameof(SupplementalFieldsSectionTitle));
+        OnPropertyChanged(nameof(ShowContestMetadata));
+        OnPropertyChanged(nameof(ShowLegacyExchangeRequirementLabel));
         OnPropertyChanged(nameof(CurrentContestDefinition));
         OnPropertyChanged(nameof(CurrentContestDisplayName));
         OnPropertyChanged(nameof(CurrentContestAdifId));
@@ -286,6 +291,7 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
 
     public bool IsNormalContest => CurrentContestDefinition.UsesNormalExchange;
     public bool IsFieldDay => CurrentContestDefinition.UsesFieldDayExchange;
+    public bool IsGeneralLogType => IsContestKeyMatch(ContestCatalog.NormalKey);
     public IReadOnlyList<ContestFieldRequirement> EffectiveRequiredFields
         => IsArkansasQsoParty ? ArkansasQsoPartyRequiredFields : CurrentContestDefinition.RequiredFields;
     public bool UsesUnifiedExchange => EffectiveRequiredFields
@@ -293,8 +299,8 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
     public bool ShowLegacyNormalExchangeFields => IsNormalContest && !UsesUnifiedExchange;
     public bool ShowUnifiedExchangeField => UsesUnifiedExchange;
     public bool ShowExchange => ShowUnifiedExchangeField;
-    public bool ShowRstSent => HasRequiredField(ContestFieldKeys.RstSent);
-    public bool ShowRstRecv => HasRequiredField(ContestFieldKeys.RstRecv);
+    public bool ShowRstSent => IsNormalContest || HasRequiredField(ContestFieldKeys.RstSent);
+    public bool ShowRstRecv => IsNormalContest || HasRequiredField(ContestFieldKeys.RstRecv);
     public bool ShowLocationFields => IsNormalContest
     || HasRequiredField(ContestFieldKeys.Country)
     || HasRequiredField(ContestFieldKeys.State)
@@ -306,6 +312,9 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
     public bool ShowGrid => ShowLocationFields;
     public bool ShowFieldDaySection => HasRequiredField(ContestFieldKeys.FieldDaySection);
     public bool ShowFieldDayClass => HasRequiredField(ContestFieldKeys.FieldDayClass);
+    public string SupplementalFieldsSectionTitle => IsGeneralLogType ? "OPTIONAL FIELDS" : "CONTEST REQUIREMENTS";
+    public bool ShowContestMetadata => !IsGeneralLogType;
+    public bool ShowLegacyExchangeRequirementLabel => !IsGeneralLogType && ShowLegacyNormalExchangeFields;
     public ContestDefinition CurrentContestDefinition => FindContestDefinition(_selectedContestKey)
         ?? ContestCatalog.Get(ContestType.Normal);
     public string CurrentContestDisplayName => CurrentContestDefinition.DisplayName;
@@ -745,7 +754,7 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
 
     public void RefreshAutoFields()
     {
-        if (_suspendRigAutoPopulateUntilUtc is not DateTime pauseUntil || DateTime.UtcNow >= pauseUntil)
+        if (!IsRigAutoPopulateSuspended())
             RefreshSelectedRadioInputs();
 
         InputTimeOut = DateTime.UtcNow.ToString("HHmm");
@@ -769,7 +778,10 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
 
         var mode = NormalizeWsjtMode(qso.Mode, qso.Submode);
         if (!string.IsNullOrWhiteSpace(mode))
+        {
             InputMode = mode;
+            _wsjtModeOverride = mode.Trim().ToUpperInvariant();
+        }
 
         if (!string.IsNullOrWhiteSpace(qso.FreqMhz))
             InputFreq = qso.FreqMhz;
@@ -815,10 +827,15 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
         if (state is null || !state.IsConnected)
             return;
 
-        if (!string.IsNullOrWhiteSpace(state.Mode) && state.Mode != "0")
+        var preserveRecentWsjtValues = IsRigAutoPopulateSuspended();
+
+        if (string.IsNullOrWhiteSpace(_wsjtModeOverride)
+            && !preserveRecentWsjtValues
+            && !string.IsNullOrWhiteSpace(state.Mode)
+            && state.Mode != "0")
             InputMode = state.Mode;
 
-        if (state.FrequencyMhz is decimal mhz && mhz > 0)
+        if (!preserveRecentWsjtValues && state.FrequencyMhz is decimal mhz && mhz > 0)
         {
             InputFreq = mhz.ToString("0.000000", CultureInfo.InvariantCulture);
 
@@ -827,6 +844,9 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
                 InputBand = derivedBand;
         }
     }
+
+    private bool IsRigAutoPopulateSuspended()
+        => _suspendRigAutoPopulateUntilUtc is DateTime pauseUntil && DateTime.UtcNow < pauseUntil;
 
     private void ClearErrors()
     {
@@ -1404,13 +1424,7 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
             return normalizedSubmode;
 
         var normalizedMode = (mode ?? string.Empty).Trim().ToUpperInvariant();
-        return normalizedMode switch
-        {
-            "MFSK" => "FT8",
-            "PKTUSB" => "DIGU",
-            "PKTLSB" => "DIGL",
-            _ => normalizedMode
-        };
+        return normalizedMode;
     }
 
     private void OnWsjtLoggedQsoReceived(object? sender, WsjtLoggedQso qso)

@@ -264,20 +264,22 @@
                               RowSpacing="10">
                             <TextBlock Grid.Row="0" Grid.ColumnSpan="5"
                                        Classes="SectionHeading"
-                                       Text="CONTEST REQUIREMENTS" />
+                                       Text="{Binding SupplementalFieldsSectionTitle}" />
 
                             <TextBlock Grid.Row="1" Grid.ColumnSpan="5"
+                                       IsVisible="{Binding ShowContestMetadata}"
                                        Text="{Binding CurrentContestDisplayName, StringFormat=Selected: {0}}"
                                        Foreground="{DynamicResource AppMutedForegroundBrush}"
                                        FontSize="11" />
                             <TextBlock Grid.Row="1" Grid.Column="4"
+                                       IsVisible="{Binding ShowContestMetadata}"
                                        HorizontalAlignment="Right"
                                        Text="{Binding CurrentContestAdifId, StringFormat=ADIF: {0}}"
                                        Foreground="{DynamicResource AppMutedForegroundBrush}"
                                        FontSize="11" />
 
                             <TextBlock Grid.Row="2" Grid.ColumnSpan="5"
-                                       IsVisible="{Binding ShowLegacyNormalExchangeFields}"
+                                       IsVisible="{Binding ShowLegacyExchangeRequirementLabel}"
                                        Text="Normal Contest Required Exchange"
                                        Foreground="{DynamicResource AppMutedForegroundBrush}"
                                        FontSize="11" />

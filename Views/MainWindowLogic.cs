@@ -1,6 +1,7 @@
 namespace HamBusLog.Views;
 
 using Avalonia.VisualTree;
+using Avalonia.Threading;
 using HamBusLog.Data.Repositories.Sqlite;
 using HamBusLog.Wa1gonLib.Models;
 
@@ -487,15 +488,35 @@ public partial class MainWindow
             return;
         }
 
-        if (App.ActivateOpenWindow<LogInputWindow>())
+        var existingWindow = App.FindOpenWindow<LogInputWindow>();
+        if (existingWindow is not null)
+        {
+            _logInputWindow = existingWindow;
+            ShowLogInputWindow(existingWindow);
             return;
+        }
 
         _qsoRepository ??= new SqliteQsoRepository(App.DbContext);
         _logInputWindow = new LogInputWindow();
         _logInputWindow.Closed += (_, _) => _logInputWindow = null;
         _logInputWindow.QsoLogged += async (_, qso) => await SaveQsoAsync(qso);
-        _logInputWindow.Show();
-        _logInputWindow.Activate();
+        ShowLogInputWindow(_logInputWindow);
+    }
+
+    private void ShowLogInputWindow(LogInputWindow window)
+    {
+        if (window.IsVisible)
+        {
+            window.Activate();
+            return;
+        }
+
+        if (IsVisible)
+            window.Show(this);
+        else
+            window.Show();
+
+        Dispatcher.UIThread.Post(window.Activate);
     }
 
     private async Task SaveQsoAsync(Qso qso)

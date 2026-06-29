@@ -70,6 +70,99 @@ public sealed class LogInputViewModelTests
     }
 
     [Fact]
+    public void ApplyWsjtLoggedQso_PreventsRigModeFromOverwritingRecentPacketMode()
+    {
+        var viewModel = new LogInputViewModel();
+        var wsjt = new WsjtLoggedQso(
+            "<EOR>",
+            "K1ABC",
+            new DateTimeOffset(2026, 6, 29, 12, 30, 45, TimeSpan.Zero),
+            "20M",
+            "Q65",
+            string.Empty,
+            "-5",
+            "-8",
+            "14.074",
+            "FN31",
+            "FN42",
+            "MA",
+            "MID",
+            "USA",
+            "DARRYL",
+            "K1OWN",
+            "K1OP",
+            string.Empty);
+
+        viewModel.ApplyWsjtLoggedQso(wsjt);
+        viewModel.SelectedConnectedRadio = CreateOption("Slice A", "Flex Slice A", "DIGI", 14_074_000);
+
+        Assert.Equal("Q65", viewModel.InputMode);
+        Assert.Equal("14.074", viewModel.InputFreq);
+        Assert.Equal("20M", viewModel.InputBand);
+    }
+
+    [Fact]
+    public void ApplyWsjtLoggedQso_ModeStaysLockedWhenRigAutofillRunsAgain()
+    {
+        var viewModel = new LogInputViewModel();
+        var wsjt = new WsjtLoggedQso(
+            "<EOR>",
+            "K1ABC",
+            new DateTimeOffset(2026, 6, 29, 12, 30, 45, TimeSpan.Zero),
+            "20M",
+            "MFSK",
+            "FT8",
+            "-5",
+            "-8",
+            "14.074",
+            "FN31",
+            "FN42",
+            "MA",
+            "MID",
+            "USA",
+            "DARRYL",
+            "K1OWN",
+            "K1OP",
+            string.Empty);
+
+        viewModel.ApplyWsjtLoggedQso(wsjt);
+        viewModel.ApplySelectedRadioToInputs();
+
+        Assert.Equal("FT8", viewModel.InputMode);
+    }
+
+    [Fact]
+    public void PrepareForNextLogEntry_KeepsRecentWsjtModeLocked()
+    {
+        var viewModel = new LogInputViewModel();
+        var wsjt = new WsjtLoggedQso(
+            "<EOR>",
+            "K1ABC",
+            new DateTimeOffset(2026, 6, 29, 12, 30, 45, TimeSpan.Zero),
+            "20M",
+            "MFSK",
+            "FT8",
+            "-5",
+            "-8",
+            "14.074",
+            "FN31",
+            "FN42",
+            "MA",
+            "MID",
+            "USA",
+            "DARRYL",
+            "K1OWN",
+            "K1OP",
+            string.Empty);
+
+        viewModel.ApplyWsjtLoggedQso(wsjt);
+        viewModel.PrepareForNextLogEntry();
+        viewModel.SelectedConnectedRadio = CreateOption("Slice A", "Flex Slice A", "DIGI", 14_074_000);
+
+        Assert.Equal("FT8", viewModel.InputMode);
+    }
+
+    [Fact]
     public void CallSectionAndClass_AreForcedToUppercase()
     {
         var viewModel = new LogInputViewModel();
@@ -164,6 +257,105 @@ public sealed class LogInputViewModelTests
         Assert.Equal(string.Empty, qso.RstRcvd);
         Assert.Contains(qso.Details, d => d.FieldName == "Section" && d.FieldValue == "EMA");
         Assert.Contains(qso.Details, d => d.FieldName == "Class" && d.FieldValue == "1D");
+    }
+
+    [Fact]
+    public void TryBuildQso_NormalFt8_AllowsWsjtStyleMinimalFields()
+    {
+        var call = FindUnusedCallsign();
+        var viewModel = new LogInputViewModel
+        {
+            SelectedContestType = ContestType.Normal,
+            InputCall = call,
+            InputDate = "20260629",
+            InputTimeOn = "0015",
+            InputBand = "20M",
+            InputMode = "FT8",
+            InputFreq = "14.074",
+            InputSent = "-05",
+            InputRec = "-10"
+        };
+
+        var qso = viewModel.TryBuildQso(out var error);
+
+        Assert.NotNull(qso);
+        Assert.Equal(string.Empty, error);
+        Assert.Equal(ContestCatalog.NormalKey, qso.ContestId);
+        Assert.Equal("FT8", qso.Mode);
+        Assert.Equal("-05", qso.RstSent);
+        Assert.Equal("-10", qso.RstRcvd);
+    }
+
+    [Fact]
+    public void TryBuildQso_NormalLog_AllowsMinimalManualFieldsWithoutRstOrLocation()
+    {
+        var call = FindUnusedCallsign();
+        var viewModel = new LogInputViewModel
+        {
+            SelectedContestType = ContestType.Normal,
+            InputCall = call,
+            InputDate = "20260629",
+            InputTimeOn = "0020",
+            InputBand = "40M",
+            InputMode = "FT8",
+            InputFreq = "7.074",
+            InputSent = string.Empty,
+            InputRec = string.Empty
+        };
+
+        var qso = viewModel.TryBuildQso(out var error);
+
+        Assert.NotNull(qso);
+        Assert.Equal(string.Empty, error);
+        Assert.Equal(string.Empty, qso.RstSent);
+        Assert.Equal(string.Empty, qso.RstRcvd);
+        Assert.DoesNotContain(qso.Details, d => d.FieldName == "GRID");
+        Assert.Equal(string.Empty, qso.Country);
+        Assert.Equal(string.Empty, qso.State);
+    }
+
+    [Fact]
+    public void NormalLog_ShowsOptionalRstFields_EvenWhenTheyAreNotRequired()
+    {
+        var viewModel = new LogInputViewModel
+        {
+            SelectedContestType = ContestType.Normal
+        };
+
+        Assert.True(viewModel.ShowRstSent);
+        Assert.True(viewModel.ShowRstRecv);
+        Assert.True(viewModel.ShowCountry);
+        Assert.True(viewModel.ShowName);
+        Assert.True(viewModel.ShowState);
+        Assert.True(viewModel.ShowCounty);
+        Assert.True(viewModel.ShowGrid);
+    }
+
+    [Fact]
+    public void NormalLog_HidesContestOnlyMetadataAndLabels()
+    {
+        var viewModel = new LogInputViewModel
+        {
+            SelectedContestType = ContestType.Normal
+        };
+
+        Assert.True(viewModel.IsGeneralLogType);
+        Assert.Equal("OPTIONAL FIELDS", viewModel.SupplementalFieldsSectionTitle);
+        Assert.False(viewModel.ShowContestMetadata);
+        Assert.False(viewModel.ShowLegacyExchangeRequirementLabel);
+    }
+
+    [Fact]
+    public void NonNormalContest_ShowsContestMetadataAndLabels()
+    {
+        var viewModel = new LogInputViewModel
+        {
+            SelectedContestDefinition = ContestCatalog.GetAll().First(x => !string.Equals(x.Key, ContestCatalog.NormalKey, StringComparison.OrdinalIgnoreCase))
+        };
+
+        Assert.False(viewModel.IsGeneralLogType);
+        Assert.Equal("CONTEST REQUIREMENTS", viewModel.SupplementalFieldsSectionTitle);
+        Assert.True(viewModel.ShowContestMetadata);
     }
 
     [Fact]
