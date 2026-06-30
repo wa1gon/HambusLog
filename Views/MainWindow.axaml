@@ -225,26 +225,32 @@
                         <WrapPanel ItemSpacing="8" HorizontalAlignment="Right">
                             <Button Classes="QuickAction" Content="Progress Status"
                                     IsVisible="{Binding ShowProgressButton}"
-                                    Click="OnOpenProgressStatusClicked"
+                                     ClickMode="Press"
+                                     Click="OnOpenProgressStatusClicked"
                                     Background="{DynamicResource AppButtonCautionBrush}"
                                     Foreground="{DynamicResource AppButtonCautionForegroundBrush}" />
                             <Button Classes="QuickAction" Content="Open Grid"
-                                    Click="OnOpenGridClicked"
+                                     ClickMode="Press"
+                                     Click="OnOpenGridClicked"
                                     Background="{DynamicResource AppButtonNormalBrush}"
                                     Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
                             <Button Classes="QuickAction" Content="New QSO"
-                                    Click="OnOpenNewContactClicked"
+                                     ClickMode="Press"
+                                     Click="OnOpenNewContactClicked"
                                     Background="{DynamicResource AppButtonNormalBrush}"
                                     Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
                             <Button Classes="QuickAction" Content="DX Cluster"
-                                    Click="OnOpenDxClusterClicked"
+                                     ClickMode="Press"
+                                     Click="OnOpenDxClusterClicked"
                                     Background="{DynamicResource AppButtonNormalBrush}"
                                     Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
                             <Button Classes="QuickAction" Content="Voice Keyer"
-                                    Click="OnOpenDigitalVoiceKeyerClicked"
+                                     ClickMode="Press"
+                                     Click="OnOpenDigitalVoiceKeyerClicked"
                                     Background="{DynamicResource AppButtonNormalBrush}"
                                     Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
                             <Button Classes="QuickAction" Content="Exit Program"
+                                     ClickMode="Press"
                                     Click="OnExitProgramClicked"
                                     Background="{DynamicResource AppButtonDangerBrush}"
                                     Foreground="{DynamicResource AppButtonDangerForegroundBrush}" />

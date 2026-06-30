@@ -24,6 +24,7 @@ public partial class MainWindow
     private bool _isImportingAdif;
     private bool _isAppExitRequested;
     private bool _skipNextMenuSelectionChanged;
+    private bool _isHandlingMenuClick;
 
     public MainWindow()
     {
@@ -31,6 +32,14 @@ public partial class MainWindow
         ApplyStayOnTopSetting();
         // MainWindow placement tracking is disabled to avoid close-button hangs on Linux.
         App.Toasts.RegisterWindow(this);
+        Opened += (_, _) =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                Activate();
+                Focus();
+            }, DispatcherPriority.Input);
+        };
     }
 
     private void ApplyStayOnTopSetting()
@@ -110,6 +119,13 @@ public partial class MainWindow
             return;
         }
 
+        // Skip if we're already handling a menu click
+        if (_isHandlingMenuClick)
+        {
+            Log.Debug("Skipping SelectionChanged - already handling menu click");
+            return;
+        }
+
         if (e.AddedItems.Count > 0 && e.AddedItems[0] is MenuNode node)
             await HandleMenuNodeClickAsync(node, sender);
     }
@@ -134,12 +150,32 @@ public partial class MainWindow
             return;
         }
 
-        await HandleMenuNodeClickAsync(node, sender);
+        // Prevent duplicate handling
+        if (_isHandlingMenuClick)
+        {
+            Log.Debug("Ignoring PointerPressed - already handling menu click");
+            e.Handled = true;
+            return;
+        }
+
+        _isHandlingMenuClick = true;
+        try
+        {
+            await HandleMenuNodeClickAsync(node, sender);
+        }
+        finally
+        {
+            // Clear the flag after a brief delay to allow event processing
+            _ = Task.Delay(100).ContinueWith(_ => _isHandlingMenuClick = false);
+        }
+
         e.Handled = true;
     }
 
     private async Task HandleMenuNodeClickAsync(MenuNode node, object? sender)
     {
+        Log.Debug("Menu item clicked: {MenuItem}", node.Title);
+        
         if (node.Title == "Grid" || node.Title == "Open/Reopen Grid")
             ToggleGridWindow();
         else if (node.Title == "Add New Contact")
@@ -200,9 +236,19 @@ public partial class MainWindow
         ResetTreeSelection(sender);
     }
 
-    public void OnOpenGridClicked(object? sender, RoutedEventArgs e) => ToggleGridWindow();
+    public void OnOpenGridClicked(object? sender, RoutedEventArgs e)
+    {
+        Log.Debug("Open Grid button clicked");
+        ToggleGridWindow();
+    }
 
-    public void OnOpenNewContactClicked(object? sender, RoutedEventArgs e) => OpenNewContactWindow();
+
+    public void OnOpenNewContactClicked(object? sender, RoutedEventArgs e)
+    {
+        Log.Debug("Open New Contact button clicked");
+        OpenNewContactWindow();
+    }
+
 
     public void OnOpenProgressStatusClicked(object? sender, RoutedEventArgs e)
     {
@@ -226,6 +272,7 @@ public partial class MainWindow
         App.Toasts.ShowInfo("Progress status", "No contest progress window is available for the selected contest.");
     }
 
+
     private static bool IsArqpContestKey(string key, string adif, string name)
     {
         static bool IsArqp(string v)
@@ -244,6 +291,7 @@ public partial class MainWindow
     public async void OnImportAdifClicked(object? sender, RoutedEventArgs e) => await ImportAdifAsync();
 
     public void OnOpenDxClusterClicked(object? sender, RoutedEventArgs e) => ToggleDxSpotsWindow();
+
 
     public void OnOpenDigitalVoiceKeyerClicked(object? sender, RoutedEventArgs e) => ToggleDigitalVoiceKeyerWindow();
 
@@ -482,8 +530,11 @@ public partial class MainWindow
 
     private void OpenNewContactWindow()
     {
+        Log.Information("Opening new contact (QSO input) window");
+        
         if (_logInputWindow is { IsVisible: true })
         {
+            Log.Debug("Log input window already visible, activating");
             _logInputWindow.Activate();
             return;
         }
@@ -491,11 +542,13 @@ public partial class MainWindow
         var existingWindow = App.FindOpenWindow<LogInputWindow>();
         if (existingWindow is not null)
         {
+            Log.Debug("Found existing log input window, reusing");
             _logInputWindow = existingWindow;
             ShowLogInputWindow(existingWindow);
             return;
         }
 
+        Log.Debug("Creating new log input window");
         _qsoRepository ??= new SqliteQsoRepository(App.DbContext);
         _logInputWindow = new LogInputWindow();
         _logInputWindow.Closed += (_, _) => _logInputWindow = null;
@@ -507,16 +560,23 @@ public partial class MainWindow
     {
         if (window.IsVisible)
         {
+            Log.Debug("Log input window is already visible, activating");
             window.Activate();
             return;
         }
 
+        Log.Debug("Showing log input window");
         if (IsVisible)
             window.Show(this);
         else
             window.Show();
 
-        Dispatcher.UIThread.Post(window.Activate);
+        // Ensure window is properly activated and brought to foreground
+        Dispatcher.UIThread.Post(() =>
+        {
+            window.Activate();
+            window.Focus();
+        });
     }
 
     private async Task SaveQsoAsync(Qso qso)
