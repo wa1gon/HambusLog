@@ -31,7 +31,7 @@ sealed class Program
             Directory.CreateDirectory(logDir);
 
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Information()
+            .MinimumLevel.Debug()
             .WriteTo.Console(
                 outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] {Message:lj}{NewLine}{Exception}")
             .WriteTo.File(

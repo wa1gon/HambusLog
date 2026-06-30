@@ -121,6 +121,7 @@ public partial class SplashWindow : Window
             return;
 
         _isClosingOrClosed = true;
+        e.Handled = true;  // Mark as handled so event doesn't tunnel to main window.
         // Any mouse click dismisses the splash immediately.
         TryCancelCountdown();
         Close();

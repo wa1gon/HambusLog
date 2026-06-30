@@ -213,21 +213,8 @@ public partial class App
                 {
                     mainWindow.WindowStartupLocation = WindowStartupLocation.Manual;
                     mainWindow.Position = targetPosition;
+                    mainWindow.Activate();
                     mainWindow.Focus();
-                });
-                mainWindow.Activate();
-                mainWindow.Focus();
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(180);
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                    {
-                        if (!mainWindow.IsVisible)
-                            return;
-
-                        mainWindow.Activate();
-                        mainWindow.Focus();
-                    });
                 });
 
                 if (AppConfigurationStore.ConsumeContestRepairNotice())
