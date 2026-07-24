@@ -6,9 +6,7 @@ using Avalonia.Platform;
 
 public partial class SplashWindow : Window
 {
-    private const int SplashSeconds = 30;
     private const string SplashImageRelativePath = "images/hambus-large.png";
-    private readonly CancellationTokenSource _cts = new();
     private bool _isClosingOrClosed;
 
     /// <summary>The screen the splash was displayed on — read by AppLogic after Close().</summary>
@@ -20,7 +18,7 @@ public partial class SplashWindow : Window
     public SplashWindow()
     {
         InitializeComponent();
-        AddHandler(InputElement.PointerPressedEvent, OnAnyPointerPressed, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+        AddHandler(InputElement.PointerReleasedEvent, OnAnyPointerReleased, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
         SetSplashImage();
         SetVersionInfo();
     }
@@ -63,41 +61,12 @@ public partial class SplashWindow : Window
         base.OnOpened(e);
         HostScreen = Screens.ScreenFromWindow(this);
         LastKnownPosition = Position;
-        _ = RunCountdownAsync(_cts.Token);
-    }
-
-    private async Task RunCountdownAsync(CancellationToken ct)
-    {
-        var countdownText = this.FindControl<TextBlock>("CountdownText");
-
-        for (var remaining = SplashSeconds; remaining > 0; remaining--)
-        {
-            if (ct.IsCancellationRequested)
-                return;
-
-            if (countdownText is not null)
-                countdownText.Text = $"Closing in {remaining} s\u2026";
-
-            try
-            {
-                await Task.Delay(1000, ct);
-            }
-            catch (TaskCanceledException)
-            {
-                return;
-            }
-        }
-
-        if (!ct.IsCancellationRequested)
-            Close();
     }
 
     protected override void OnClosed(EventArgs e)
     {
         _isClosingOrClosed = true;
-        RemoveHandler(InputElement.PointerPressedEvent, OnAnyPointerPressed);
-        TryCancelCountdown();
-        _cts.Dispose();
+        RemoveHandler(InputElement.PointerReleasedEvent, OnAnyPointerReleased);
         base.OnClosed(e);
     }
 
@@ -111,7 +80,7 @@ public partial class SplashWindow : Window
         base.OnClosing(e);
     }
 
-    private void OnAnyPointerPressed(object? sender, PointerPressedEventArgs e)
+    private void OnAnyPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         if (_isClosingOrClosed)
             return;
@@ -121,23 +90,8 @@ public partial class SplashWindow : Window
             return;
 
         _isClosingOrClosed = true;
-        e.Handled = true;  // Mark as handled so event doesn't tunnel to main window.
         // Any mouse click dismisses the splash immediately.
-        TryCancelCountdown();
         Close();
-    }
-
-    private void TryCancelCountdown()
-    {
-        try
-        {
-            if (!_cts.IsCancellationRequested)
-                _cts.Cancel();
-        }
-        catch (ObjectDisposedException)
-        {
-            // Ignore races from late UI events after splash teardown.
-        }
     }
 }
 

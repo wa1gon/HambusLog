@@ -645,6 +645,7 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
 
         var qso = new Qso
         {
+            Id      = Guid.NewGuid(),
             Call    = InputCall.Trim().ToUpperInvariant(),
             StationCallSign = _stationCallSign.Trim().ToUpperInvariant(),
             QsoDate = qsoDateUtc,
