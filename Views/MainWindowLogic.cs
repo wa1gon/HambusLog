@@ -24,6 +24,16 @@ public partial class MainWindow
     private bool _isImportingAdif;
     private bool _isAppExitRequested;
     private bool _skipNextMenuSelectionChanged;
+    private bool _isHandlingMenuClick;
+    private bool _startupFocusPulseApplied;
+    
+    private bool _hasReceivedWindowPointerEvent;
+    private CancellationTokenSource? _activationGuardCts;
+    private bool _bypassDeduping;
+    private DateTime _lastGridToggleUtc = DateTime.MinValue;
+    private DateTime _openedUtc;
+    private DateTime _lastQuickActionDispatchUtc;
+    private string? _lastQuickActionDispatchName;
 
     public MainWindow()
     {
@@ -31,6 +41,216 @@ public partial class MainWindow
         ApplyStayOnTopSetting();
         // MainWindow placement tracking is disabled to avoid close-button hangs on Linux.
         App.Toasts.RegisterWindow(this);
+        
+        // Capture pointer events at multiple stages to ensure we see all events
+        AddHandler(InputElement.PointerPressedEvent, OnWindowPointerPressed, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+        
+        // Also listen for PointerMoved to detect when WM releases input grab
+        AddHandler(InputElement.PointerMovedEvent, OnWindowPointerMoved, RoutingStrategies.Tunnel);
+        
+        Opened += (_, _) =>
+        {
+            _openedUtc = DateTime.UtcNow;
+            _ = EnsureStartupFocusAsync();
+        };
+
+        Deactivated += (_, _) =>
+        {
+            // Some Linux WMs briefly deactivate the window during handoff; keep activation sticky
+            // only when no other in-app window is active.
+            var openedAgo = DateTime.UtcNow - _openedUtc;
+            if (openedAgo <= TimeSpan.FromSeconds(8) && !IsAnotherAppWindowActive())
+                StartActivationGuard("early-deactivated", 3000);
+        };
+    }
+
+    private void OnWindowPointerMoved(object? sender, PointerEventArgs e)
+    {
+        var point = e.GetCurrentPoint(this);
+        if (point.Pointer.Type == PointerType.Mouse && !_hasReceivedWindowPointerEvent)
+        {
+            // This is the first pointer movement after the window opened
+            // By this point, the WM should have released its focus grab
+            _hasReceivedWindowPointerEvent = true;
+            // First post-open mouse movement observed.
+        }
+
+        // On some Linux WMs, first click is consumed to activate window.
+        // Proactively activate on mouse movement so the next click reaches buttons.
+        if (!IsActive)
+        {
+            Activate();
+            Focus();
+        }
+    }
+
+    private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        var point = e.GetCurrentPoint(this);
+        if (point.Pointer.Type != PointerType.Mouse)
+            return;
+
+        _hasReceivedWindowPointerEvent = true;
+        // First actionable mouse press can be swallowed by WM focus handoff.
+        // Route quick-action clicks directly from window-level pointer events.
+        if (!e.Handled && TryDispatchQuickActionFromSource(e.Source))
+            e.Handled = true;
+    }
+
+    private bool TryDispatchQuickActionFromSource(object? source)
+    {
+        if (source is not Visual visual)
+            return false;
+
+        var button = visual.FindAncestorOfType<Button>();
+        if (button is null)
+            return false;
+
+        // Skip Open Grid button since it uses standard Click handler without pointer events
+        if (button.Name == "OpenGridQuickActionButton")
+            return false;
+
+        switch (button.Name)
+        {
+            case "ProgressStatusQuickActionButton":
+                OnOpenProgressStatusClicked(button, new RoutedEventArgs());
+                return true;
+            case "NewQsoQuickActionButton":
+                OnOpenNewContactClicked(button, new RoutedEventArgs());
+                return true;
+            case "DxClusterQuickActionButton":
+                OnOpenDxClusterClicked(button, new RoutedEventArgs());
+                return true;
+            case "VoiceKeyerQuickActionButton":
+                OnOpenDigitalVoiceKeyerClicked(button, new RoutedEventArgs());
+                return true;
+            case "ExitProgramQuickActionButton":
+                OnExitProgramClicked(button, new RoutedEventArgs());
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private bool ShouldHandleQuickActionInvocation(object? sender, string expectedButtonName)
+    {
+        if (sender is not Button button)
+            return true;
+
+        if (!string.Equals(button.Name, expectedButtonName, StringComparison.Ordinal))
+            return true;
+
+        return TryBeginQuickActionDispatch(button.Name);
+    }
+
+    private bool TryBeginQuickActionDispatch(string? buttonName, int dedupeMs = 700)
+    {
+        if (string.IsNullOrWhiteSpace(buttonName))
+            return false;
+
+        // Bypass deduping temporarily after splash close
+        if (_bypassDeduping)
+        {
+            _lastQuickActionDispatchName = buttonName;
+            _lastQuickActionDispatchUtc = DateTime.UtcNow;
+            return true;
+        }
+
+        var now = DateTime.UtcNow;
+        if (string.Equals(_lastQuickActionDispatchName, buttonName, StringComparison.Ordinal)
+            && (now - _lastQuickActionDispatchUtc).TotalMilliseconds < dedupeMs)
+        {
+            return false;
+        }
+
+        _lastQuickActionDispatchName = buttonName;
+        _lastQuickActionDispatchUtc = now;
+        return true;
+    }
+
+    private void StartActivationGuard(string reason, int durationMs = 2200)
+    {
+        _activationGuardCts?.Cancel();
+        _activationGuardCts?.Dispose();
+
+        var cts = new CancellationTokenSource();
+        _activationGuardCts = cts;
+
+        _ = Task.Run(async () =>
+        {
+            var deadlineUtc = DateTime.UtcNow.AddMilliseconds(durationMs);
+            while (DateTime.UtcNow < deadlineUtc && !cts.IsCancellationRequested)
+            {
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (!IsVisible)
+                        return;
+
+                    if (!IsActive)
+                    {
+                        Activate();
+                        Focus();
+                    }
+                }, DispatcherPriority.Input);
+
+                try
+                {
+                    await Task.Delay(120, cts.Token);
+                }
+                catch (TaskCanceledException)
+                {
+                    break;
+                }
+            }
+        });
+    }
+
+    private bool IsAnotherAppWindowActive()
+    {
+        if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+            return false;
+
+        return desktop.Windows.Any(w => !ReferenceEquals(w, this) && w.IsVisible && w.IsActive);
+    }
+
+    private async Task EnsureStartupFocusAsync()
+    {
+        if (_startupFocusPulseApplied)
+            return;
+
+        _startupFocusPulseApplied = true;
+
+        try
+        {
+            // Quick initial focus
+            Activate();
+            Focus();
+            await Task.Delay(50);
+
+            // Check if we have focus
+            if (!IsActive)
+            {
+                Topmost = true;
+                Activate();
+                Focus();
+                await Task.Delay(50);
+                Topmost = false;
+            }
+
+            // Force rendering by invalidating visual
+            InvalidateVisual();
+            InvalidateMeasure();
+            InvalidateArrange();
+            
+            // Process dispatcher queue to ensure rendering completes
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.MaxValue);
+            
+            await Task.Delay(150);
+        }
+        finally
+        {
+            StartActivationGuard("startup");
+        }
     }
 
     private void ApplyStayOnTopSetting()
@@ -68,9 +288,54 @@ public partial class MainWindow
         UpdateStayOnTop(false);
     }
 
+    public void RecoverFocusAfterSplashClose()
+    {
+        if (!IsVisible)
+            return;
+
+        // Cancel any existing activation guard to prevent interference
+        _activationGuardCts?.Cancel();
+        _activationGuardCts?.Dispose();
+        _activationGuardCts = null;
+
+        // Reset pointer event tracking to ensure clean state after splash
+        _hasReceivedWindowPointerEvent = false;
+
+        // Enable deduping bypass for first click after splash
+        _bypassDeduping = true;
+
+        // Reset quick action deduping state
+        _lastQuickActionDispatchName = null;
+        _lastQuickActionDispatchUtc = DateTime.UtcNow.AddSeconds(-10);
+
+        // Force layout update to ensure UI is in correct state
+        InvalidateVisual();
+        InvalidateMeasure();
+        InvalidateArrange();
+
+        // Mark as interactive immediately
+        _hasReceivedWindowPointerEvent = true;
+
+        // Simple activation - let the window manager handle focus naturally
+        Activate();
+        Focus();
+
+        // Disable deduping bypass after 2 seconds
+        _ = Task.Delay(2000).ContinueWith(_ =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                _bypassDeduping = false;
+            });
+        });
+    }
+
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         StopDashboardPlayback();
+        _activationGuardCts?.Cancel();
+        _activationGuardCts?.Dispose();
+        _activationGuardCts = null;
 
         if (_isAppExitRequested)
         {
@@ -110,6 +375,12 @@ public partial class MainWindow
             return;
         }
 
+        // Skip if we're already handling a menu click
+        if (_isHandlingMenuClick)
+        {
+            return;
+        }
+
         if (e.AddedItems.Count > 0 && e.AddedItems[0] is MenuNode node)
             await HandleMenuNodeClickAsync(node, sender);
     }
@@ -134,7 +405,24 @@ public partial class MainWindow
             return;
         }
 
-        await HandleMenuNodeClickAsync(node, sender);
+        // Prevent duplicate handling
+        if (_isHandlingMenuClick)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        _isHandlingMenuClick = true;
+        try
+        {
+            await HandleMenuNodeClickAsync(node, sender);
+        }
+        finally
+        {
+            // Clear the flag after a brief delay to allow event processing
+            _ = Task.Delay(100).ContinueWith(_ => _isHandlingMenuClick = false);
+        }
+
         e.Handled = true;
     }
 
@@ -200,12 +488,26 @@ public partial class MainWindow
         ResetTreeSelection(sender);
     }
 
-    public void OnOpenGridClicked(object? sender, RoutedEventArgs e) => ToggleGridWindow();
+    public void OnOpenGridClicked(object? sender, RoutedEventArgs e)
+    {
+        // Bypass deduping check for Open Grid button to ensure first click works
+        ToggleGridWindow();
+    }
 
-    public void OnOpenNewContactClicked(object? sender, RoutedEventArgs e) => OpenNewContactWindow();
+    public void OnOpenNewContactClicked(object? sender, RoutedEventArgs e)
+    {
+        if (!ShouldHandleQuickActionInvocation(sender, "NewQsoQuickActionButton"))
+            return;
+
+        OpenNewContactWindow();
+    }
+
 
     public void OnOpenProgressStatusClicked(object? sender, RoutedEventArgs e)
     {
+        if (!ShouldHandleQuickActionInvocation(sender, "ProgressStatusQuickActionButton"))
+            return;
+
         var contest = App.LogTypeSelectionService.GetSelectedContestDefinition();
         var key  = contest.Key.Trim();
         var adif = contest.AdifContestId.Trim();
@@ -226,6 +528,7 @@ public partial class MainWindow
         App.Toasts.ShowInfo("Progress status", "No contest progress window is available for the selected contest.");
     }
 
+
     private static bool IsArqpContestKey(string key, string adif, string name)
     {
         static bool IsArqp(string v)
@@ -239,13 +542,31 @@ public partial class MainWindow
                || name.Contains("ARQP", StringComparison.OrdinalIgnoreCase);
     }
 
-    public void OnOpenConfigurationClicked(object? sender, RoutedEventArgs e) => OpenConfigurationWindow();
+    public void OnOpenConfigurationClicked(object? sender, RoutedEventArgs e)
+    {
+        OpenConfigurationWindow();
+    }
 
-    public async void OnImportAdifClicked(object? sender, RoutedEventArgs e) => await ImportAdifAsync();
+    public async void OnImportAdifClicked(object? sender, RoutedEventArgs e)
+    {
+        await ImportAdifAsync();
+    }
 
-    public void OnOpenDxClusterClicked(object? sender, RoutedEventArgs e) => ToggleDxSpotsWindow();
+    public void OnOpenDxClusterClicked(object? sender, RoutedEventArgs e)
+    {
+        if (!ShouldHandleQuickActionInvocation(sender, "DxClusterQuickActionButton"))
+            return;
 
-    public void OnOpenDigitalVoiceKeyerClicked(object? sender, RoutedEventArgs e) => ToggleDigitalVoiceKeyerWindow();
+        ToggleDxSpotsWindow();
+    }
+
+    public void OnOpenDigitalVoiceKeyerClicked(object? sender, RoutedEventArgs e)
+    {
+        if (!ShouldHandleQuickActionInvocation(sender, "VoiceKeyerQuickActionButton"))
+            return;
+
+        ToggleDigitalVoiceKeyerWindow();
+    }
 
     public async void OnVoiceKeyerSlotClicked(object? sender, RoutedEventArgs e)
     {
@@ -294,20 +615,62 @@ public partial class MainWindow
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
-        if (e.Key == Key.Escape && _dashboardPlaybackCts is not null)
+        // Hotkeys for quick-action buttons
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Alt))
         {
-            StopDashboardPlayback();
-            e.Handled = true;
-            return;
+            switch (e.Key)
+            {
+                case Key.N:
+                    Log.Information("Alt+N pressed: Opening New QSO");
+                    OpenNewContactWindow();
+                    e.Handled = true;
+                    return;
+                case Key.G:
+                    Log.Information("Alt+G pressed: Opening Grid");
+                    ToggleGridWindow();
+                    e.Handled = true;
+                    return;
+                case Key.C:
+                    Log.Information("Alt+C pressed: Opening DX Cluster");
+                    ToggleDxSpotsWindow();
+                    e.Handled = true;
+                    return;
+                case Key.V:
+                    Log.Information("Alt+V pressed: Opening Voice Keyer");
+                    ToggleDigitalVoiceKeyerWindow();
+                    e.Handled = true;
+                    return;
+                case Key.Escape:
+                    if (_dashboardPlaybackCts is not null)
+                    {
+                        StopDashboardPlayback();
+                        e.Handled = true;
+                        return;
+                    }
+                    break;
+            }
         }
 
         base.OnKeyDown(e);
     }
 
-    public void OnExitProgramClicked(object? sender, RoutedEventArgs e) => Close();
+    public void OnExitProgramClicked(object? sender, RoutedEventArgs e)
+    {
+        if (!ShouldHandleQuickActionInvocation(sender, "ExitProgramQuickActionButton"))
+            return;
+
+        Close();
+    }
 
     private void ToggleGridWindow()
     {
+        // Prevent rapid repeated calls that cause blink behavior
+        var now = DateTime.UtcNow;
+        if ((now - _lastGridToggleUtc).TotalMilliseconds < 500)
+            return;
+        _lastGridToggleUtc = now;
+
+        // Check if window exists and is visible BEFORE creating new one
         if (_gridWindow is { IsVisible: true })
         {
             App.SaveWindowPlacement(_gridWindow, nameof(GridWindow));
@@ -315,13 +678,34 @@ public partial class MainWindow
             return;
         }
 
+        // Only create new window if it doesn't exist
         if (_gridWindow is null)
         {
             _gridWindow = new GridWindow();
             _gridWindow.Closed += (_, _) => _gridWindow = null;
         }
+        else if (_gridWindow.IsVisible)
+        {
+            // Window exists but might be hidden, just activate it
+            _gridWindow.Activate();
+            return;
+        }
 
-        ShowWithVisibleOwner(_gridWindow);
+        // Show the window
+        if (IsVisible)
+            _gridWindow.Show(this);
+        else
+            _gridWindow.Show();
+
+        // Ensure window is properly activated and brought to foreground
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_gridWindow is not null)
+            {
+                _gridWindow.Activate();
+                _gridWindow.Focus();
+            }
+        }, DispatcherPriority.Input);
     }
 
     private void OpenConfigurationWindow()
@@ -482,6 +866,8 @@ public partial class MainWindow
 
     private void OpenNewContactWindow()
     {
+        Log.Information("Opening new contact (QSO input) window");
+        
         if (_logInputWindow is { IsVisible: true })
         {
             _logInputWindow.Activate();
@@ -498,7 +884,18 @@ public partial class MainWindow
 
         _qsoRepository ??= new SqliteQsoRepository(App.DbContext);
         _logInputWindow = new LogInputWindow();
-        _logInputWindow.Closed += (_, _) => _logInputWindow = null;
+        _logInputWindow.Closed += (_, _) =>
+        {
+            _logInputWindow = null;
+            // Return focus to dashboard so first click is actionable.
+            if (IsVisible)
+            {
+                Activate();
+                Focus();
+                if (!IsAnotherAppWindowActive())
+                    StartActivationGuard("log-input-closed", 3200);
+            }
+        };
         _logInputWindow.QsoLogged += async (_, qso) => await SaveQsoAsync(qso);
         ShowLogInputWindow(_logInputWindow);
     }
@@ -516,7 +913,12 @@ public partial class MainWindow
         else
             window.Show();
 
-        Dispatcher.UIThread.Post(window.Activate);
+        // Ensure window is properly activated and brought to foreground
+        Dispatcher.UIThread.Post(() =>
+        {
+            window.Activate();
+            window.Focus();
+        });
     }
 
     private async Task SaveQsoAsync(Qso qso)
@@ -1006,5 +1408,57 @@ public partial class MainWindow
 
         if (sender is Border { DataContext: RadioConnectionStatusViewModel row })
             vm.SelectedRadioStatus = row;
+    }
+
+    private void OnQuickActionPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is Button button)
+        {
+            // Workaround: On first startup, the WM may consume the first pointer event
+            // before it reaches the window. If we haven't received a window-level pointer
+            // event yet, signal that the system is now interactive.
+            if (!_hasReceivedWindowPointerEvent)
+            {
+                _hasReceivedWindowPointerEvent = true;
+            }
+        }
+    }
+
+    private void OnQuickActionPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (sender is not Button button)
+            return;
+
+        var point = e.GetCurrentPoint(this);
+        if (point.Pointer.Type != PointerType.Mouse)
+            return;
+
+        // Use pointer release as the action trigger to avoid lost first Click events on some Linux WMs.
+        // Bypass deduping by calling window methods directly instead of going through click handlers.
+        switch (button.Name)
+        {
+            case "ProgressStatusQuickActionButton":
+                OnOpenProgressStatusClicked(button, new RoutedEventArgs());
+                break;
+            case "OpenGridQuickActionButton":
+                ToggleGridWindow();
+                break;
+            case "NewQsoQuickActionButton":
+                OpenNewContactWindow();
+                break;
+            case "DxClusterQuickActionButton":
+                ToggleDxSpotsWindow();
+                break;
+            case "VoiceKeyerQuickActionButton":
+                ToggleDigitalVoiceKeyerWindow();
+                break;
+            case "ExitProgramQuickActionButton":
+                Close();
+                break;
+            default:
+                return;
+        }
+
+        e.Handled = true;
     }
 }

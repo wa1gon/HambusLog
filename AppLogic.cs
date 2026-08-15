@@ -188,46 +188,46 @@ public partial class App
                 Log.Information("Services disposed, application closing");
             };
 
-            var splash = new SplashWindow();
-            App.TrackWindowPlacement(splash, nameof(SplashWindow));
-
-            // When splash closes: open the main window on the same monitor the splash was on.
-            splash.Closed += (_, _) =>
+            var mainWindow = new MainWindow
             {
-                Log.Information("Splash window closed, opening main window");
-                var mainWindow = new MainWindow
-                {
-                    DataContext = new MainWindowViewModel(),
-                };
-
-                // Place the main window on the same monitor as splash by reusing splash top-left.
-                var targetPosition = splash.LastKnownPosition;
-                mainWindow.WindowStartupLocation = WindowStartupLocation.Manual;
-                mainWindow.Position = targetPosition;
-
-                desktop.MainWindow = mainWindow;
-                desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
-                mainWindow.Show();
-                // Some WMs may override initial placement; enforce once after mapping.
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                {
-                    mainWindow.WindowStartupLocation = WindowStartupLocation.Manual;
-                    mainWindow.Position = targetPosition;
-                });
-                mainWindow.Activate();
-
-                if (AppConfigurationStore.ConsumeContestRepairNotice())
-                {
-                    Toasts.ShowInfo(
-                        "Configuration updated",
-                        "Restored missing built-in contest fields (including FD section/class). Review Configuration if needed.");
-                }
+                DataContext = new MainWindowViewModel(),
             };
 
-            splash.Show();
+            desktop.MainWindow = mainWindow;
+            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
+            mainWindow.Show();
+
+            var splash = new SplashWindow
+            {
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            _ = ShowSplashDialogAsync(mainWindow, splash);
+
+            if (AppConfigurationStore.ConsumeContestRepairNotice())
+            {
+                Toasts.ShowInfo(
+                    "Configuration updated",
+                    "Restored missing built-in contest fields (including FD section/class). Review Configuration if needed.");
+            }
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static async Task ShowSplashDialogAsync(MainWindow mainWindow, SplashWindow splash)
+    {
+        try
+        {
+            await splash.ShowDialog(mainWindow);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Splash dialog closed with an exception");
+        }
+
+        Log.Information("Splash window closed, returning to main window");
+        mainWindow.RecoverFocusAfterSplashClose();
     }
 
     private static async void OnWsjtLoggedQsoReceived(object? sender, WsjtLoggedQso loggedQso)
@@ -336,6 +336,7 @@ public partial class App
 
         var qso = new Qso
         {
+            Id = Guid.NewGuid(),
             Call = loggedQso.Call.Trim().ToUpperInvariant(),
             StationCallSign = stationCall,
             QsoDate = (loggedQso.TimeOnUtc ?? DateTimeOffset.UtcNow).UtcDateTime,

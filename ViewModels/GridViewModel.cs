@@ -277,6 +277,7 @@ public class GridViewModel
         
         var newEntry = new Qso
         {
+            Id = Guid.NewGuid(),
             Call = InputCall,
             QsoDate = qsoDate,
             Band = InputBand,

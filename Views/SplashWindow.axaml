@@ -44,7 +44,7 @@
                                    Foreground="#4B5563"
                                    VerticalAlignment="Center" />
                         <TextBlock Name="CountdownText"
-                                   Text="Closing in 30 s…"
+                                   Text="Click anywhere to continue"
                                    FontSize="13"
                                    Foreground="#94A3B8"
                                    VerticalAlignment="Center" />

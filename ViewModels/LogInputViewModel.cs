@@ -645,6 +645,7 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
 
         var qso = new Qso
         {
+            Id      = Guid.NewGuid(),
             Call    = InputCall.Trim().ToUpperInvariant(),
             StationCallSign = _stationCallSign.Trim().ToUpperInvariant(),
             QsoDate = qsoDateUtc,
@@ -833,7 +834,7 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
             && !preserveRecentWsjtValues
             && !string.IsNullOrWhiteSpace(state.Mode)
             && state.Mode != "0")
-            InputMode = state.Mode;
+            InputMode = NormalizeRigModeForInput(state.Mode, state.FrequencyMhz);
 
         if (!preserveRecentWsjtValues && state.FrequencyMhz is decimal mhz && mhz > 0)
         {
@@ -1264,7 +1265,7 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
         }
 
         if (string.IsNullOrWhiteSpace(InputMode) && !string.IsNullOrWhiteSpace(state.Mode))
-            InputMode = state.Mode;
+            InputMode = NormalizeRigModeForInput(state.Mode, state.FrequencyMhz);
 
         if (string.IsNullOrWhiteSpace(InputFreq) && state.FrequencyMhz is decimal mhz)
             InputFreq = mhz.ToString("0.000000", CultureInfo.InvariantCulture);
@@ -1425,6 +1426,42 @@ public sealed class LogInputViewModel : ViewModelBase, IDisposable
 
         var normalizedMode = (mode ?? string.Empty).Trim().ToUpperInvariant();
         return normalizedMode;
+    }
+
+    private static string NormalizeRigModeForInput(string? rawMode, decimal? frequencyMhz)
+    {
+        var mode = (rawMode ?? string.Empty).Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(mode) || mode == "0")
+            return string.Empty;
+
+        // Keep the mode picker vocabulary aligned with AvailableModes.
+        return mode switch
+        {
+            "PKTUSB" or "PKTLSB" or "DIGU" or "DIGL" => ResolveDigitalSubmodeFromFrequency(frequencyMhz),
+            _ => mode
+        };
+    }
+
+    private static string ResolveDigitalSubmodeFromFrequency(decimal? frequencyMhz)
+    {
+        if (frequencyMhz is decimal mhz && mhz > 0)
+        {
+            // FT8 centers
+            if (IsNear(mhz, 1.840m) || IsNear(mhz, 3.573m) || IsNear(mhz, 5.357m)
+                || IsNear(mhz, 7.074m) || IsNear(mhz, 10.136m) || IsNear(mhz, 14.074m)
+                || IsNear(mhz, 18.100m) || IsNear(mhz, 21.074m) || IsNear(mhz, 24.915m)
+                || IsNear(mhz, 28.074m) || IsNear(mhz, 50.313m) || IsNear(mhz, 144.174m))
+                return "FT8";
+
+            // FT4 centers
+            if (IsNear(mhz, 3.575m) || IsNear(mhz, 7.0475m) || IsNear(mhz, 10.140m)
+                || IsNear(mhz, 14.080m) || IsNear(mhz, 18.104m) || IsNear(mhz, 21.140m)
+                || IsNear(mhz, 24.919m) || IsNear(mhz, 28.180m) || IsNear(mhz, 50.318m))
+                return "FT4";
+        }
+
+        // Reasonable default when the rig reports only generic digital mode.
+        return "FT8";
     }
 
     private void OnWsjtLoggedQsoReceived(object? sender, WsjtLoggedQso qso)
