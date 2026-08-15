@@ -26,8 +26,11 @@ public partial class MainWindow
     private bool _skipNextMenuSelectionChanged;
     private bool _isHandlingMenuClick;
     private bool _startupFocusPulseApplied;
+    
     private bool _hasReceivedWindowPointerEvent;
     private CancellationTokenSource? _activationGuardCts;
+    private bool _bypassDeduping;
+    private DateTime _lastGridToggleUtc = DateTime.MinValue;
     private DateTime _openedUtc;
     private DateTime _lastQuickActionDispatchUtc;
     private string? _lastQuickActionDispatchName;
@@ -103,13 +106,14 @@ public partial class MainWindow
         if (button is null)
             return false;
 
+        // Skip Open Grid button since it uses standard Click handler without pointer events
+        if (button.Name == "OpenGridQuickActionButton")
+            return false;
+
         switch (button.Name)
         {
             case "ProgressStatusQuickActionButton":
                 OnOpenProgressStatusClicked(button, new RoutedEventArgs());
-                return true;
-            case "OpenGridQuickActionButton":
-                OnOpenGridClicked(button, new RoutedEventArgs());
                 return true;
             case "NewQsoQuickActionButton":
                 OnOpenNewContactClicked(button, new RoutedEventArgs());
@@ -143,6 +147,14 @@ public partial class MainWindow
     {
         if (string.IsNullOrWhiteSpace(buttonName))
             return false;
+
+        // Bypass deduping temporarily after splash close
+        if (_bypassDeduping)
+        {
+            _lastQuickActionDispatchName = buttonName;
+            _lastQuickActionDispatchUtc = DateTime.UtcNow;
+            return true;
+        }
 
         var now = DateTime.UtcNow;
         if (string.Equals(_lastQuickActionDispatchName, buttonName, StringComparison.Ordinal)
@@ -281,9 +293,41 @@ public partial class MainWindow
         if (!IsVisible)
             return;
 
+        // Cancel any existing activation guard to prevent interference
+        _activationGuardCts?.Cancel();
+        _activationGuardCts?.Dispose();
+        _activationGuardCts = null;
+
+        // Reset pointer event tracking to ensure clean state after splash
+        _hasReceivedWindowPointerEvent = false;
+
+        // Enable deduping bypass for first click after splash
+        _bypassDeduping = true;
+
+        // Reset quick action deduping state
+        _lastQuickActionDispatchName = null;
+        _lastQuickActionDispatchUtc = DateTime.UtcNow.AddSeconds(-10);
+
+        // Force layout update to ensure UI is in correct state
+        InvalidateVisual();
+        InvalidateMeasure();
+        InvalidateArrange();
+
+        // Mark as interactive immediately
+        _hasReceivedWindowPointerEvent = true;
+
+        // Simple activation - let the window manager handle focus naturally
         Activate();
         Focus();
-        StartActivationGuard("splash-closed", 3200);
+
+        // Disable deduping bypass after 2 seconds
+        _ = Task.Delay(2000).ContinueWith(_ =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                _bypassDeduping = false;
+            });
+        });
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
@@ -446,9 +490,7 @@ public partial class MainWindow
 
     public void OnOpenGridClicked(object? sender, RoutedEventArgs e)
     {
-        if (!ShouldHandleQuickActionInvocation(sender, "OpenGridQuickActionButton"))
-            return;
-
+        // Bypass deduping check for Open Grid button to ensure first click works
         ToggleGridWindow();
     }
 
@@ -622,6 +664,13 @@ public partial class MainWindow
 
     private void ToggleGridWindow()
     {
+        // Prevent rapid repeated calls that cause blink behavior
+        var now = DateTime.UtcNow;
+        if ((now - _lastGridToggleUtc).TotalMilliseconds < 500)
+            return;
+        _lastGridToggleUtc = now;
+
+        // Check if window exists and is visible BEFORE creating new one
         if (_gridWindow is { IsVisible: true })
         {
             App.SaveWindowPlacement(_gridWindow, nameof(GridWindow));
@@ -629,13 +678,34 @@ public partial class MainWindow
             return;
         }
 
+        // Only create new window if it doesn't exist
         if (_gridWindow is null)
         {
             _gridWindow = new GridWindow();
             _gridWindow.Closed += (_, _) => _gridWindow = null;
         }
+        else if (_gridWindow.IsVisible)
+        {
+            // Window exists but might be hidden, just activate it
+            _gridWindow.Activate();
+            return;
+        }
 
-        ShowWithVisibleOwner(_gridWindow);
+        // Show the window
+        if (IsVisible)
+            _gridWindow.Show(this);
+        else
+            _gridWindow.Show();
+
+        // Ensure window is properly activated and brought to foreground
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_gridWindow is not null)
+            {
+                _gridWindow.Activate();
+                _gridWindow.Focus();
+            }
+        }, DispatcherPriority.Input);
     }
 
     private void OpenConfigurationWindow()
@@ -1364,25 +1434,26 @@ public partial class MainWindow
             return;
 
         // Use pointer release as the action trigger to avoid lost first Click events on some Linux WMs.
+        // Bypass deduping by calling window methods directly instead of going through click handlers.
         switch (button.Name)
         {
             case "ProgressStatusQuickActionButton":
                 OnOpenProgressStatusClicked(button, new RoutedEventArgs());
                 break;
             case "OpenGridQuickActionButton":
-                OnOpenGridClicked(button, new RoutedEventArgs());
+                ToggleGridWindow();
                 break;
             case "NewQsoQuickActionButton":
-                OnOpenNewContactClicked(button, new RoutedEventArgs());
+                OpenNewContactWindow();
                 break;
             case "DxClusterQuickActionButton":
-                OnOpenDxClusterClicked(button, new RoutedEventArgs());
+                ToggleDxSpotsWindow();
                 break;
             case "VoiceKeyerQuickActionButton":
-                OnOpenDigitalVoiceKeyerClicked(button, new RoutedEventArgs());
+                ToggleDigitalVoiceKeyerWindow();
                 break;
             case "ExitProgramQuickActionButton":
-                OnExitProgramClicked(button, new RoutedEventArgs());
+                Close();
                 break;
             default:
                 return;

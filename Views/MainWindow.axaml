@@ -236,8 +236,6 @@
                                      Name="OpenGridQuickActionButton"
                                     IsHitTestVisible="True"
                                      Click="OnOpenGridClicked"
-                                     PointerPressed="OnQuickActionPointerPressed"
-                                     PointerReleased="OnQuickActionPointerReleased"
                                     Background="{DynamicResource AppButtonNormalBrush}"
                                     Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
                             <Button Classes="QuickAction" Content="New QSO"
