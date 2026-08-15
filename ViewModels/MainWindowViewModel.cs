@@ -27,6 +27,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         new MenuNode("Digital Voice Keyer"),
         new MenuNode("Configuration"),
         new MenuNode("Awards", false,
+            new MenuNode("Worked All States (Mixed)")),
+        new MenuNode("Reports", false,
             new MenuNode("ARQP Report"),
             new MenuNode("ARRL FD Report")),
         new MenuNode("eLogs", false,

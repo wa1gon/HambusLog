@@ -85,6 +85,7 @@ public sealed class ConfigProfile
     public bool StayOnTopAddContactWindow { get; set; }
     public bool StayOnTopArqpProgressWindow { get; set; }
     public bool StayOnTopArrlFdProgressWindow { get; set; }
+    public bool StayOnTopWasProgressWindow { get; set; }
     public bool StayOnTopDigitalVoiceKeyerWindow { get; set; }
 }
 

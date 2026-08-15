@@ -46,9 +46,84 @@ public static class AdifImportService
             ? await db.SaveChangesAsync(cancellationToken)
             : 0;
 
+        var merged = await MergeQslConfirmationsAsync(db, duplicateFilter.DuplicateMerges, cancellationToken);
+
         progress?.Report(AdifImportProgress.Completed(fullPath, parsed.Count, saved));
 
-        return new AdifImportResult(parsed.Count, saved, fullPath, duplicateFilter.DuplicateCount);
+        return new AdifImportResult(parsed.Count, saved + merged, fullPath, duplicateFilter.DuplicateCount);
+    }
+
+    private static async Task<int> MergeQslConfirmationsAsync(
+        HamBusLogDbContext db,
+        IReadOnlyList<QsoImportDuplicateMerge> duplicateMerges,
+        CancellationToken cancellationToken)
+    {
+        if (duplicateMerges.Count == 0)
+            return 0;
+
+        var existingIds = duplicateMerges.Select(x => x.ExistingQsoId).Distinct().ToList();
+        var existingQsos = await db.Qsos
+            .Include(x => x.QslInfo)
+            .Where(x => existingIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, cancellationToken);
+
+        var changed = false;
+        foreach (var merge in duplicateMerges)
+        {
+            if (!existingQsos.TryGetValue(merge.ExistingQsoId, out var existing))
+                continue;
+
+            if (string.IsNullOrWhiteSpace(existing.State) && !string.IsNullOrWhiteSpace(merge.IncomingQso.State))
+            {
+                existing.State = merge.IncomingQso.State;
+                changed = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(existing.Country) && !string.IsNullOrWhiteSpace(merge.IncomingQso.Country))
+            {
+                existing.Country = merge.IncomingQso.Country;
+                changed = true;
+            }
+
+            if (existing.Dxcc == 0 && merge.IncomingQso.Dxcc != 0)
+            {
+                existing.Dxcc = merge.IncomingQso.Dxcc;
+                changed = true;
+            }
+
+            foreach (var incomingQsl in merge.IncomingQso.QslInfo)
+            {
+                var existingQsl = existing.QslInfo.FirstOrDefault(x =>
+                    string.Equals(x.QslService, incomingQsl.QslService, StringComparison.OrdinalIgnoreCase));
+
+                if (existingQsl is null)
+                {
+                    existing.QslInfo.Add(new QsoQslInfo
+                    {
+                        QsoId = existing.Id,
+                        QslService = incomingQsl.QslService,
+                        QslSent = incomingQsl.QslSent,
+                        QslReceived = incomingQsl.QslReceived
+                    });
+                    changed = true;
+                    continue;
+                }
+
+                if (incomingQsl.QslReceived && !existingQsl.QslReceived)
+                {
+                    existingQsl.QslReceived = true;
+                    changed = true;
+                }
+
+                if (incomingQsl.QslSent && !existingQsl.QslSent)
+                {
+                    existingQsl.QslSent = true;
+                    changed = true;
+                }
+            }
+        }
+
+        return changed ? await db.SaveChangesAsync(cancellationToken) : 0;
     }
 
     private static async Task<int> CountRecordsAsync(

@@ -1,0 +1,107 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:HamBusLog.ViewModels"
+        x:Class="HamBusLog.Views.WasProgressWindow"
+        x:DataType="vm:WasProgressViewModel"
+        Title="Worked All States (Mixed)"
+        RequestedThemeVariant="Dark"
+        Background="{DynamicResource AppWindowBackgroundBrush}"
+        Foreground="{DynamicResource AppForegroundBrush}"
+        Width="720"
+        Height="640"
+        MinWidth="560"
+        MinHeight="480"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid RowDefinitions="Auto,*" Margin="16,14,16,12" RowSpacing="12">
+        <Border Grid.Row="0"
+                Padding="14"
+                CornerRadius="10"
+                Background="{DynamicResource AppPanelBackgroundBrush}"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
+                <StackPanel Grid.Column="0" Spacing="6">
+                    <TextBlock Text="Worked All States - Mixed" FontSize="18" FontWeight="Bold" />
+                    <TextBlock Text="{Binding StateSummary}" Foreground="{DynamicResource AppMutedForegroundBrush}" />
+                    <TextBlock Text="{Binding LastUpdated}" Foreground="{DynamicResource AppMutedForegroundBrush}" FontSize="11" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="COUNT AS" Classes="FieldLabel" />
+                    <ComboBox ItemsSource="{Binding ConfirmationSources}"
+                              SelectedItem="{Binding SelectedConfirmationSource, Mode=TwoWay}"
+                              MinWidth="170">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Display}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+                <CheckBox Grid.Column="2"
+                          Name="StayOnTopCheckBox"
+                          Content="Stay on top"
+                          VerticalAlignment="Center"
+                          Foreground="{DynamicResource AppForegroundBrush}"
+                          TextElement.Foreground="{DynamicResource AppForegroundBrush}"
+                          Checked="OnStayOnTopChecked"
+                          Unchecked="OnStayOnTopUnchecked" />
+                <Button Grid.Column="3"
+                        Content="Refresh"
+                        Padding="16,8"
+                        VerticalAlignment="Center"
+                        Click="OnRefreshClicked"
+                        Background="{DynamicResource AppButtonNormalBrush}"
+                        Foreground="{DynamicResource AppButtonNormalForegroundBrush}" />
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1"
+                Padding="12"
+                CornerRadius="10"
+                Background="{DynamicResource AppPanelBackgroundBrush}"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                <TextBlock Text="States" FontSize="14" FontWeight="SemiBold" />
+                <TextBlock Text="All 50 U.S. states. Status reflects the selected confirmation source above."
+                           Foreground="{DynamicResource AppMutedForegroundBrush}"
+                           FontSize="11" />
+
+                <TextBlock Grid.Row="2"
+                           Text="No matching QSOs yet."
+                           IsVisible="{Binding HasNoStates}"
+                           Foreground="{DynamicResource AppMutedForegroundBrush}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+
+                <ScrollViewer Grid.Row="2" IsVisible="{Binding HasStates}">
+                    <ItemsControl ItemsSource="{Binding StateRows}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel ItemWidth="60" ItemHeight="36" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="6,4"
+                                        Margin="4"
+                                        CornerRadius="6"
+                                        Background="{Binding BackgroundBrush}"
+                                        Opacity="{Binding Opacity}"
+                                        BorderBrush="{DynamicResource AppBorderBrush}"
+                                        BorderThickness="1">
+                                    <TextBlock Text="{Binding Code}"
+                                               Foreground="{Binding ForegroundBrush}"
+                                               FontWeight="{Binding FontWeight}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

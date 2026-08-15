@@ -757,6 +757,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
                 StayOnTopAddContactWindow = existingProfile?.StayOnTopAddContactWindow ?? false,
                 StayOnTopArqpProgressWindow = existingProfile?.StayOnTopArqpProgressWindow ?? false,
                 StayOnTopArrlFdProgressWindow = existingProfile?.StayOnTopArrlFdProgressWindow ?? false,
+                StayOnTopWasProgressWindow = existingProfile?.StayOnTopWasProgressWindow ?? false,
               StayOnTopDigitalVoiceKeyerWindow = existingProfile?.StayOnTopDigitalVoiceKeyerWindow ?? false,
                 ConnectionString = resolvedConnectionString
             };
@@ -925,6 +926,7 @@ public sealed class ConfigurationViewModel : ViewModelBase, IDisposable
             StayOnTopAddContactWindow = src.StayOnTopAddContactWindow,
             StayOnTopArqpProgressWindow = src.StayOnTopArqpProgressWindow,
             StayOnTopArrlFdProgressWindow = src.StayOnTopArrlFdProgressWindow,
+            StayOnTopWasProgressWindow = src.StayOnTopWasProgressWindow,
             StayOnTopDigitalVoiceKeyerWindow = src.StayOnTopDigitalVoiceKeyerWindow,
             ConnectionString = src.ConnectionString
         };

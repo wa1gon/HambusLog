@@ -18,6 +18,7 @@ public partial class MainWindow
     private CabrilloExportWindow? _cabrilloExportWindow;
     private ArqpProgressWindow? _arqpProgressWindow;
     private ArrlFdProgressWindow? _arrlFdProgressWindow;
+    private WasProgressWindow? _wasProgressWindow;
     private LotwUploadWindow? _lotwUploadWindow;
     private CancellationTokenSource? _dashboardPlaybackCts;
     private int? _dashboardPlaybackSlot;
@@ -460,6 +461,8 @@ public partial class MainWindow
             OpenCabrilloExportWindow();
         else if (node.Title == "Callbook")
             ShowNotImplemented("Callbook");
+        else if (node.Title == "Worked All States (Mixed)")
+            OpenWasProgressWindow();
         else if (node.Title == "Awards" && !node.HasChildren)
             ShowNotImplemented("Awards");
         else if (node.Title == "Logbook of the World")
@@ -845,6 +848,23 @@ public partial class MainWindow
         }
 
         ShowWithVisibleOwner(_arrlFdProgressWindow);
+    }
+
+    private void OpenWasProgressWindow()
+    {
+        if (_wasProgressWindow is { IsVisible: true })
+        {
+            _wasProgressWindow.Activate();
+            return;
+        }
+
+        if (_wasProgressWindow is null)
+        {
+            _wasProgressWindow = App.FindOpenWindow<WasProgressWindow>() ?? new WasProgressWindow();
+            _wasProgressWindow.Closed += (_, _) => _wasProgressWindow = null;
+        }
+
+        ShowWithVisibleOwner(_wasProgressWindow);
     }
 
     private void OpenLotwUploadWindow()

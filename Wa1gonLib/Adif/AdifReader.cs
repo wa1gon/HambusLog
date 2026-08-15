@@ -129,16 +129,21 @@ public class AdifReader
         DateTime? qsoDate = null;
         TimeSpan? qsoTime = null;
 
+        // A genuine LoTW-downloaded QSL report has no "LOTW_"-prefixed QSL fields; instead it
+        // uses plain QSL_RCVD/QSL_SENT and includes LoTW-specific APP_LoTW_* fields as context.
+        var isLotwRecord = fields.Keys.Any(k => k.Contains("APP_LoTW", StringComparison.OrdinalIgnoreCase));
+        var plainQslService = isLotwRecord ? "LOTW" : "DIRECT";
+
         foreach (var field in fields)
         {
             var name = field.Key.ToLowerInvariant();
             var value = field.Value;
 
-            var service = (name.Contains("lotw") ? "LOTW"
+            var service = name.Contains("lotw") ? "LOTW"
                 : name.Contains("eqsl") ? "EQSL"
-                : name.StartsWith("qsl_") ? "DIRECT" : null) ?? string.Empty;
+                : name.StartsWith("qsl_") ? plainQslService : null;
             QsoQslInfo? qslInfo = null;
-            if (service != null)
+            if (service is not null)
                 if (!qslInfos.TryGetValue(service, out qslInfo))
                 {
                     qslInfo = new QsoQslInfo { QslService = service };
@@ -195,10 +200,10 @@ public class AdifReader
                     if (qslInfos.TryGetValue("EQSL", out qslInfo)) qslInfo.QslReceived = value == "Y";
                     break;
                 case var n when n == "qsl_sent":
-                    if (qslInfos.TryGetValue("DIRECT", out qslInfo)) qslInfo.QslSent = value == "Y";
+                    if (qslInfos.TryGetValue(plainQslService, out qslInfo)) qslInfo.QslSent = value == "Y";
                     break;
                 case var n when n == "qsl_rcvd":
-                    if (qslInfos.TryGetValue("DIRECT", out qslInfo)) qslInfo.QslReceived = value == "Y";
+                    if (qslInfos.TryGetValue(plainQslService, out qslInfo)) qslInfo.QslReceived = value == "Y";
                     break;
 
                 default:

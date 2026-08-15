@@ -66,8 +66,7 @@ public sealed class AdifImportServiceTests : IDisposable
         Assert.Equal("W1AW", storedQso.Call);
         Assert.NotEqual(Guid.Empty, storedQso.Id);
         Assert.NotEqual(default, storedQso.LastUpdate);
-        Assert.Single(storedQso.QslInfo);
-        Assert.Equal(storedQso.Id, storedQso.QslInfo.Single().QsoId);
+        Assert.Empty(storedQso.QslInfo);
     }
 
     [Fact]
@@ -96,6 +95,41 @@ public sealed class AdifImportServiceTests : IDisposable
         Assert.Equal(1, await db.Qsos.CountAsync());
     }
 
+    [Fact]
+    public async Task ImportFromFileAsync_MergesLotwConfirmationIntoExistingQso()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        var firstAdifPath = Path.Combine(_tempDirectory, "initial.adi");
+        var lotwAdifPath = Path.Combine(_tempDirectory, "lotw-report.adi");
+        var dbPath = Path.Combine(_tempDirectory, "merge.sqlite");
+        await File.WriteAllTextAsync(firstAdifPath, CreateSampleAdif());
+        await File.WriteAllTextAsync(lotwAdifPath, CreateLotwConfirmationAdif());
+
+        var first = await AdifImportService.ImportFromFileAsync(
+            firstAdifPath,
+            new AdifImportOptions(ConnectionString: $"Data Source={dbPath}"));
+        Assert.True(first.SavedChanges >= 1);
+
+        var second = await AdifImportService.ImportFromFileAsync(
+            lotwAdifPath,
+            new AdifImportOptions(ConnectionString: $"Data Source={dbPath}"));
+
+        Assert.Equal(1, second.DuplicateCount);
+        Assert.True(second.SavedChanges >= 1);
+
+        await using var db = HamBusLogDbContextFactory.Create(DatabaseProvider.Sqlite, $"Data Source={dbPath}");
+        Assert.Equal(1, await db.Qsos.CountAsync());
+
+        var storedQso = await db.Qsos
+            .Include(q => q.QslInfo)
+            .SingleAsync();
+
+        Assert.Equal("CT", storedQso.State);
+        var lotwQsl = Assert.Single(storedQso.QslInfo);
+        Assert.Equal("LOTW", lotwQsl.QslService);
+        Assert.True(lotwQsl.QslReceived);
+    }
+
     public void Dispose()
     {
         try
@@ -111,6 +145,10 @@ public sealed class AdifImportServiceTests : IDisposable
 
     private static string CreateSampleAdif() =>
         "Sample Header <eoh>\n<CALL:4>W1AW <STATION_CALLSIGN:6>N0CALL <QSO_DATE:8>20260425 <TIME_ON:6>123000 <BAND:3>20M <MODE:3>SSB <RST_SENT:2>59 <RST_RCVD:2>59 <EOR>\n";
+
+    private static string CreateLotwConfirmationAdif() =>
+        "LoTW Report <eoh>\n<CALL:4>W1AW <STATION_CALLSIGN:6>N0CALL <QSO_DATE:8>20260425 <TIME_ON:6>123000 <BAND:3>20M <MODE:3>SSB " +
+        "<STATE:2>CT <QSL_RCVD:1>Y <QSLRDATE:8>20260426 <APP_LoTW_RXQSL:8>20260426 <EOR>\n";
 }
 
 

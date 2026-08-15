@@ -46,7 +46,7 @@ public static class QsoImportDuplicateDetector
         CancellationToken cancellationToken = default)
     {
         if (imported.Count == 0)
-            return new QsoImportDuplicateFilterResult([], 0);
+            return new QsoImportDuplicateFilterResult([], 0, []);
 
         var existingIds = await db.Qsos
             .AsNoTracking()
@@ -54,38 +54,41 @@ public static class QsoImportDuplicateDetector
             .Select(x => x.Id)
             .ToListAsync(cancellationToken);
 
-        var existingKeys = await db.Qsos
+        var existingRows = await db.Qsos
             .AsNoTracking()
-            .Select(x => new DuplicateProbe(x.Call, x.StationCallSign, x.QsoDate, x.Band, x.Mode, x.Freq))
+            .Select(x => new { x.Id, Probe = new DuplicateProbe(x.Call, x.StationCallSign, x.QsoDate, x.Band, x.Mode, x.Freq) })
             .ToListAsync(cancellationToken);
 
         var knownIds = existingIds.ToHashSet();
-        var knownKeys = existingKeys
-            .Select(CreateSignature)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var idBySignature = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in existingRows)
+            idBySignature[CreateSignature(row.Probe)] = row.Id;
 
         var accepted = new List<Qso>(imported.Count);
+        var duplicateMerges = new List<QsoImportDuplicateMerge>();
         var duplicateCount = 0;
 
         foreach (var qso in imported)
         {
             var signature = CreateSignature(new DuplicateProbe(qso.Call, qso.StationCallSign, qso.QsoDate, qso.Band, qso.Mode, qso.Freq));
-            var isDuplicate = (qso.Id != Guid.Empty && knownIds.Contains(qso.Id))
-                              || knownKeys.Contains(signature);
+            var existingIdById = qso.Id != Guid.Empty && knownIds.Contains(qso.Id) ? qso.Id : (Guid?)null;
+            var existingIdBySignature = idBySignature.TryGetValue(signature, out var matchedId) ? matchedId : (Guid?)null;
+            var existingId = existingIdById ?? existingIdBySignature;
 
-            if (isDuplicate)
+            if (existingId is { } duplicateId)
             {
                 duplicateCount++;
+                duplicateMerges.Add(new QsoImportDuplicateMerge(duplicateId, qso));
                 continue;
             }
 
             accepted.Add(qso);
             if (qso.Id != Guid.Empty)
                 knownIds.Add(qso.Id);
-            knownKeys.Add(signature);
+            idBySignature[signature] = qso.Id;
         }
 
-        return new QsoImportDuplicateFilterResult(accepted, duplicateCount);
+        return new QsoImportDuplicateFilterResult(accepted, duplicateCount, duplicateMerges);
     }
 
     private static string CreateSignature(DuplicateProbe qso)
@@ -107,4 +110,9 @@ public static class QsoImportDuplicateDetector
     private readonly record struct DuplicateProbe(string Call, string StationCallSign, DateTime QsoDate, string Band, string Mode, decimal Freq);
 }
 
-public readonly record struct QsoImportDuplicateFilterResult(IReadOnlyList<Qso> Accepted, int DuplicateCount);
+public readonly record struct QsoImportDuplicateFilterResult(
+    IReadOnlyList<Qso> Accepted,
+    int DuplicateCount,
+    IReadOnlyList<QsoImportDuplicateMerge> DuplicateMerges);
+
+public readonly record struct QsoImportDuplicateMerge(Guid ExistingQsoId, Qso IncomingQso);
