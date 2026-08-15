@@ -465,3 +465,5 @@ _ReSharper*/
 *.msm
 *.msp
 >>>>>>> origin/master
+/.junie/mcp/mcp.json
+/.junie/mcp/mcp.json.bak
